@@ -33,10 +33,13 @@ upload-to-pypi: increment-minor-number-and-build # Upload current dist directory
 system-tests: # Run system tests
 	./run_system_tests.sh $(RELEASE_TAG)
 
+pytest:	# Run pytest
+	python3 -m pytest
+
 git-release:
 	git add .
 	git commit -nm "Release $(RELEASE_TAG)"
 	git push
 
-release: check-no-unstaged-changes increment-patch-number-and-build upload-to-testpypi system-tests upload-to-pypi git-release
+release: check-no-unstaged-changes increment-patch-number-and-build upload-to-testpypi system-tests pytest upload-to-pypi git-release
 	@echo "Done"

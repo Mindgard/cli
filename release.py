@@ -67,5 +67,6 @@ if __name__ == "__main__":
 
     if len(stored_version_numbers) > 1:
         raise ValueError("Different version numbers detected between setup.py, pyproject.toml, and __main__.py")
-    # THIS NEEDS TO BE THE ONLY THING THIS FILE PRINTS
+
+    # This needs to be the only print statement in the script for makefile purposes
     print(stored_version_numbers.pop())

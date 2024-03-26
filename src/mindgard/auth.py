@@ -8,13 +8,9 @@ from auth0.authentication.token_verifier import (
 )
 import requests
 
+from src.mindgard.constants import AUTH0_AUDIENCE, AUTH0_CLIENT_ID, AUTH0_DOMAIN
+
 from .utils import print_to_stderr
-
-
-AUTH0_DOMAIN= "login.sandbox.mindgard.ai"
-AUTH0_CLIENT_ID= "U0OT7yZLJ4GEyabar11BENeQduu4MaNO"
-AUTH0_AUDIENCE="https://marketplace-orchestrator.com"
-ALGORITHMS = ['RS256']
 
 
 def get_config_directory():
@@ -92,14 +88,11 @@ def auth():
 
         token_data = token_response.json()
         if token_response.status_code == 200:
-            print(token_data['id_token'])
             validate_id_token(token_data['id_token'])
             print('Authenticated!')
             os.makedirs(get_config_directory(), exist_ok=True)
             with open(get_token_file(), 'w') as f:
                 f.write(token_data['access_token'])
-                global access_token
-                access_token = token_data['access_token']
             authenticated = True
         elif token_data['error'] not in ('authorization_pending', 'slow_down'):
             error = token_data.get('error_description', 'Error authenticating the user. Please wait 30s and try again.')
