@@ -34,7 +34,7 @@ system-tests: # Run system tests
 	./run_system_tests.sh $(RELEASE_TAG)
 
 pytest:	# Run pytest
-	python3 -m pytest
+	python3 -m pytest tests/module
 
 git-release:
 	git add .
