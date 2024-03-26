@@ -163,3 +163,4 @@ cython_debug/
 .vscode
 .test_env
 token.txt
+.systest_env

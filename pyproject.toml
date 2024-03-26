@@ -1,7 +1,7 @@
 
 [tool.poetry]
 name = "mindgard"
-version = "0.0.12"
+version = "0.0.15"
 description = "Test your AI model's security without leaving your terminal."
 authors = ["Danny Hunt <danny.hunt@mindgard.ai>"]
 readme = "README.md"
@@ -11,11 +11,11 @@ mindgard = "src.mindgard:main"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-mypy = "^1.8.0"
 auth0-python = "^4.7.1"
 
 
 [tool.poetry.group.dev.dependencies]
+mypy = "^1.8.0"
 twine = "^5.0.0"
 wheel = "^0.43.0"
 setuptools = "^69.2.0"

@@ -2,28 +2,34 @@
 
 import argparse
 import os
+from typing import Callable
 import requests
 
-from .auth import auth, load_access_token
+from .auth import auth, clear_token, load_access_token
 
 
 access_token: str = ""
 
 
-def require_auth(func):
-    def wrapper(*args, **kwargs):
+def require_auth(func: Callable[..., requests.Response]) -> Callable[..., None]:
+    def wrapper(*args, **kwargs) -> None:
         if not access_token:
             print("First authenticate with Mindgard API.")
             print("Run 'mindgard auth' to authenticate.")
             return
-        return func(*args, **kwargs)
+        res: requests.Response = func(*args, **kwargs)
+        if res.status_code == 401:
+            print("Access token has expired. Please re-authenticate using `mindgard auth`")
+            clear_token()
+            return
+        print(res.json())
     return wrapper
 
 
 @require_auth
 def list():
-    res = requests.get("https://api.sandbox.mindgard.ai/api/v1/attacks/categories", headers={"Authorization": f"Bearer {access_token}"}) 
-    print(res.json())
+    res = requests.get("https://api.sandbox.mindgard.ai/api/v1/attacks/categories", headers={"Authorization": f"Bearer {access_token}"})
+    return res
 
 
 def main():

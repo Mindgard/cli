@@ -7,9 +7,7 @@ from auth0.authentication.token_verifier import (
     TokenVerifier,
 )
 import requests
-from pathlib import Path
 
-p = Path(__file__).with_name('file.txt')
 
 AUTH0_DOMAIN="login.sandbox.mindgard.ai"
 AUTH0_CLIENT_ID="U0OT7yZLJ4GEyabar11BENeQduu4MaNO"
@@ -18,7 +16,17 @@ ALGORITHMS = ['RS256']
 
 
 def get_config_directory():
-    return os.path.join(os.path.expanduser('~'), '.mindgard')
+    config_dir = os.environ.get('MINDGARD_CONFIG_DIR')
+    return config_dir or os.path.join(os.path.expanduser('~'), '.mindgard')
+
+
+def get_token_file():
+    return os.path.join(get_config_directory(), 'token.txt')
+
+
+def clear_token():
+    if os.path.exists(get_token_file()):
+        os.remove(get_token_file())
 
 
 def validate_id_token(id_token: str) -> None:
@@ -35,8 +43,8 @@ def validate_id_token(id_token: str) -> None:
 
 
 def load_access_token():
-    if os.path.exists('token.txt'):
-        with open('token.txt', 'r') as f:
+    if os.path.exists(get_token_file()):
+        with open(get_token_file(), 'r') as f:
             token = f.read()
             if token:
                 return token
@@ -63,7 +71,9 @@ def auth():
     print('Device code successful')
     device_code_data = device_code_response.json()
     print('1. On your computer or mobile device navigate to: ', device_code_data['verification_uri_complete'])
-    print('2. Enter the following code: ', device_code_data['user_code'])
+    print('2. Confirm that you see the following code: ', device_code_data['user_code'])
+    print('3. Register/log in using the web UI')
+
 
     # New code 👇
     token_payload = {
@@ -82,8 +92,8 @@ def auth():
         if token_response.status_code == 200:
             validate_id_token(token_data['id_token'])
             print('Authenticated!')
-            with open('token.txt', 'w') as f:
-                # print(f"{token_data=}")
+            os.makedirs(get_config_directory(), exist_ok=True)
+            with open(get_token_file(), 'w') as f:
                 f.write(token_data['access_token'])
                 global access_token
                 access_token = token_data['access_token']
