@@ -8,7 +8,7 @@ def test_cli_help():
 
 
 def test_cli_list():
-    result = subprocess.run(['python3', '-m', 'mindgard', 'list'], capture_output=True, text=True)
+    result = subprocess.run(['python3', '-m', 'mindgard', 'attackcategories'], capture_output=True, text=True)
     assert result.returncode == 0
     assert 'First authenticate with Mindgard API.' in result.stdout
 
