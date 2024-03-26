@@ -1,6 +1,7 @@
 
 
 import argparse
+import json
 import sys
 from typing import Callable, Optional
 import requests
@@ -24,28 +25,27 @@ def get_latest_version() -> Optional[str]:
         return None
 
 
-def require_auth(func: Callable[..., requests.Response]) -> Callable[..., None]:
-    def wrapper(*args, **kwargs) -> None:
+def require_auth(func: Callable[..., requests.Response], json_format=None) -> Callable[..., None]:
+    def wrapper(*args, json_format=json_format, **kwargs) -> None:
         if not access_token:
             print_to_stderr("First authenticate with Mindgard API.")
             print_to_stderr("Run 'mindgard auth' to authenticate.")
             return
-        res: requests.Response = func(*args, **kwargs)
+        res: requests.Response = func(*args, json_format=json_format, **kwargs)
         if res.status_code == 401:
             print_to_stderr("Access token is invalid. Please re-authenticate using `mindgard auth`")
             clear_token()
             return
-        print(res.json())
     return wrapper
 
 
 @require_auth
-def list():
+def attackcategories(json_format=None):
     res = requests.get("https://api.sandbox.mindgard.ai/api/v1/attacks/categories", headers={
         "Authorization": f"Bearer {access_token}", 
         "User-Agent": f"mindgard/{version}"
     })
-    return res
+    print(json.dumps(res.json(), indent=2)) if json_format else print("\n".join(list(map(lambda x: x["category"], res.json()))))
 
 
 def main():
@@ -55,7 +55,8 @@ def main():
     parser = argparse.ArgumentParser(description='Securing AIs', prog='mindgard', usage='%(prog)s [command] [options]', epilog='Enjoy the program! :)', add_help=True)
     parser.add_argument('--version', action='version', version=f"%(prog)s {version}", help='Show the current version number')
     subparsers = parser.add_subparsers(dest='command', title='commands', description='Use these commands to interact with the Mindgard API')
-    subparsers.add_parser('list', help='List the possible attack categories', )
+    attack_categories = subparsers.add_parser('attackcategories', help='Get a list of attack categories.')
+    attack_categories.add_argument('--json', action="store_true", help='Output the info in JSON format.')
     subparsers.add_parser('auth', help='Authenticate with Mindgard API')
     args = parser.parse_args()
 
@@ -69,8 +70,8 @@ def main():
 
     if args.command == 'auth':
         auth()
-    elif args.command == 'list':
-        list()
+    elif args.command == 'attackcategories':
+        attackcategories(json_format=args.json)
     else:
         print_to_stderr('Hey give us a command. Use list or auth.')
 
