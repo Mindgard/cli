@@ -31,6 +31,7 @@ def clear_token():
         os.remove(get_token_file())
 
 
+# TODO: test
 def validate_id_token(id_token: str) -> None:
     """
     Verify the token and its precedence. Raises if the token is invalid.
@@ -91,6 +92,7 @@ def auth():
 
         token_data = token_response.json()
         if token_response.status_code == 200:
+            print(token_data['id_token'])
             validate_id_token(token_data['id_token'])
             print('Authenticated!')
             os.makedirs(get_config_directory(), exist_ok=True)

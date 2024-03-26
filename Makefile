@@ -12,6 +12,10 @@ check-no-unstaged-changes:
 	git fetch
 	git diff --quiet origin/main || (echo "Local branch is not in sync with remote"; exit 1)
 
+current-version-number : # Show current version number
+	$(eval RELEASE_TAG := $(shell python3 release.py --current))
+	@echo $(RELEASE_TAG)
+
 increment-patch-number-and-build: # increment version
 	$(eval RELEASE_TAG := $(shell python3 release.py --patch))
 	python3 -m build
