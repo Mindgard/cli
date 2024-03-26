@@ -8,9 +8,11 @@ from auth0.authentication.token_verifier import (
 )
 import requests
 
+from .utils import print_to_stderr
 
-AUTH0_DOMAIN="login.sandbox.mindgard.ai"
-AUTH0_CLIENT_ID="U0OT7yZLJ4GEyabar11BENeQduu4MaNO"
+
+AUTH0_DOMAIN= "login.sandbox.mindgard.ai"
+AUTH0_CLIENT_ID= "U0OT7yZLJ4GEyabar11BENeQduu4MaNO"
 AUTH0_AUDIENCE="https://marketplace-orchestrator.com"
 ALGORITHMS = ['RS256']
 
@@ -65,7 +67,7 @@ def auth():
     device_code_response = requests.post('https://{}/oauth/device/code'.format(AUTH0_DOMAIN), data=device_code_payload)
 
     if device_code_response.status_code != 200:
-        print('Error generating login url. Please try again. Contact Mindgard support if the issue persists.')
+        print_to_stderr('Error generating login url. Please try again. Contact Mindgard support if the issue persists.')
         raise Exception(device_code_response.json())
 
     device_code_data = device_code_response.json()

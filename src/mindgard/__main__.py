@@ -5,6 +5,8 @@ import sys
 from typing import Callable, Optional
 import requests
 
+from .utils import print_to_stderr
+
 from .auth import auth, clear_token, load_access_token
 
 
@@ -25,12 +27,12 @@ def get_latest_version() -> Optional[str]:
 def require_auth(func: Callable[..., requests.Response]) -> Callable[..., None]:
     def wrapper(*args, **kwargs) -> None:
         if not access_token:
-            print("First authenticate with Mindgard API.")
-            print("Run 'mindgard auth' to authenticate.")
+            print_to_stderr("First authenticate with Mindgard API.")
+            print_to_stderr("Run 'mindgard auth' to authenticate.")
             return
         res: requests.Response = func(*args, **kwargs)
         if res.status_code == 401:
-            print("Access token has expired. Please re-authenticate using `mindgard auth`")
+            print_to_stderr("Access token is invalid. Please re-authenticate using `mindgard auth`")
             clear_token()
             return
         print(res.json())
@@ -58,19 +60,19 @@ def main():
     args = parser.parse_args()
 
     if not (sys.version_info.major == 3 and sys.version_info.minor >= 8):
-        print("Python 3.8 or later is required to run the Mindgard CLI.")
+        print_to_stderr("Python 3.8 or later is required to run the Mindgard CLI.")
         sys.exit(1)
 
     latest_version = get_latest_version()
     if latest_version and latest_version != version:
-        print(f"New version available: {latest_version}. Run 'pip install mindgard --upgrade' to upgrade. Older versions of the CLI may not be actively maintained.")
+        print_to_stderr(f"New version available: {latest_version}. Run 'pip install mindgard --upgrade' to upgrade. Older versions of the CLI may not be actively maintained.")
 
     if args.command == 'auth':
         auth()
     elif args.command == 'list':
         list()
     else:
-        print('Hey give us a command. Use list or auth.')
+        print_to_stderr('Hey give us a command. Use list or auth.')
 
 
 if __name__ == '__main__':
