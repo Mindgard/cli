@@ -31,7 +31,7 @@ system-tests: # Run system tests
 
 git-release:
 	git add .
-	git commit -nm "Release $(TARGET_TAG)"
+	git commit -nm "Release $(RELEASE_TAG)"
 	git push
 
 release: check-no-unstaged-changes increment-patch-number-and-build upload-to-testpypi system-tests upload-to-pypi git-release
