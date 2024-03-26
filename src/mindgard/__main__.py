@@ -52,6 +52,7 @@ def main():
     access_token = load_access_token()
 
     parser = argparse.ArgumentParser(description='Securing AIs', prog='mindgard', usage='%(prog)s [command] [options]', epilog='Enjoy the program! :)', add_help=True)
+    parser.add_argument('--version', action='version', version=f"%(prog)s {version}", help='Show the current version number')
     subparsers = parser.add_subparsers(dest='command', title='commands', description='Use these commands to interact with the Mindgard API')
     subparsers.add_parser('list', help='List the possible attack categories', )
     subparsers.add_parser('auth', help='Authenticate with Mindgard API')
