@@ -68,7 +68,6 @@ def auth():
         print('Error generating login url. Please try again. Contact Mindgard support if the issue persists.')
         raise Exception(device_code_response.json())
 
-    print('Device code successful')
     device_code_data = device_code_response.json()
     print('1. On your computer or mobile device navigate to: ', device_code_data['verification_uri_complete'])
     print('2. Confirm that you see the following code: ', device_code_data['user_code'])
