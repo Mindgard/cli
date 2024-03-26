@@ -9,7 +9,7 @@ from .auth import auth, clear_token, load_access_token
 
 
 access_token: str = ""
-version: str = "0.5.0"
+version: str = "0.6.0"
 repository_url: str = f"https://pypi.org/pypi/mindgard/json"
 
 
