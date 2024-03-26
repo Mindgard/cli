@@ -1,0 +1,40 @@
+
+[tool.poetry]
+name = "mindgard"
+version = "0.0.12"
+description = "Test your AI model's security without leaving your terminal."
+authors = ["Danny Hunt <danny.hunt@mindgard.ai>"]
+readme = "README.md"
+
+[tool.poetry.scripts]
+mindgard = "src.mindgard:main"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+mypy = "^1.8.0"
+auth0-python = "^4.7.1"
+
+
+[tool.poetry.group.dev.dependencies]
+twine = "^5.0.0"
+wheel = "^0.43.0"
+setuptools = "^69.2.0"
+types-setuptools = "^69.2.0.20240317"
+build = "^1.1.1"
+types-requests = "^2.31.0.20240311"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.mypy]
+ignore_missing_imports = true
+
+
+[tool.autopep8]
+max_line_length = 120
+ignore = "E501,W6"  # or ["E501", "W6"]
+in-place = true
+recursive = true
+aggressive = 3
