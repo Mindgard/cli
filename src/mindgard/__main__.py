@@ -12,7 +12,7 @@ from .auth import auth, clear_token, load_access_token
 
 
 access_token: str = ""
-version: str = "0.6.0"
+version: str = "0.6.1"
 repository_url: str = f"https://pypi.org/pypi/mindgard/json"
 
 
@@ -46,6 +46,7 @@ def attackcategories(json_format=None):
         "User-Agent": f"mindgard/{version}"
     })
     print(json.dumps(res.json(), indent=2)) if json_format else print("\n".join(list(map(lambda x: x["category"], res.json()))))
+    return res
 
 
 def main():
