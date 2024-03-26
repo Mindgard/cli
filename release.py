@@ -50,11 +50,11 @@ if __name__ == "__main__":
                 line = line.replace(version, incremented_version)
             f.write(line)
 
-    with open("src/mindgard/__main__.py", "r") as f:
+    with open("src/mindgard/constants.py", "r") as f:
         lines = f.readlines()
-    with open("src/mindgard/__main__.py", "w") as f:
+    with open("src/mindgard/constants.py", "w") as f:
         for line in lines:
-            if "version: str = " in line:
+            if "VERSION: str = " in line:
                 version = line.split("= ")[1].strip().replace('"', "")
                 incremented_version = increment_version(version, which)
                 stored_version_numbers.add(incremented_version)
