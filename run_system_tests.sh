@@ -9,8 +9,8 @@ python3 -m venv .systest_env
 # Activate the virtual environment
 source .systest_env/bin/activate
 
-# Install the required packages to run the system tests using pytest
-pip install mindgard
+# Install the latest version of the mindgard package from testpypi to run the system tests using pytest
+python3 -m pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple mindgard
 pip install pytest
 
 # Run the system tests

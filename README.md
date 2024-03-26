@@ -2,6 +2,11 @@
 
 Test your AI model's security through CLI alone
 
+### Dev locally
+
+- Set up a local python environment
+- `poetry install`
+
 ### Release process:
 
 - be in the repo root directory
