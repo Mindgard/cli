@@ -1,9 +1,8 @@
 
 
 import argparse
-import os
 import sys
-from typing import Callable
+from typing import Callable, Optional
 import requests
 
 from .auth import auth, clear_token, load_access_token
@@ -14,7 +13,7 @@ version: str = "0.5.0"
 repository_url: str = f"https://pypi.org/pypi/mindgard/json"
 
 
-def get_latest_version() -> str | None:
+def get_latest_version() -> Optional[str]:
     try:
         res = requests.get(repository_url)
         res.raise_for_status()
