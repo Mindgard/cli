@@ -70,11 +70,11 @@ setup(
     },
     # Entry points. The following would provide a command called `sample` which
     # executes the function `main` from this package when invoked:
-    # entry_points={  # Optional
-    #     "console_scripts": [
-    #         "sample=sample:main",
-    #     ],
-    # },
+    entry_points={  # Optional
+        "console_scripts": [
+            "mindgard=src.mindgard:main",
+        ],
+    },
     project_urls={  # Optional
         "Bug Reports": "https://github.com/Mindgard/cli/issues",
         "Find out more": "https://mindgard.ai/",

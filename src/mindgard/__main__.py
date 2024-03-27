@@ -41,7 +41,6 @@ def attackcategories(json_format: Optional[bool] = None) -> requests.Response:
         "User-Agent": f"mindgard/{VERSION}"
     })
     print(json.dumps(res.json(), indent=2)) if json_format else print("\n".join(list(map(lambda x: x["category"], res.json()))))
-
     return res
 
 
