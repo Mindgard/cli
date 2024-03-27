@@ -16,7 +16,7 @@ long_description = (here / "README.md").read_text(encoding="utf-8")
 
 setup(
     name="mindgard",  # Required
-    version="0.10.0",
+    version="0.10.1",
     # This is a one-line description or tagline of what your project does. This
     # corresponds to the "Summary" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#summary
@@ -41,7 +41,7 @@ setup(
         "Programming Language :: Python :: 3 :: Only",
     ],
     keywords="ai, security, machine learning, llm, cybersecurity",  # Optional
-    package_dir={"": "src"},  # Optional
+    # package_dir={"": "src"},  # Optional
     # You can just specify package directories manually here if your project is
     # simple. Or you can use find_packages().
     #
@@ -72,7 +72,7 @@ setup(
     # executes the function `main` from this package when invoked:
     entry_points={  # Optional
         "console_scripts": [
-            "mindgard=src.mindgard:main",
+            "mindgard=main",
         ],
     },
     project_urls={  # Optional
