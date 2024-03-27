@@ -4,7 +4,7 @@ from unittest import mock
 from ...src.mindgard.auth import get_config_directory, clear_token, get_token_file, load_access_token
 
 
-def test_config_location():
+def test_config_location() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         with mock.patch.dict(os.environ, {"MINDGARD_CONFIG_DIR": tmpdir}):
             assert get_config_directory() == tmpdir
@@ -12,7 +12,7 @@ def test_config_location():
         assert get_config_directory() == os.path.join(os.path.expanduser('~'), '.mindgard')
 
 
-def test_token_clearing():
+def test_token_clearing() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         with mock.patch.dict(os.environ, {"MINDGARD_CONFIG_DIR": tmpdir}):
             token_file = get_token_file()
@@ -23,7 +23,7 @@ def test_token_clearing():
             assert not os.path.exists(token_file)
 
 
-def test_token_load():
+def test_token_load() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         with mock.patch.dict(os.environ, {"MINDGARD_CONFIG_DIR": tmpdir}):
             token_file = get_token_file()
@@ -34,4 +34,3 @@ def test_token_load():
             clear_token()
             assert not os.path.exists(token_file)
             assert load_access_token() is None
-

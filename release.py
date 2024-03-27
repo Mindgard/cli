@@ -2,13 +2,13 @@
 import os
 import shutil
 import sys
-from typing import Literal, cast
+from typing import Literal, Set, cast
 
 
 WHICH_TYPE = Literal["patch", "minor", "major", "current"]
 
 
-def increment_version(version_str: str, which: WHICH_TYPE):
+def increment_version(version_str: str, which: WHICH_TYPE) -> str:
     major, minor, patch = map(int, version_str.split("."))
     if which == "patch":
         return f"{major}.{minor}.{patch+1}"
@@ -25,7 +25,7 @@ def increment_version(version_str: str, which: WHICH_TYPE):
 if __name__ == "__main__":
     which = cast(WHICH_TYPE, sys.argv[1].replace("--", ""))
 
-    stored_version_numbers = set()
+    stored_version_numbers: Set[str] = set()
 
     # increment version numbers  in setup.py and pyproject.toml
     with open("setup.py", "r") as f:

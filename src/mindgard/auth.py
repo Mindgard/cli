@@ -2,27 +2,28 @@
 
 import os
 import time
+from typing import Optional
 from auth0.authentication.token_verifier import (
     AsymmetricSignatureVerifier,
     TokenVerifier,
 )
 import requests
 
-from src.mindgard.constants import AUTH0_AUDIENCE, AUTH0_CLIENT_ID, AUTH0_DOMAIN
+from .constants import AUTH0_AUDIENCE, AUTH0_CLIENT_ID, AUTH0_DOMAIN
 
 from .utils import print_to_stderr
 
 
-def get_config_directory():
+def get_config_directory() -> str:
     config_dir = os.environ.get('MINDGARD_CONFIG_DIR')
     return config_dir or os.path.join(os.path.expanduser('~'), '.mindgard')
 
 
-def get_token_file():
+def get_token_file() -> str:
     return os.path.join(get_config_directory(), 'token.txt')
 
 
-def clear_token():
+def clear_token() -> None:
     if os.path.exists(get_token_file()):
         os.remove(get_token_file())
 
@@ -41,15 +42,16 @@ def validate_id_token(id_token: str) -> None:
     tv.verify(id_token)
 
 
-def load_access_token():
+def load_access_token() -> Optional[str]:
     if os.path.exists(get_token_file()):
         with open(get_token_file(), 'r') as f:
             token = f.read()
             if token:
                 return token
+    return None
     
 
-def auth():
+def auth() -> None:
     """
     Runs the device authorization flow and stores the user token in memory
     """

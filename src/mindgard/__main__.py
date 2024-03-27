@@ -3,10 +3,10 @@
 import argparse
 import json
 import sys
-from typing import Callable
+from typing import Any, Callable, Optional, TypeVar
 import requests
 
-from src.mindgard.constants import VERSION
+from .constants import VERSION
 
 from .utils import is_version_outdated, print_to_stderr
 
@@ -14,34 +14,38 @@ from .auth import auth, clear_token, load_access_token
 
 
 
-def require_auth(func: Callable[..., requests.Response], json_format=None) -> Callable[..., None]:
-    def wrapper(*args, json_format=json_format, **kwargs) -> None:
+access_token = load_access_token()
+
+
+T = TypeVar('T')
+
+def require_auth(func: Callable[..., T], json_format: Optional[bool] = None) -> Callable[..., Optional[T]]:
+    def wrapper(*args: Any, json_format: Optional[bool]=json_format, **kwargs: Any) -> Optional[T]:
         if not access_token:
             print_to_stderr("First authenticate with Mindgard API.")
             print_to_stderr("Run 'mindgard auth' to authenticate.")
-            return
-        res: requests.Response = func(*args, json_format=json_format, **kwargs)
-        if res.status_code == 401:
+            return None
+        res: T = func(*args, json_format=json_format, **kwargs)
+        if isinstance(res, requests.Response) and res.status_code == 401:
             print_to_stderr("Access token is invalid. Please re-authenticate using `mindgard auth`")
             clear_token()
-            return
+            return None
+        return res
     return wrapper
 
 
 @require_auth
-def attackcategories(json_format=None):
+def attackcategories(json_format: Optional[bool] = None) -> requests.Response:
     res = requests.get("https://api.sandbox.mindgard.ai/api/v1/attacks/categories", headers={
         "Authorization": f"Bearer {access_token}", 
         "User-Agent": f"mindgard/{VERSION}"
     })
     print(json.dumps(res.json(), indent=2)) if json_format else print("\n".join(list(map(lambda x: x["category"], res.json()))))
+
     return res
 
 
-def main():
-    global access_token
-    access_token = load_access_token()
-
+def main() -> None:
     parser = argparse.ArgumentParser(description='Securing AIs', prog='mindgard', usage='%(prog)s [command] [options]', epilog='Enjoy the program! :)', add_help=True)
     parser.add_argument('--version', action='version', version=f"%(prog)s {VERSION}", help='Show the current version number')
     subparsers = parser.add_subparsers(dest='command', title='commands', description='Use these commands to interact with the Mindgard API')
