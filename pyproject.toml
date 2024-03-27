@@ -1,13 +1,13 @@
 
 [tool.poetry]
 name = "mindgard"
-version = "0.11.0"
+version = "0.11.1"
 description = "Test your AI model's security without leaving your terminal."
 authors = ["Danny Hunt <danny.hunt@mindgard.ai>"]
 readme = "README.md"
 
 [tool.poetry.scripts]
-mindgard = "src.mindgard.__main__:main"
+mindgard = "mindgard.__main__:main"
 
 [tool.poetry.dependencies]
 python = "^3.8"
