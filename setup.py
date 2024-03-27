@@ -72,7 +72,7 @@ setup(
     # executes the function `main` from this package when invoked:
     entry_points={  # Optional
         "console_scripts": [
-            "mindgard=main",
+            "mindgard=src.mindgard.__main__:main",
         ],
     },
     project_urls={  # Optional

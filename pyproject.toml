@@ -7,7 +7,7 @@ authors = ["Danny Hunt <danny.hunt@mindgard.ai>"]
 readme = "README.md"
 
 [tool.poetry.scripts]
-mindgard = "src.mindgard:main"
+mindgard = "src.mindgard.__main__:main"
 
 [tool.poetry.dependencies]
 python = "^3.8"
