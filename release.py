@@ -4,7 +4,6 @@ import shutil
 import sys
 from typing import Literal, Set, cast
 
-
 WHICH_TYPE = Literal["patch", "minor", "major", "current"]
 
 

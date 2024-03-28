@@ -1,7 +1,9 @@
 import os
 import tempfile
 from unittest import mock
-from ...src.mindgard.auth import get_config_directory, clear_token, get_token_file, load_access_token
+
+from ...src.mindgard.auth import (clear_token, get_config_directory,
+                                  get_token_file, load_access_token)
 
 
 def test_config_location() -> None:
