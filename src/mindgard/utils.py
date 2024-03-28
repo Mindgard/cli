@@ -2,7 +2,9 @@ import sys
 from typing import Any, Optional, Tuple
 
 import requests
+
 from .constants import REPOSITORY_URL, VERSION
+
 
 def print_to_stderr(*args: Any, **kwargs: Any) -> None:
     print(*args, file=sys.stderr, **kwargs)

@@ -1,7 +1,8 @@
 import json
 
 from pytest import CaptureFixture
-from ...src.mindgard.__main__ import attackcategories
+
+from ...src.mindgard.attacks import attackcategories
 
 
 def test_attackcategories(capfd: CaptureFixture[str]) -> None:
