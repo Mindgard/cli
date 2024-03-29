@@ -1,5 +1,5 @@
 import sys
-from typing import Any, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import requests
 
@@ -25,3 +25,21 @@ def is_version_outdated() -> Optional[str]:
     except Exception:
         return ''
     
+
+def api_get(url: str, access_token: str) -> requests.Response:
+    res = requests.get(url, headers={
+        "Authorization": f"Bearer {access_token}",
+        "User-Agent": f"mindgard/{VERSION}"
+    })
+    res.raise_for_status()
+    return res
+
+
+def api_post(url: str, access_token: str, json: Dict[str, Any]) -> requests.Response:
+    res = requests.post(url, headers={
+        "Authorization": f"Bearer {access_token}",
+        "User-Agent": f"mindgard/{VERSION}"
+    }, json=json)
+    res.raise_for_status()
+    return res
+
