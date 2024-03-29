@@ -17,8 +17,8 @@ def get_tests(access_token: str, json_format: bool = False, test_id: Optional[st
         "Authorization": f"Bearer {access_token}",
         "User-Agent": f"mindgard/{VERSION}"
     })
-    res.raise_for_status()     
-    data: List[Dict[str, Any]] = res.json()[0] if isinstance(res.json(), list) else [res.json()]
+    res.raise_for_status()
+    data: List[Dict[str, Any]] = res.json() if isinstance(res.json(), list) else [res.json()]
     if json_format:
         print(json.dumps(res.json()))
     else:

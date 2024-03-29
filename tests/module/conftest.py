@@ -29,8 +29,8 @@ def pytest_configure(config: Config) -> None:
         assert res_json is not None
         res_json.raise_for_status()
         assert len(res_json.json()) > 0
-        test_id = res_json.json()[0][0]['id']
-        attack_id = res_json.json()[0][0]['attacks'][0]["id"]
+        test_id = res_json.json()[0]['id']
+        attack_id = res_json.json()[0]['attacks'][0]["id"]
         global example_ids
         example_ids = {"test_id": test_id, "attack_id": attack_id}
 

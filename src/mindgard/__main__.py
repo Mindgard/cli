@@ -51,7 +51,7 @@ def main() -> None:
         attackcategories(json_format=args.json)
     elif args.command == 'tests':
         if args.test_commands == "run":
-            run_test(args.name, json_format=args.json)
+            run_test(attack_name=args.name, json_format=args.json)
         else:
             get_tests(json_format=args.json, test_id=args.id)
     elif args.command == 'attacks':
