@@ -3,6 +3,8 @@ from typing import TypedDict
 
 from pytest import Config
 
+from .utils import suppress_output
+
 from ...src.mindgard.__main__ import attackcategories, get_tests
 from ...src.mindgard.auth import get_token_file
 
@@ -14,18 +16,21 @@ class ExampleIds(TypedDict):
 example_ids: ExampleIds
 
 
+
 def pytest_configure(config: Config) -> None:
     # Check that the user has a valid token in their config directory
     token_file = get_token_file()
     assert os.path.exists(token_file)
     try:
-        res_json = attackcategories()
+        with suppress_output():
+            res_json = attackcategories()
         assert res_json is not None
         res_json.raise_for_status()
     except Exception as e:
         assert False, f"Failed when checking saved auth token: {e}. Check that you are authenticated, and that orchestrator is running."
     try:
-        res_json = get_tests(json_format=True)
+        with suppress_output():
+            res_json = get_tests(json_format=True)
         assert res_json is not None
         res_json.raise_for_status()
         assert len(res_json.json()) > 0
