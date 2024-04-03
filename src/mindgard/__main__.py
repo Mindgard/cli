@@ -2,6 +2,7 @@
 
 import argparse
 import sys
+from typing import List
 
 from .attacks import attackcategories, get_attacks
 
@@ -11,7 +12,7 @@ from .tests import get_tests, run_test
 from .utils import is_version_outdated, print_to_stderr
 
 
-def main() -> None:
+def parse_args(args: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description='Securing AIs', prog='mindgard', usage='%(prog)s [command] [options]', epilog='Enjoy the program! :)', add_help=True)
     parser.add_argument('--version', action='version', version=f"%(prog)s {VERSION}", help='Show the current version number')
 
@@ -37,8 +38,14 @@ def main() -> None:
     attack_parser.add_argument('--json', action="store_true", help='Output the info in JSON format.', required=False)
     attack_parser.add_argument('--id', type=str, help='Get the details of a specific attack.', required=False)
 
+    return parser.parse_args(args)
     
-    args = parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args(sys.argv[1:])
+    args.json = args.json_tests if hasattr(args, 'json_tests') else False
+
 
     if not (sys.version_info.major == 3 and sys.version_info.minor >= 8):
         print_to_stderr("Python 3.8 or later is required to run the Mindgard CLI.")
@@ -53,9 +60,9 @@ def main() -> None:
         attackcategories(json_format=args.json)
     elif args.command == 'tests':
         if args.test_commands == "run":
-            run_test(attack_name=args.name, json_format=args.json)
+            run_test(attack_name=args.name, json_format=bool(args.json))
         else:
-            get_tests(json_format=args.json, test_id=args.id)
+            get_tests(json_format=bool(args.json), test_id=args.id)
     elif args.command == 'attacks':
         get_attacks(json_format=args.json, attack_id=args.id)
     else:
