@@ -14,3 +14,11 @@ Test your AI model's security through CLI alone
 - increment build number in pyproject.toml & setup.py (it overrides setup.py's value) - YOU CAN USE fully_release.sh for this
 - `python3 -m build`
 - `python3 -m twine upload --repository testpypi dist/*`
+
+### Running tests:
+
+- `pytest tests/module`
+
+OR
+
+- `./run_system_tests.sh`
