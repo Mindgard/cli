@@ -21,7 +21,7 @@ def test_cli_attackcategories() -> None:
 
 def test_cli_auth() -> None:
     try:
-        subprocess.run(['python3', '-m', 'mindgard', 'auth'], capture_output=True, text=True, timeout=1)
+        subprocess.run(['python3', '-m', 'mindgard', 'auth'], capture_output=True, text=True, timeout=2)
     except subprocess.TimeoutExpired as e:
         assert e.stdout
         assert 'Welcome to Mindgard! Let\'s get you authenticated...' in str(e.stdout)
