@@ -20,7 +20,7 @@ def test_tests_list(capfd: CaptureFixture[str]) -> None:
     res.raise_for_status()
     out, _ = capfd.readouterr()
     assert "------------------------" in out
-    assert "attack_ids" in out
+    assert "attack_id" in out
 
 
 def test_run_tests_json(capfd: CaptureFixture[str]) -> None:

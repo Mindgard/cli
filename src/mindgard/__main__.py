@@ -22,12 +22,14 @@ def main() -> None:
 
     subparsers.add_parser('auth', help='Authenticate with Mindgard API')
 
-    test_parser = subparsers.add_parser('tests', help='See the tests you\'ve run.')
+    # TODO: think about more streamlined command for running a test
+    test_parser = subparsers.add_parser('tests', help='See the tests you\'ve run.') # TODO: better help text
     test_parser.add_argument('--json', action="store_true", help='Output the info in JSON format.', required=False) # TODO: don't allow this if run comes after
     test_parser.add_argument('--id', type=str, help='Get the details of a specific test.', required=False)
     
     test_subparsers = test_parser.add_subparsers(dest='test_commands', title='test_commands', description='Perform actions against tests')
-    test_run_parser = test_subparsers.add_parser('run', help='Run a test.') 
+    test_run_parser = test_subparsers.add_parser('run', help='Run a test.') # TODO: risk exit codes
+    # TODO: links to view results in the UI for images etc
     test_run_parser.add_argument('--name', type=str, help='The attack to test.', required=True, choices=['cfp_faces', 'mistral'])
     test_run_parser.add_argument('--json', action="store_true", help='Initiate test and return id that can be used to check status.', required=False)
 
