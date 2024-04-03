@@ -4,7 +4,6 @@ from typing import Any, Callable, Dict, List, NotRequired, Optional, TypedDict
 
 import pytest
 import requests
-from requests import HTTPError
 
 from ...src.mindgard.__main__ import (attackcategories, get_attacks, get_tests,
                                       run_test)
@@ -18,7 +17,7 @@ class CommandTestCase(TypedDict):
     expected_error: Optional[List[str]]
     custom_test: NotRequired[bool]
     status_code: NotRequired[int]
-    exception: NotRequired[type[Exception]]
+    fails: NotRequired[bool]
 
 
 # This is suitable for CLI routes that return a requests.Response object
@@ -65,12 +64,12 @@ test_cases: List[CommandTestCase] = [
         "kwargs": {"json_format": False, "attack_id": "thisisinvalid"},
         "expected_stdout": None,
         "expected_error": ['Bad Request'],
-        "exception": HTTPError
+        "fails": True
     },
     {
         "command": get_tests,
         "kwargs": {"json_format": False},
-        "expected_stdout": ["------------------------", "attack_ids", "Completed"],
+        "expected_stdout": ["------------------------", "attack_id", "Completed"],
         "expected_error": None
     },
     {
@@ -88,7 +87,7 @@ test_cases: List[CommandTestCase] = [
     {
         "command": get_tests,
         "kwargs": {"json_format": False, "test_id": example_ids["test_id"]},
-        "expected_stdout": ["------------------------", "attack_ids", "Completed"],        
+        "expected_stdout": ["------------------------", "attack_id", "Completed"],        
         "expected_error": None
     },
     {
@@ -96,7 +95,7 @@ test_cases: List[CommandTestCase] = [
         "kwargs": {"json_format": False, "test_id": "thisisinvalid"},
         "expected_stdout": None,
         "expected_error": ['Bad Request'],
-        "exception": HTTPError
+        "fails": True
     },
     {
         "command": run_test,
@@ -143,32 +142,30 @@ def check_stdout(test_case: CommandTestCase, out: str) -> None:
 
 @pytest.mark.parametrize("test_case", non_custom_test_cases, ids=lambda x: create_custom_name(x))
 def test_cli_routes(test_case: CommandTestCase, capfd: pytest.CaptureFixture[str]) -> None:
-    if "exception" in test_case:
-        with pytest.raises(test_case["exception"]) as e:
-            test_case["command"](**test_case["kwargs"])
-            check_stderr(test_case, str(e))
-        return
     
     res = test_case["command"](**test_case["kwargs"])
 
-    # Check response
-    assert res is not None
-    assert res.status_code == test_case.get("status_code", 200)
-
-    if not test_case["expected_stdout"] and not test_case["expected_error"]:
-        raise ValueError("At least one of expected_stdout or expected_error must be provided")
-
-    # Check stdout & stderr
+    # Check stdout and stderr
     out, err = capfd.readouterr()
     check_stdout(test_case, out)
     check_stderr(test_case, err)
-    
-    # Check jsonic
-    if test_case["kwargs"]["json_format"]:
-        try:
-            json.loads(out) 
-        except json.JSONDecodeError:
-            assert False, "Output is not a valid JSON"
-    
-    assert res.json() is not None
-    assert len(res.json()) > 0
+
+    # Check response
+    if test_case.get("fails"):
+        assert res is None
+    else:
+        assert res is not None
+        assert res.status_code == test_case.get("status_code", 200)
+
+        # Check jsonic
+        if test_case["kwargs"]["json_format"]:
+            try:
+                json.loads(out) 
+            except json.JSONDecodeError:
+                assert False, "Output is not a valid JSON"
+        
+        assert res.json() is not None
+        assert len(res.json()) > 0
+
+    if not test_case["expected_stdout"] and not test_case["expected_error"]:
+        raise ValueError("At least one of expected_stdout or expected_error must be provided")
