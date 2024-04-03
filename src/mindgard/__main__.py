@@ -44,8 +44,6 @@ def parse_args(args: List[str]) -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args(sys.argv[1:])
-    args.json = args.json_tests if hasattr(args, 'json_tests') else False
-
 
     if not (sys.version_info.major == 3 and sys.version_info.minor >= 8):
         print_to_stderr("Python 3.8 or later is required to run the Mindgard CLI.")
