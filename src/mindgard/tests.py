@@ -48,6 +48,10 @@ def get_tests(access_token: str, json_format: bool = False, test_id: Optional[st
     })
     res.raise_for_status()
     data: List[Dict[str, Any]] = res.json() if isinstance(res.json(), list) else [res.json()]
+
+    for item in data:
+        item["url"] = f"https://sandbox.mindgard.ai/model-assessment-detail/{item["id"]}"
+
     if json_format:
         print(json.dumps(res.json()))
     else:
