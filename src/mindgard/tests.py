@@ -16,11 +16,13 @@ from .utils import api_get, api_post
 from .auth import require_auth
 
 
-def display_test_results(data: List[Dict[str, Any]]) -> None:
+# TODO: tidy this
+def display_test_results(data: List[Dict[str, Any]]) -> None: # TODO: consider color-coded output for risks
     display_data: List[Dict[str, Any]] = []
     for d in data:
         row = {k: v for k, v in d.items() if k not in ["attacks", "updatedAt", "displayName", "source", "isCompleted", "hasFinished"]}
-        row["attack_ids"] = d["attacks"][0]["id"]
+        row["attack_id"] = d["attacks"][0]["id"]
+        row["attack_name"] = d["attacks"][0]["attack"]
         row["state"] = d["attacks"][0]["state_message"]
         row["runtime"] = d["attacks"][0]["runtime"] or time.time() - d["attacks"][0]["run_at_unix"]
         row["attack_risk"] = d["attacks"][0]["risk"] if d["attacks"][0]["state_message"] == "Completed" else "TBD"
@@ -28,7 +30,8 @@ def display_test_results(data: List[Dict[str, Any]]) -> None:
         display_data.append(row)
         for attack in d["attacks"][1:]:
             display_data.append({
-                "attack_ids": attack["id"],
+                "attack_id": attack["id"],
+                "attack_name": attack["attack"],
                 "state": attack["state_message"],
                 "runtime": attack["runtime"] or time.time() - attack["run_at_unix"],
                 "attack_risk": attack["risk"] if attack["state_message"] == "Completed" else "TBD",
@@ -58,7 +61,7 @@ def run_test(access_token: str, attack_name: str, json_format: bool = False) -> 
         print("Initiating testing...")
     res = api_post("https://api.sandbox.mindgard.ai/api/v1/assessments", access_token, {"mindgardModelName": attack_name})
     if json_format:
-        print(json.dumps(res.json()))
+        print(json.dumps(res.json())) # TODO: include url
     else:
         print("Test initiated. Waiting for results...")
         test_id = res.json()["id"]
