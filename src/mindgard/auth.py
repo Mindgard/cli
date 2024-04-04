@@ -123,10 +123,10 @@ def require_auth(func: Callable[..., T]) -> Callable[..., Optional[T]]:
                 clear_token()
                 return None
             else:
-                print_to_stderr(f"An error occurred: {e}")
+                print_to_stderr(f"An error occurred: {type(e)}:{e}")
                 return None
         except Exception as e:
-            print_to_stderr(f"An error occurred: {e}")
+            print_to_stderr(f"An error occurred: {type(e)}:{e}")
             return None
         return res
     return wrapper
