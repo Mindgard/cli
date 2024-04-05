@@ -9,8 +9,6 @@ class ModelWrapper(ABC):
 
 class APIModelWrapper(ModelWrapper):
     def __call__(self, api_url, payload, headers = {}) -> dict:
-        print(payload)
-        print(api_url)
         response = requests.post(api_url, headers=headers, json=payload)
 
         if response.status_code != 200:
@@ -25,8 +23,6 @@ class HuggingFaceWrapper(APIModelWrapper):
 
     def __call__(self, prompt) -> str:
         # Post request to the Hugging Face API
-        print(self.api_url)
-        print(self.api_key)
         response = super().__call__(api_url=self.api_url, payload=[prompt], headers={'Authorization': f'Bearer {self.api_key}'}, )
         return response[0]['generated_text']
     
