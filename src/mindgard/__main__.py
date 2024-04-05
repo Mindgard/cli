@@ -6,7 +6,7 @@ from typing import List
 
 from .attacks import attackcategories, get_attacks
 
-from .auth import auth
+from .auth import login
 from .constants import VERSION
 from .tests import get_tests, run_test
 from .utils import is_version_outdated, print_to_stderr
@@ -21,7 +21,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     attack_categories_parser = subparsers.add_parser('attackcategories', help='Get a list of attack categories.')
     attack_categories_parser.add_argument('--json', action="store_true", help='Output the info in JSON format.') 
 
-    subparsers.add_parser('auth', help='Authenticate with Mindgard API')
+    subparsers.add_parser('login', help='Login to the Mindgard platform')
 
     # TODO: think about more streamlined command for running a test
     test_parser = subparsers.add_parser('tests', help='See the tests you\'ve run.') # TODO: better help text
@@ -54,8 +54,8 @@ def main() -> None:
     if new_version := is_version_outdated():
         print_to_stderr(f"New version available: {new_version}. Run 'pip install mindgard --upgrade' to upgrade. Older versions of the CLI may not be actively maintained.")
     
-    if args.command == 'auth':
-        auth()
+    if args.command == 'login':
+        login()
     elif args.command == 'attackcategories':
         res = attackcategories(json_format=args.json)
         exit(res.code())

@@ -51,7 +51,7 @@ def load_access_token() -> Optional[str]:
     return None
     
 
-def auth() -> None:
+def login() -> None:
     """
     Runs the device authorization flow and stores the user token in memory
     """
