@@ -1,12 +1,13 @@
 import os
 from typing import TypedDict
 
+from ...src.mindgard.tests import api_get_tests
 from pytest import Config
 
 from .utils import suppress_output
 
-from ...src.mindgard.__main__ import attackcategories, get_tests
-from ...src.mindgard.auth import get_token_file
+from ...src.mindgard.__main__ import attackcategories
+from ...src.mindgard.auth import get_token_file, load_access_token
 
 
 class ExampleIds(TypedDict):
@@ -23,19 +24,16 @@ def pytest_configure(config: Config) -> None:
     assert os.path.exists(token_file)
     try:
         with suppress_output():
-            res_json = attackcategories()
-        assert res_json is not None
-        res_json.raise_for_status()
+            attackcategories()
     except Exception as e:
         assert False, f"Failed when checking saved auth token: {e}. Check that you are authenticated, and that orchestrator is running."
     try:
         with suppress_output():
-            res_json = get_tests(json_format=True)
-        assert res_json is not None
-        res_json.raise_for_status()
-        assert len(res_json.json()) > 0
-        test_id = res_json.json()[0]['id']
-        attack_id = res_json.json()[0]['attacks'][0]["id"]
+            access_token = load_access_token()
+            tests = api_get_tests(access_token)
+
+        test_id = tests[0]['id']
+        attack_id = tests[0]['attacks'][0]["id"]
         global example_ids
         example_ids = {"test_id": test_id, "attack_id": attack_id}
 

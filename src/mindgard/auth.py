@@ -10,7 +10,7 @@ from auth0.authentication.token_verifier import (AsymmetricSignatureVerifier,
                                                  TokenVerifier)
 
 from .constants import AUTH0_AUDIENCE, AUTH0_CLIENT_ID, AUTH0_DOMAIN
-from .utils import print_to_stderr
+from .utils import CliResponse, print_to_stderr
 
 
 
@@ -102,31 +102,26 @@ def auth() -> None:
         else:
             time.sleep(device_code_data['interval'])
     
-
+    
 T = TypeVar('T')
-
-
 # TODO: improve typing definitions here
-def require_auth(func: Callable[..., T]) -> Callable[..., Optional[T]]:
+def require_auth(func: Callable[..., CliResponse]) -> Callable[..., CliResponse]:
     @wraps(func)
-    def wrapper(*args: Any, **kwargs: Any) -> Optional[T]:
+    def wrapper(*args: Any, **kwargs: Any) -> CliResponse:
         access_token = load_access_token()
         if not access_token:
             print_to_stderr("First authenticate with Mindgard API.")
             print_to_stderr("Run 'mindgard auth' to authenticate.")
-            return None
         try:
-            res: T = func(access_token, *args, **kwargs)
+            return func(access_token, *args, **kwargs)
         except requests.HTTPError as e:
             if "Unauthorized" in str(e):
                 print_to_stderr("Access token is invalid. Please re-authenticate using `mindgard auth`")
                 clear_token()
-                return None
             else:
                 print_to_stderr(f"An error occurred: {type(e)}:{e}")
-                return None
         except Exception as e:
             print_to_stderr(f"An error occurred: {type(e)}:{e}")
-            return None
-        return res
+        return CliResponse(1)
     return wrapper
+

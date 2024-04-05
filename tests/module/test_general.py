@@ -27,90 +27,114 @@ test_cases: List[CommandTestCase] = [
         "command": attackcategories,
         "kwargs": {"json_format": True},
         "expected_stdout": ['"evasion"'],
-        "expected_error": None
+        "expected_error": None,
+        "expected_response_code": 0,
     },
     {
         "command": attackcategories,
         "kwargs": {"json_format": False},
         "expected_stdout": ["evasion"],
-        "expected_error": None
+        "expected_error": None,
+        "expected_response_code": 0,
     },
     {
         "command": get_attacks,
         "kwargs": {"json_format": True},
         "expected_stdout": ['"id":', '"model":', '"dataset":', '"attack":', '"url":'],
-        "expected_error": None
+        "expected_error": None,
+        "expected_response_code": 0,
     },
     {
         "command": get_attacks,
         "kwargs": {"json_format": False},
         "expected_stdout": ["--------------------", "id", "model", "dataset", "attack"],
-        "expected_error": None
+        "expected_error": None,
+        "expected_response_code": 0,
     },
     {
         "command": get_attacks,
         "kwargs": {"json_format": True, "attack_id": example_ids["attack_id"]},
         "expected_stdout": ['"risk_text": [{'],
-        "expected_error": None
+        "expected_error": None,
+        "expected_response_code": 0,
     },
     {
         "command": get_attacks,
         "kwargs": {"json_format": False, "attack_id": example_ids["attack_id"]},
         "expected_stdout": ['"id":', '"model":', '"dataset":', '"attack":'],
-        "expected_error": None
+        "expected_error": None,
+        "expected_response_code": 0,
     },
     {
         "command": get_attacks,
         "kwargs": {"json_format": False, "attack_id": "thisisinvalid"},
         "expected_stdout": None,
         "expected_error": ['Bad Request'],
-        "fails": True
+        "expected_response_code": 1,
     },
     {
         "command": get_tests,
         "kwargs": {"json_format": False},
         "expected_stdout": ["------------------------", "attack_id", "Completed"],
-        "expected_error": None
+        "expected_error": None,
+        "expected_response_code": 0,
     },
     {
         "command": get_tests,
         "kwargs": {"json_format": True},
         "expected_stdout": ['[{"id": "', '"hasFinished": true', '"url":'],
-        "expected_error": None
+        "expected_error": None,
+        "expected_response_code": 0,
     },
     {
         "command": get_tests,
         "kwargs": {"json_format": True, "test_id": example_ids["test_id"]},
         "expected_stdout": ['{"id": "', '"hasFinished": true'],
-        "expected_error": None
+        "expected_error": None,
+        "expected_response_code": 0,
     },
     {
         "command": get_tests,
         "kwargs": {"json_format": False, "test_id": example_ids["test_id"]},
         "expected_stdout": ["------------------------", "attack_id", "Completed"],        
-        "expected_error": None
+        "expected_error": None,
+        "expected_response_code": 0,
     },
     {
         "command": get_tests,
         "kwargs": {"json_format": False, "test_id": "thisisinvalid"},
         "expected_stdout": None,
         "expected_error": ['Bad Request'],
-        "fails": True
+        "expected_response_code": 1,
     },
     {
         "command": run_test,
-        "kwargs": {"attack_name": "cfp_faces", "json_format": True},
+        "kwargs": {"attack_name": "cfp_faces", "json_format": True, "risk_threshold":100},
         "expected_stdout": ['{"id": "'],
         "expected_error": None,
-        "status_code": 201
+        "expected_response_code": 0,
+    },
+    {
+        "command": run_test,
+        "kwargs": {"attack_name": "cfp_faces", "json_format": False, "risk_threshold":0},
+        "expected_stdout": ['above threshold of'],
+        "expected_error": None,
+        "expected_response_code": 2,
+    },
+    {
+        "command": run_test,
+        "kwargs": {"attack_name": "cfp_faces", "json_format": False, "risk_threshold":101},
+        "expected_stdout": ['under threshold of'],
+        "expected_error": None,
+        "expected_response_code": 0,
     },
     {   
         "custom_test": True,
         "command": run_test,
-        "kwargs": {"attack_name": "cfp_faces", "json_format": False},
-        "expected_stdout": None,
+        "kwargs": {"attack_name": "cfp_faces", "json_format": False, "risk_threshold":100},
+        "expected_stdout": ['below threshold of'],
         "expected_error": None,
-        "status_code": 201
+        "expected_response_code": 2, # risk threshold
     }
 ]
 
@@ -145,27 +169,20 @@ def test_cli_routes(test_case: CommandTestCase, capfd: pytest.CaptureFixture[str
     
     res = test_case["command"](**test_case["kwargs"])
 
+    assert res.code() == test_case["expected_response_code"]
+
     # Check stdout and stderr
     out, err = capfd.readouterr()
     check_stdout(test_case, out)
     check_stderr(test_case, err)
 
-    # Check response
-    if test_case.get("fails"):
-        assert res is None
-    else:
-        assert res is not None
-        assert res.status_code == test_case.get("status_code", 200)
+    # Check jsonic
+    if test_case["kwargs"]["json_format"]:
+        try:
+            json.loads(out) 
+        except json.JSONDecodeError:
+            assert False, "Output is not a valid JSON"
 
-        # Check jsonic
-        if test_case["kwargs"]["json_format"]:
-            try:
-                json.loads(out) 
-            except json.JSONDecodeError:
-                assert False, "Output is not a valid JSON"
-        
-        assert res.json() is not None
-        assert len(res.json()) > 0
 
     if not test_case["expected_stdout"] and not test_case["expected_error"]:
         raise ValueError("At least one of expected_stdout or expected_error must be provided")

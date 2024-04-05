@@ -11,7 +11,7 @@ from tabulate import tabulate
 
 from .constants import VERSION
 
-from .utils import api_get, api_post
+from .utils import api_get, api_post, CliResponse
 
 from .auth import require_auth
 
@@ -39,8 +39,7 @@ def display_test_results(data: List[Dict[str, Any]]) -> None: # TODO: consider c
     print(tabulate(display_data, headers="keys"))
 
 
-@require_auth
-def get_tests(access_token: str, json_format: bool = False, test_id: Optional[str] = None) -> Response:
+def api_get_tests(access_token: str, test_id: Optional[str] = None) -> List[Dict[str, Any]]:
     url = f"https://api.sandbox.mindgard.ai/api/v1/assessments/{test_id}" if test_id else "https://api.sandbox.mindgard.ai/api/v1/assessments?ungrouped=true"
     res = requests.get(url, headers={
         "Authorization": f"Bearer {access_token}",
@@ -53,20 +52,26 @@ def get_tests(access_token: str, json_format: bool = False, test_id: Optional[st
         test_id = item["id"]
         item["url"] = f"https://sandbox.mindgard.ai/r/tests/{test_id}"
 
+    return data
+
+@require_auth
+def get_tests(access_token: str, json_format: bool = False, test_id: Optional[str] = None) -> CliResponse:
+    data = api_get_tests(access_token, test_id)
     if json_format:
         print(json.dumps(data))
     else:
         display_test_results(data)
-    return res
+    return CliResponse(0)
 
 
 @require_auth
-def run_test(access_token: str, attack_name: str, json_format: bool = False) -> Response:
+def run_test(access_token: str, attack_name: str, json_format: bool = False, risk_threshold: int = 80) -> CliResponse:
     if not json_format:
         print("Initiating testing...")
     res = api_post("https://api.sandbox.mindgard.ai/api/v1/assessments", access_token, {"mindgardModelName": attack_name})
     if json_format:
         print(json.dumps(res.json())) # TODO: include url
+        return CliResponse(0)
     else:
         print("Test initiated. Waiting for results...")
         test_id = res.json()["id"]
@@ -87,5 +92,11 @@ def run_test(access_token: str, attack_name: str, json_format: bool = False) -> 
             test_res = api_get(f"https://api.sandbox.mindgard.ai/api/v1/assessments/{test_id}", access_token)  
             completed = test_res.json()["hasFinished"]
             display_test_results([test_res.json()])
-        print("Test completed.")
-    return res
+
+        risk_score = test_res.json()["risk"]
+        if risk_score > risk_threshold:
+            print(f"Test completed - risk score {risk_score} above threshold of {risk_threshold}")
+            return CliResponse(2)
+        else:
+            print(f"Test completed - risk score {risk_score} under threshold of {risk_threshold}")
+            return CliResponse(0)

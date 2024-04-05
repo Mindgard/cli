@@ -6,17 +6,16 @@ from typing import Any, Dict, List, Optional
 from requests import Response
 from tabulate import tabulate
 
-from .utils import api_get
+from .utils import api_get,CliResponse
 from .auth import require_auth
 
 
 @require_auth
-def attackcategories(access_token: str, json_format: bool = False) -> Response:
+def attackcategories(access_token: str, json_format: bool = False) -> CliResponse:
     res = api_get("https://api.sandbox.mindgard.ai/api/v1/attacks/categories", access_token)
     category_names: List[str] = list(map(lambda x: x["category"], res.json()))
     print(json.dumps(res.json(), indent=2)) if json_format else print("\n".join(category_names))
-    return res
-
+    return CliResponse(0)
 
 def display_attacks_results(data: List[Dict[str, Any]]) -> None:
     display_data: List[Dict[str, Any]] = []
@@ -25,9 +24,8 @@ def display_attacks_results(data: List[Dict[str, Any]]) -> None:
         display_data.append(row)
     print(tabulate(display_data, headers="keys"))
 
-
 @require_auth
-def get_attacks(access_token: str, json_format: bool = False, attack_id: Optional[str] = None) -> Response:
+def get_attacks(access_token: str, json_format: bool = False, attack_id: Optional[str] = None) -> CliResponse:
     url = f"https://api.sandbox.mindgard.ai/api/v1/results/{attack_id}" if attack_id else "https://api.sandbox.mindgard.ai/api/v1/users/experiments"
     res = api_get(url, access_token)
     data: List[Dict[str, Any]] = res.json() if isinstance(res.json(), list) else [res.json()] # TODO - res.json has different strucutre in sinlge vs multi
@@ -44,4 +42,4 @@ def get_attacks(access_token: str, json_format: bool = False, attack_id: Optiona
         print(json.dumps(data))
     else:
         print(json.dumps(data, indent=2)) if attack_id else display_attacks_results(data)
-    return res
+    return CliResponse(0)
