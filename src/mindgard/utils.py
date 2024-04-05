@@ -5,6 +5,12 @@ import requests
 
 from .constants import REPOSITORY_URL, VERSION
 
+class CliResponse():
+    def __init__(self, code:int):
+        self._code = code
+
+    def code(self) -> int:
+        return self._code
 
 def print_to_stderr(*args: Any, **kwargs: Any) -> None:
     print(*args, file=sys.stderr, **kwargs)

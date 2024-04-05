@@ -33,6 +33,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     # TODO: links to view results in the UI for images etc
     test_run_parser.add_argument('--name', type=str, help='The attack to tests.', required=True, choices=['cfp_faces', 'mistral'])
     test_run_parser.add_argument('--json', action="store_true", help='Initiate test and return id that can be used to check status.', required=False)
+    test_run_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=80)
 
     # TODO: better error message if someone provides an id that is for the wrong resource eg attacks or tests
     attack_parser = subparsers.add_parser('attacks', help='See the attacks you\'ve run.') # TODO: alias single version of plural nouns
@@ -52,18 +53,22 @@ def main() -> None:
 
     if new_version := is_version_outdated():
         print_to_stderr(f"New version available: {new_version}. Run 'pip install mindgard --upgrade' to upgrade. Older versions of the CLI may not be actively maintained.")
-
+    
     if args.command == 'auth':
         auth()
     elif args.command == 'attackcategories':
-        attackcategories(json_format=args.json)
+        res = attackcategories(json_format=args.json)
+        exit(res.code())
     elif args.command == 'tests':
         if args.test_commands == "run":
-            run_test(attack_name=args.name, json_format=bool(args.json))
+            res = run_test(attack_name=args.name, json_format=bool(args.json), risk_threshold=int(args.risk_threshold))
+            exit(res.code())
         else:
-            get_tests(json_format=bool(args.json), test_id=args.id)
+            res = get_tests(json_format=bool(args.json), test_id=args.id)
+            exit(res.code())
     elif args.command == 'attacks':
-        get_attacks(json_format=args.json, attack_id=args.id)
+        res = get_attacks(json_format=args.json, attack_id=args.id)
+        exit(res.code())
     else:
         print_to_stderr('Hey give us a command. Use list or auth.') # TODO update
 
