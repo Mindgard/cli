@@ -96,7 +96,7 @@ def run_test(access_token: str, attack_name: str, json_format: bool = False, ris
         risk_score = test_res.json()["risk"]
         if risk_score > risk_threshold:
             print(f"Test completed - risk score {risk_score} above threshold of {risk_threshold}")
-            return CliResponse(2)
+            return CliResponse(1)
         else:
             print(f"Test completed - risk score {risk_score} under threshold of {risk_threshold}")
             return CliResponse(0)
