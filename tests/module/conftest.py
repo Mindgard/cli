@@ -6,7 +6,6 @@ from pytest import Config
 
 from .utils import suppress_output
 
-from ...src.mindgard.__main__ import attackcategories
 from ...src.mindgard.auth import get_token_file, load_access_token
 
 
@@ -22,11 +21,6 @@ def pytest_configure(config: Config) -> None:
     # Check that the user has a valid token in their config directory
     token_file = get_token_file()
     assert os.path.exists(token_file)
-    try:
-        with suppress_output():
-            attackcategories()
-    except Exception as e:
-        assert False, f"Failed when checking saved auth token: {e}. Check that you are authenticated, and that orchestrator is running."
     try:
         with suppress_output():
             access_token = load_access_token()

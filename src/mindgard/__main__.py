@@ -4,7 +4,7 @@ import argparse
 import sys
 from typing import List
 
-from .attacks import attackcategories, get_attacks
+from .attacks import get_attacks
 
 from .auth import login
 from .constants import VERSION
@@ -17,10 +17,6 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     parser.add_argument('--version', action='version', version=f"%(prog)s {VERSION}", help='Show the current version number')
 
     subparsers = parser.add_subparsers(dest='command', title='commands', description='Use these commands to interact with the Mindgard API')
-
-    attack_categories_parser = subparsers.add_parser('attackcategories', help='Get a list of attack categories.')
-    attack_categories_parser.add_argument('--json', action="store_true", help='Output the info in JSON format.') 
-
     subparsers.add_parser('login', help='Login to the Mindgard platform')
 
     # TODO: think about more streamlined command for running a test
@@ -64,9 +60,6 @@ def main() -> None:
     
     if args.command == 'login':
         login()
-    elif args.command == 'attackcategories':
-        res = attackcategories(json_format=args.json)
-        exit(res.code())
     elif args.command == 'test':
         if args.target is None:
             raise Exception("test command requires target argument")

@@ -7,8 +7,6 @@ from ...src.mindgard.__main__ import parse_args
 
 
 argparse_success_test_cases: List[Tuple[str, Namespace]] = [
-    ("attackcategories", Namespace(command='attackcategories', json=False)),
-    ("attackcategories --json", Namespace(command='attackcategories', json=True)),
     ("login", Namespace(command='login')),
     ("tests", Namespace(command='tests', test_commands=None, json=False, id=None)),
     ("tests --json", Namespace(command='tests', test_commands=None, json=True, id=None)),

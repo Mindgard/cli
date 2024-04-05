@@ -10,13 +10,6 @@ from .utils import api_get,CliResponse
 from .auth import require_auth
 
 
-@require_auth
-def attackcategories(access_token: str, json_format: bool = False) -> CliResponse:
-    res = api_get("https://api.sandbox.mindgard.ai/api/v1/attacks/categories", access_token)
-    category_names: List[str] = list(map(lambda x: x["category"], res.json()))
-    print(json.dumps(res.json(), indent=2)) if json_format else print("\n".join(category_names))
-    return CliResponse(0)
-
 def display_attacks_results(data: List[Dict[str, Any]]) -> None:
     display_data: List[Dict[str, Any]] = []
     for d in data:

@@ -5,7 +5,7 @@ from typing import Any, Callable, Dict, List, NotRequired, Optional, TypedDict
 import pytest
 import requests
 
-from ...src.mindgard.__main__ import (attackcategories, get_attacks, get_tests,
+from ...src.mindgard.__main__ import (get_attacks, get_tests,
                                       run_test)
 from .conftest import example_ids
 
@@ -23,20 +23,6 @@ class CommandTestCase(TypedDict):
 # This is suitable for CLI routes that return a requests.Response object
 # custom_test: True is used to indicate parameter inputs that are not suitable for this function and should be handled separately
 test_cases: List[CommandTestCase] = [
-    {
-        "command": attackcategories,
-        "kwargs": {"json_format": True},
-        "expected_stdout": ['"evasion"'],
-        "expected_error": None,
-        "expected_response_code": 0,
-    },
-    {
-        "command": attackcategories,
-        "kwargs": {"json_format": False},
-        "expected_stdout": ["evasion"],
-        "expected_error": None,
-        "expected_response_code": 0,
-    },
     {
         "command": get_attacks,
         "kwargs": {"json_format": True},
