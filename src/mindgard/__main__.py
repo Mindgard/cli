@@ -56,7 +56,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     wrapper_parser = subparsers.add_parser('wrapper', help='Wrapper commands')
     wrapper_subparsers = wrapper_parser.add_subparsers(dest='wrapper_command')
     wrapper_run_parser = wrapper_subparsers.add_parser('run', help='Run wrapper')
-    wrapper_run_parser.add_argument('--preset', type=str, help='The preset to use', choices=['huggingface', 'openai', 'custom_mistral'], required=True)
+    wrapper_run_parser.add_argument('--preset', type=str, help='The preset to use', choices=['huggingface', 'openai', 'anthropic', 'custom_mistral'], required=True)
     wrapper_run_parser.add_argument('--api_key', type=str, help='Specify the API key for the wrapper', required=False)
     wrapper_run_parser.add_argument('--url', type=str, help='Specify the url for the wrapper', required=False)
     wrapper_run_parser.add_argument('--model_name', type=str, help='Specify which model to run againist (OpenAI and Anthropic)', required=False)

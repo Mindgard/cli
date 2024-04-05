@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from anthropic import Anthropic
 import requests
 from openai import OpenAI
 
@@ -39,6 +40,19 @@ class OpenAIWrapper(ModelWrapper):
 
         return response
     
+class AnthropicWrapper(ModelWrapper):
+    def __init__(self, api_key = None, model_name="claude-3-opus-20240229") -> None:
+        self.api_key = api_key
+        self.client = Anthropic(api_key=api_key)
+        self.model_name = model_name
+
+    def __call__(self, prompt) -> str:
+        message = self.client.messages.create(max_tokens=1024, messages=[{"role": "user", "content": prompt}], model=self.model_name)
+
+        response = message.content[0].text
+
+        return response
+    
 class CustomMistralWrapper(APIModelWrapper):
     def __init__(self, api_url = None) -> None:
         # Assigns api_url attribute if it exists in kwargs, else defaults to None
@@ -56,6 +70,9 @@ def wrapper_test(preset, prompt, api_key=None, url=None, model_name=None):
         print(model(prompt))
     elif preset == 'openai':
         model = OpenAIWrapper(api_key=api_key, model_name=model_name)
+        print(model(prompt))
+    elif preset == 'anthropic':
+        model = AnthropicWrapper(api_key=api_key, model_name=model_name)
         print(model(prompt))
     elif preset == 'custom_mistral':
         model = CustomMistralWrapper(api_url=url)
