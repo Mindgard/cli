@@ -19,7 +19,16 @@ argparse_success_test_cases: List[Tuple[str, Namespace]] = [
     ("attacks --id 123", Namespace(command='attacks', json=False, id='123')),
     ("attacks --json", Namespace(command='attacks', json=True, id=None)),
     ("attacks --json --id 123", Namespace(command='attacks', json=True, id='123')),
+    # new cli structure:
     ("test cfp_faces", Namespace(command='test', target='cfp_faces', json=False, risk_threshold=80)),
+
+    ("list tests", Namespace(command='list', list_command='tests', json=False, id=None)),
+    ("list tests --json", Namespace(command='list', list_command='tests', json=True, id=None)),
+    ("list tests --json --id 123", Namespace(command='list', list_command='tests', json=True, id='123')),
+    #TODO singulars - the 'aliases' feature of argparse didn't work as expected and didn't want to block
+    # ("list test", Namespace(command='list', list_command='tests', json=False, id=None)),
+    # ("list test --json", Namespace(command='list', list_command='tests', json=True, id=None)),
+    # ("list test --json --id 123", Namespace(command='tests', test_command=None, json=True, id='123')),
 ]
 
 argparse_failure_test_cases: List[str] = [

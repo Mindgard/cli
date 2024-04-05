@@ -6,7 +6,7 @@ Test your AI model's security through CLI alone
 
 - Set up a local python environment
 - `poetry install`
-- Run commands as eg: `python3 -m src.mindgard auth`
+- Run commands as eg: `python3 -m src.mindgard login`
 
 ### Release process:
 

@@ -44,6 +44,12 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     test_parser.add_argument('--json', action="store_true", help='Return json output', required=False)
     test_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=80)
 
+    list_parser = subparsers.add_parser('list', help='List items')
+    list_subparsers = list_parser.add_subparsers(dest='list_command')
+    list_test_parser = list_subparsers.add_parser('tests', help='List tests')
+    list_test_parser.add_argument('--json', action="store_true", help='Return json output', required=False)
+    list_test_parser.add_argument('--id', type=str, help='Get the details of a specific test.', required=False)
+
     return parser.parse_args(args)
     
 
@@ -60,6 +66,10 @@ def main() -> None:
     
     if args.command == 'login':
         login()
+    elif args.command == 'list':
+        if args.list_command == 'tests':
+            res = get_tests(json_format=bool(args.json), test_id=args.id)
+            exit(res.code())
     elif args.command == 'test':
         if args.target is None:
             raise Exception("test command requires target argument")
