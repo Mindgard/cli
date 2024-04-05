@@ -50,13 +50,15 @@ class CustomMistralWrapper(APIModelWrapper):
         return response['response']
     
 
-def wrapper_test(preset, api_key=None, url=None, model_name=None):
+def wrapper_test(preset, prompt, api_key=None, url=None, model_name=None):
     if preset == 'huggingface':
         model = HuggingFaceWrapper(api_key=api_key, api_url=url)
-        print(model("Once upon a time, "))
+        print(model(prompt))
     elif preset == 'openai':
         model = OpenAIWrapper(api_key=api_key, model_name=model_name)
-        print(model("Once upon a time, "))
+        print(model(prompt))
     elif preset == 'custom_mistral':
         model = CustomMistralWrapper(api_url=url)
-        print(model("Once upon a time, "))
+        print(model(prompt))
+
+
