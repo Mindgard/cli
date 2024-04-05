@@ -38,7 +38,7 @@ test_cases: List[CommandTestCase] = [
     {
         "command": get_attacks,
         "kwargs": {"json_format": True},
-        "expected_stdout": ['"id":', '"model":', '"dataset":', '"attack":'],
+        "expected_stdout": ['"id":', '"model":', '"dataset":', '"attack":', '"url":'],
         "expected_error": None
     },
     {
@@ -75,7 +75,7 @@ test_cases: List[CommandTestCase] = [
     {
         "command": get_tests,
         "kwargs": {"json_format": True},
-        "expected_stdout": ['[{"id": "', '"hasFinished": true'],
+        "expected_stdout": ['[{"id": "', '"hasFinished": true', '"url":'],
         "expected_error": None
     },
     {

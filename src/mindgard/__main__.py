@@ -31,10 +31,11 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     test_subparsers = test_parser.add_subparsers(dest='test_commands', title='test_commands', description='Perform actions against tests')
     test_run_parser = test_subparsers.add_parser('run', help='Run a test.') # TODO: risk exit codes
     # TODO: links to view results in the UI for images etc
-    test_run_parser.add_argument('--name', type=str, help='The attack to test.', required=True, choices=['cfp_faces', 'mistral'])
+    test_run_parser.add_argument('--name', type=str, help='The attack to tests.', required=True, choices=['cfp_faces', 'mistral'])
     test_run_parser.add_argument('--json', action="store_true", help='Initiate test and return id that can be used to check status.', required=False)
 
-    attack_parser = subparsers.add_parser('attacks', help='See the attacks you\'ve run.')
+    # TODO: better error message if someone provides an id that is for the wrong resource eg attacks or tests
+    attack_parser = subparsers.add_parser('attacks', help='See the attacks you\'ve run.') # TODO: alias single version of plural nouns
     attack_parser.add_argument('--json', action="store_true", help='Output the info in JSON format.', required=False)
     attack_parser.add_argument('--id', type=str, help='Get the details of a specific attack.', required=False)
 
