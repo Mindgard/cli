@@ -24,21 +24,29 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     subparsers.add_parser('login', help='Login to the Mindgard platform')
 
     # TODO: think about more streamlined command for running a test
-    test_parser = subparsers.add_parser('tests', help='See the tests you\'ve run.') # TODO: better help text
-    test_parser.add_argument('--json', action="store_true", help='Output the info in JSON format.', required=False) # TODO: don't allow this if run comes after
-    test_parser.add_argument('--id', type=str, help='Get the details of a specific test.', required=False)
+    tests_parser = subparsers.add_parser('tests', help='See the tests you\'ve run.') # TODO: better help text
+    tests_parser.add_argument('--json', action="store_true", help='Output the info in JSON format.', required=False) # TODO: don't allow this if run comes after
+    tests_parser.add_argument('--id', type=str, help='Get the details of a specific test.', required=False)
     
-    test_subparsers = test_parser.add_subparsers(dest='test_commands', title='test_commands', description='Perform actions against tests')
-    test_run_parser = test_subparsers.add_parser('run', help='Run a test.') # TODO: risk exit codes
+    tests_subparsers = tests_parser.add_subparsers(dest='test_commands', title='test_commands', description='Perform actions against tests')
+    tests_run_parser = tests_subparsers.add_parser('run', help='Run a test.')
+    
     # TODO: links to view results in the UI for images etc
-    test_run_parser.add_argument('--name', type=str, help='The attack to tests.', required=True, choices=['cfp_faces', 'mistral'])
-    test_run_parser.add_argument('--json', action="store_true", help='Initiate test and return id that can be used to check status.', required=False)
-    test_run_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=80)
+    tests_run_parser.add_argument('--name', type=str, help='The attack to tests.', required=True, choices=['cfp_faces', 'mistral'])
+    tests_run_parser.add_argument('--json', action="store_true", help='Initiate test and return id that can be used to check status.', required=False)
+    tests_run_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=80)
 
     # TODO: better error message if someone provides an id that is for the wrong resource eg attacks or tests
     attack_parser = subparsers.add_parser('attacks', help='See the attacks you\'ve run.') # TODO: alias single version of plural nouns
     attack_parser.add_argument('--json', action="store_true", help='Output the info in JSON format.', required=False)
     attack_parser.add_argument('--id', type=str, help='Get the details of a specific attack.', required=False)
+
+    # from here is new command structure which we're incrementally adding
+    test_parser = subparsers.add_parser('test', help='Test a model')
+    # since this feels nonsensical, here's a link: https://docs.python.org/3/library/argparse.html#nargs
+    test_parser.add_argument('target', nargs='?', type=str)
+    test_parser.add_argument('--json', action="store_true", help='Return json output', required=False)
+    test_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=80)
 
     return parser.parse_args(args)
     
@@ -59,9 +67,14 @@ def main() -> None:
     elif args.command == 'attackcategories':
         res = attackcategories(json_format=args.json)
         exit(res.code())
+    elif args.command == 'test':
+        if args.target is None:
+            raise Exception("test command requires target argument")
+        res = run_test(target_name=args.target, json_format=bool(args.json), risk_threshold=int(args.risk_threshold))
+        exit(res.code())
     elif args.command == 'tests':
         if args.test_commands == "run":
-            res = run_test(attack_name=args.name, json_format=bool(args.json), risk_threshold=int(args.risk_threshold))
+            res = run_test(target_name=args.name, json_format=bool(args.json), risk_threshold=int(args.risk_threshold))
             exit(res.code())
         else:
             res = get_tests(json_format=bool(args.json), test_id=args.id)

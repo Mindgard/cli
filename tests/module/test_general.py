@@ -109,21 +109,21 @@ test_cases: List[CommandTestCase] = [
     },
     {
         "command": run_test,
-        "kwargs": {"attack_name": "cfp_faces", "json_format": True, "risk_threshold":100},
+        "kwargs": {"target_name": "cfp_faces", "json_format": True, "risk_threshold":100},
         "expected_stdout": ['{"id": "'],
         "expected_error": None,
         "expected_response_code": 0,
     },
     {
         "command": run_test,
-        "kwargs": {"attack_name": "cfp_faces", "json_format": False, "risk_threshold":0},
+        "kwargs": {"target_name": "cfp_faces", "json_format": False, "risk_threshold":-1},
         "expected_stdout": ['above threshold of'],
         "expected_error": None,
         "expected_response_code": 1,
     },
     {
         "command": run_test,
-        "kwargs": {"attack_name": "cfp_faces", "json_format": False, "risk_threshold":101},
+        "kwargs": {"target_name": "cfp_faces", "json_format": False, "risk_threshold":101},
         "expected_stdout": ['under threshold of'],
         "expected_error": None,
         "expected_response_code": 0,
@@ -131,7 +131,7 @@ test_cases: List[CommandTestCase] = [
     {   
         "custom_test": True,
         "command": run_test,
-        "kwargs": {"attack_name": "cfp_faces", "json_format": False, "risk_threshold":100},
+        "kwargs": {"target_name": "cfp_faces", "json_format": False, "risk_threshold":100},
         "expected_stdout": ['below threshold of'],
         "expected_error": None,
         "expected_response_code": 1, # risk threshold

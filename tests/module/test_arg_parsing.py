@@ -20,7 +20,8 @@ argparse_success_test_cases: List[Tuple[str, Namespace]] = [
     ("attacks", Namespace(command='attacks', json=False, id=None)),
     ("attacks --id 123", Namespace(command='attacks', json=False, id='123')),
     ("attacks --json", Namespace(command='attacks', json=True, id=None)),
-    ("attacks --json --id 123", Namespace(command='attacks', json=True, id='123')),     
+    ("attacks --json --id 123", Namespace(command='attacks', json=True, id='123')),
+    ("test cfp_faces", Namespace(command='test', target='cfp_faces', json=False, risk_threshold=80)),
 ]
 
 argparse_failure_test_cases: List[str] = [

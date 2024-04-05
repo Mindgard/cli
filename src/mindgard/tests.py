@@ -65,10 +65,10 @@ def get_tests(access_token: str, json_format: bool = False, test_id: Optional[st
 
 
 @require_auth
-def run_test(access_token: str, attack_name: str, json_format: bool = False, risk_threshold: int = 80) -> CliResponse:
+def run_test(access_token: str, target_name: str, json_format: bool = False, risk_threshold: int = 80) -> CliResponse:
     if not json_format:
         print("Initiating testing...")
-    res = api_post("https://api.sandbox.mindgard.ai/api/v1/assessments", access_token, {"mindgardModelName": attack_name})
+    res = api_post("https://api.sandbox.mindgard.ai/api/v1/assessments", access_token, {"mindgardModelName": target_name})
     if json_format:
         print(json.dumps(res.json())) # TODO: include url
         return CliResponse(0)
