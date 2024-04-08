@@ -54,17 +54,11 @@ class APIModelWrapper(ModelWrapper):
         
         return response
         
-    
 class HuggingFaceWrapper(APIModelWrapper):
     def __init__(self, api_key = None, api_url = None, **kwargs) -> None:
         super().__init__(api_url, request_template='{"inputs": "{prompt}"}', selector='[0]["generated_text"]', headers={'Authorization': f'Bearer {api_key}'}, **kwargs)
 
-        # TODO: Remove this and enable the user to pass in their own prompt template.   
-        self.prompt_template = """You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature. If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information" [INST]{USER_PROMPT}[/INST]"""
     def __call__(self, prompt) -> str:
-        # Format prompt with user prompt/
-        prompt = self.prompt_template.format(USER_PROMPT=prompt)
-
         # Send prompt to model in required format.
         response = super().__call__(prompt)
 
@@ -110,7 +104,7 @@ def get_wrapper(preset, system_prompt=None, api_key=None, url=None, model_name=N
         llm_template = Template(system_prompt_file="Test")
 
     if preset == 'huggingface':
-        model = HuggingFaceWrapper(api_key=api_key, api_url=url)
+        model = HuggingFaceWrapper(api_key=api_key, api_url=url, template=llm_template)
     elif preset == 'openai':
         model = OpenAIWrapper(api_key=api_key, model_name=model_name)
     elif preset == 'anthropic':
@@ -122,13 +116,16 @@ def get_wrapper(preset, system_prompt=None, api_key=None, url=None, model_name=N
 
 # TODO: Remove this function as it's temporary for testing.
 def run_attack(attack_name, headers_string=None, preset=None, api_key=None, url=None, model_name=None, system_prompt=None, selector=None, request_template=None):
+    # llm template
+    llm_template = Template(system_prompt_file="Test")
+    
     # Setup jailbreak and bad questions
     jailbreak = get_jailbreak(attack_name)
     bad_questions = get_bad_questions()
 
     # Create model based on preset
     if preset == 'huggingface':
-        model = HuggingFaceWrapper(api_key=api_key, api_url=url)
+        model = HuggingFaceWrapper(api_key=api_key, api_url=url, template=llm_template)
     elif preset == 'openai':
         model = OpenAIWrapper(api_key=api_key, model_name=model_name)
     elif preset == 'anthropic':
@@ -158,7 +155,6 @@ def run_jailbreak(model, jailbreak, questions, system_prompt=False):
         if(system_prompt):
             llm_template = Template(system_prompt_file="Test")
             prompt = llm_template(prompt)
-
 
         # Send to model
         response = model(prompt)
