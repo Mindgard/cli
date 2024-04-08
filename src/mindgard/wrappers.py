@@ -3,6 +3,8 @@ from anthropic import Anthropic
 import requests
 from openai import OpenAI
 
+from .template import Template
+
 class ModelWrapper(ABC):
     @abstractmethod
     def __call__(self, messages):
@@ -64,7 +66,11 @@ class CustomMistralWrapper(APIModelWrapper):
         return response['response']
     
 
-def wrapper_test(preset, prompt, api_key=None, url=None, model_name=None):
+def wrapper_test(preset, prompt, api_key=None, url=None, model_name=None, system_prompt=None):
+    if(system_prompt):
+        llm_template = Template(system_prompt_file="Test")
+        prompt = llm_template(prompt)
+
     if preset == 'huggingface':
         model = HuggingFaceWrapper(api_key=api_key, api_url=url)
         print(model(prompt))

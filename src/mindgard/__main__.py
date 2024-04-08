@@ -61,6 +61,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     wrapper_run_parser.add_argument('--url', type=str, help='Specify the url for the wrapper', required=False)
     wrapper_run_parser.add_argument('--model_name', type=str, help='Specify which model to run againist (OpenAI and Anthropic)', required=False)
     wrapper_run_parser.add_argument('--prompt', type=str, help='Specify the prompt to use', required=False)
+    wrapper_run_parser.add_argument('--system_prompt', type=str, help='Text file containing system prompt to use.', required=False)
     return parser.parse_args(args)
     
 
@@ -98,7 +99,7 @@ def main() -> None:
         exit(res.code())
     elif args.command == 'wrapper':
         if args.wrapper_command == 'run':
-            wrapper_test(preset=args.preset, prompt=args.prompt, api_key=args.api_key, url=args.url, model_name=args.model_name)
+            wrapper_test(preset=args.preset, prompt=args.prompt, api_key=args.api_key, url=args.url, model_name=args.model_name, system_prompt=args.system_prompt)
     else:
         print_to_stderr('Hey give us a command. Use list or auth.') # TODO update
 
