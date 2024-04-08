@@ -6,6 +6,9 @@ from typing import List
 
 from .wrappers import run_attack, run_prompt
 
+from .api_service import ApiService
+from .list_tests_command import ListTestsCommand
+
 from .attacks import get_attacks
 
 from .auth import login
@@ -86,10 +89,11 @@ def main() -> None:
     
     if args.command == 'login':
         login()
-    elif args.command == 'list':
-        if args.list_command == 'tests':
-            res = get_tests(json_format=bool(args.json), test_id=args.id)
-            exit(res.code())
+    elif args.command == 'list' and args.list_command == 'tests':
+        api_service = ApiService()
+        cmd = ListTestsCommand(api_service)
+        res = cmd.run(json_format=bool(args.json), test_id=args.id)
+        exit(res.code())
     elif args.command == 'test':
         if args.target is None:
             raise Exception("test command requires target argument")

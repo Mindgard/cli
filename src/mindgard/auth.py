@@ -111,17 +111,18 @@ def require_auth(func: Callable[..., CliResponse]) -> Callable[..., CliResponse]
         access_token = load_access_token()
         if not access_token:
             print_to_stderr("First authenticate with Mindgard API.")
-            print_to_stderr("Run 'mindgard auth' to authenticate.")
+            print_to_stderr("Run `mindgard login` to authenticate.")
+            return CliResponse(2)
         try:
-            return func(access_token, *args, **kwargs)
+            return func(*args, **kwargs, access_token = access_token)
         except requests.HTTPError as e:
             if "Unauthorized" in str(e):
-                print_to_stderr("Access token is invalid. Please re-authenticate using `mindgard auth`")
+                print_to_stderr("Access token is invalid. Please re-authenticate using `mindgard login`")
                 clear_token()
             else:
                 print_to_stderr(f"An error occurred: {type(e)}:{e}")
         except Exception as e:
             print_to_stderr(f"An error occurred: {type(e)}:{e}")
-        return CliResponse(1)
+        return CliResponse(2)
     return wrapper
 
