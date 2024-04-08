@@ -8,6 +8,7 @@ class Template():
         # Load system prompt file.
         self.prompt_template = "[INST] {system_prompt} {prompt} [/INST]"
 
+
     def __call__(self, prompt):
         #Applies the template to the given prompt
         return self.prompt_template.format(
