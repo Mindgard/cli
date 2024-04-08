@@ -9,6 +9,7 @@ class Template():
         self.prompt_template = "[INST] {system_prompt} {prompt} [/INST]"
         self.__validate_prompt_template(self.prompt_template)
 
+
     def __call__(self, prompt):
         #Applies the template to the given prompt
         return self.prompt_template.format(
