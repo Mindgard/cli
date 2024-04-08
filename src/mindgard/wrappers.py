@@ -4,6 +4,8 @@ from anthropic import Anthropic
 import requests
 from openai import OpenAI
 
+from .template import Template
+
 class ModelWrapper(ABC):
     @abstractmethod
     def __call__(self, messages):
@@ -69,7 +71,11 @@ class CustomMistralWrapper(APIModelWrapper):
     
 
 # TODO: Remove this function as it's temporary for testing.
-def run_attack(preset, attack_name, api_key=None, url=None, model_name=None):
+def run_attack(preset, attack_name, api_key=None, url=None, model_name=None, system_prompt=None):
+    if(system_prompt):
+        llm_template = Template(system_prompt_file="Test")
+        prompt = llm_template(prompt)
+
     jailbreak = get_jailbreak(attack_name)
     bad_questions = get_bad_questions()
 
