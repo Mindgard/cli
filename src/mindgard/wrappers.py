@@ -69,6 +69,17 @@ class CustomMistralWrapper(APIModelWrapper):
         response = super().__call__(self.api_url, payload={"prompt": prompt})
         return response['response']
     
+def get_wrapper(preset, api_key=None, url=None, model_name=None):
+    if preset == 'huggingface':
+        model = HuggingFaceWrapper(api_key=api_key, api_url=url)
+    elif preset == 'openai':
+        model = OpenAIWrapper(api_key=api_key, model_name=model_name)
+    elif preset == 'anthropic':
+        model = AnthropicWrapper(api_key=api_key, model_name=model_name)
+    elif preset == 'custom_mistral':
+        model = CustomMistralWrapper(api_url=url)
+    
+    return model
 
 # TODO: Remove this function as it's temporary for testing.
 def run_attack(preset, attack_name, api_key=None, url=None, model_name=None, system_prompt=None):
@@ -79,16 +90,18 @@ def run_attack(preset, attack_name, api_key=None, url=None, model_name=None, sys
     jailbreak = get_jailbreak(attack_name)
     bad_questions = get_bad_questions()
 
-    if preset == 'huggingface':
-        model = HuggingFaceWrapper(api_key=api_key, api_url=url)
-    elif preset == 'openai':
-        model = OpenAIWrapper(api_key=api_key, model_name=model_name)
-    elif preset == 'anthropic':
-        model = AnthropicWrapper(api_key=api_key, model_name=model_name)
-    elif preset == 'custom_mistral':
-        model = CustomMistralWrapper(api_url=url)
+    model = get_wrapper(preset, api_key, url, model_name)
 
     run_jailbreak(model, jailbreak, bad_questions)
+
+def run_prompt(preset, api_key=None, url=None, model_name=None, system_prompt=None, prompt=None):
+    if(system_prompt):
+        llm_template = Template(system_prompt_file="Test")
+        prompt = llm_template(prompt)
+    
+    model = get_wrapper(preset, api_key, url, model_name)
+
+    print(model(prompt))
 
 # TODO: Remove this function as it's temporary for testing.
 def run_jailbreak(model, jailbreak, questions):
