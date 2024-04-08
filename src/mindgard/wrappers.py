@@ -12,8 +12,14 @@ class ModelWrapper(ABC):
         self.template = template
 
     @abstractmethod
-    def __call__(self, messages):
+    def __call__(self, prompt):
         pass
+    
+    def process_prompt(self, prompt):
+        if(self.template):
+            prompt = self.template(prompt)
+
+        return prompt
 
 class APIModelWrapper(ModelWrapper):
     def __init__(self, api_url, request_template=None, selector=None, headers = {}, **kwargs) -> None:
@@ -26,9 +32,8 @@ class APIModelWrapper(ModelWrapper):
 
     def __call__(self, prompt) -> dict:
         # Apply llm prompt template.
-        # TODO make this more generalised, likely in ModelWrapper base class
-        if(self.template):
-            prompt = self.template(prompt)
+        # TODO Moved this to Model Wrapper.
+        prompt = self.process_prompt(prompt)
 
         # Escape characters in prompt)
         prompt = json.dumps(prompt)
