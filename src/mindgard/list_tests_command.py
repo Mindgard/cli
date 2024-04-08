@@ -26,6 +26,7 @@ class ListTestsCommand():
 
         Returns int of exit code
         """
+
         console = Console()
         
         tests_res = self._api.get_tests(access_token)

@@ -105,7 +105,7 @@ test_cases: List[CommandTestCase] = [
         "kwargs": {"target_name": "cfp_faces", "json_format": False, "risk_threshold":-1},
         "expected_stdout": ['above threshold of'],
         "expected_error": None,
-        "expected_response_code": 1, # risk threshold
+        "expected_response_code": 1, # risk threshold exit code
     },
     {
         "command": run_test,
@@ -120,7 +120,7 @@ test_cases: List[CommandTestCase] = [
         "kwargs": {"target_name": "cfp_faces", "json_format": False, "risk_threshold":100},
         "expected_stdout": ['below threshold of'],
         "expected_error": None,
-        "expected_response_code": 1, # risk threshold
+        "expected_response_code": 1, # risk threshold exit code
     }
 ]
 

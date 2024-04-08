@@ -23,5 +23,4 @@ class ApiService():
                 attack_id = attack["id"]
                 attack["url"] = f"https://sandbox.mindgard.ai/r/attack/{attack_id}"
 
-
         return data
