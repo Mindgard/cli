@@ -24,3 +24,14 @@ class ApiService():
                 attack["url"] = f"https://sandbox.mindgard.ai/r/attack/{attack_id}"
 
         return data
+    
+    def submit_test(self, access_token: str, target_name:str) -> Dict[str, Any]:
+        url = f"{API_BASE}/assessments"
+        post_body = {"mindgardModelName": target_name}
+        res = requests.post(url, headers={
+            "Authorization": f"Bearer {access_token}",
+            "User-Agent": f"mindgard/{VERSION}"
+        }, json=post_body)
+        res.raise_for_status()
+        data: Dict[str, Any] = res.json()
+        return data
