@@ -4,7 +4,7 @@ import argparse
 import sys
 from typing import List
 
-from .wrappers import wrapper_test
+from .wrappers import run_attack
 
 from .attacks import get_attacks
 
@@ -53,14 +53,13 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     list_test_parser.add_argument('--id', type=str, help='Get the details of a specific test.', required=False)
 
     # For testing purposes
-    wrapper_parser = subparsers.add_parser('wrapper', help='Wrapper commands')
-    wrapper_subparsers = wrapper_parser.add_subparsers(dest='wrapper_command')
-    wrapper_run_parser = wrapper_subparsers.add_parser('run', help='Run wrapper')
-    wrapper_run_parser.add_argument('--preset', type=str, help='The preset to use', choices=['huggingface', 'openai', 'anthropic', 'custom_mistral'], required=True)
-    wrapper_run_parser.add_argument('--api_key', type=str, help='Specify the API key for the wrapper', required=False)
-    wrapper_run_parser.add_argument('--url', type=str, help='Specify the url for the wrapper', required=False)
-    wrapper_run_parser.add_argument('--model_name', type=str, help='Specify which model to run againist (OpenAI and Anthropic)', required=False)
-    wrapper_run_parser.add_argument('--prompt', type=str, help='Specify the prompt to use', required=False)
+    wrapper_parser = subparsers.add_parser('attack', help='Attack commands')
+    wrapper_parser.add_argument('attack_name', nargs='?', type=str)
+    wrapper_parser.add_argument('--preset', type=str, help='The preset to use', choices=['huggingface', 'openai', 'anthropic', 'custom_mistral'], required=True)
+    wrapper_parser.add_argument('--api_key', type=str, help='Specify the API key for the wrapper', required=False)
+    wrapper_parser.add_argument('--url', type=str, help='Specify the url for the wrapper', required=False)
+    wrapper_parser.add_argument('--model_name', type=str, help='Specify which model to run againist (OpenAI and Anthropic)', required=False)
+    wrapper_parser.add_argument('--prompt', type=str, help='Specify the prompt to use', required=False)
     return parser.parse_args(args)
     
 
@@ -96,9 +95,8 @@ def main() -> None:
     elif args.command == 'attacks':
         res = get_attacks(json_format=args.json, attack_id=args.id)
         exit(res.code())
-    elif args.command == 'wrapper':
-        if args.wrapper_command == 'run':
-            wrapper_test(preset=args.preset, prompt=args.prompt, api_key=args.api_key, url=args.url, model_name=args.model_name)
+    elif args.command == 'attack':
+        run_attack(preset=args.preset, attack_name=args.attack_name, api_key=args.api_key, url=args.url)
     else:
         print_to_stderr('Hey give us a command. Use list or auth.') # TODO update
 
