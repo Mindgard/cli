@@ -3,6 +3,7 @@ import json
 from anthropic import Anthropic
 import requests
 from openai import OpenAI
+import jsonpath_ng
 
 from .template import Template
 
@@ -32,13 +33,17 @@ class APIModelWrapper(ModelWrapper):
 
         if response.status_code != 200:
             raise Exception(f"API call failed with status code {response.status_code}")
+        
+        response = response.json()
 
         if self.selector:
-            response_json = response.json()
-            # Reminder: Using eval is risky and should be replaced with a safer alternative.
-            return eval(f"response_json{self.selector}")
+            jsonpath_expr = jsonpath_ng.parse(self.selector)
+            match = jsonpath_expr.find(response)
+            if match:
+                return [m.value for m in match][0]
+
         
-        return response.json()
+        return response
         
     
 class HuggingFaceWrapper(APIModelWrapper):
