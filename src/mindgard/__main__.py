@@ -60,6 +60,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     wrapper_parser.add_argument('--url', type=str, help='Specify the url for the wrapper', required=False)
     wrapper_parser.add_argument('--model_name', type=str, help='Specify which model to run againist (OpenAI and Anthropic)', required=False)
     wrapper_parser.add_argument('--prompt', type=str, help='Specify the prompt to use', required=False)
+    wrapper_parser.add_argument('--system_prompt', type=str, help='Text file containing system prompt to use.', required=False)
     return parser.parse_args(args)
     
 
