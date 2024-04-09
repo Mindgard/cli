@@ -112,9 +112,9 @@ class CustomMistralWrapper(APIModelWrapper):
         response = super().__call__(prompt)
         return response
     
-def get_wrapper(preset, system_prompt=None, api_key=None, url=None, model_name=None):
+def get_wrapper(preset=None, system_prompt=None, api_key=None, url=None, model_name=None, **kwargs):
     if(system_prompt):
-        llm_template = Template(system_prompt_file="Test")
+        llm_template = Template(system_prompt=system_prompt, **kwargs)
 
     if preset == 'huggingface':
         model = HuggingFaceWrapper(api_key=api_key, api_url=url, template=llm_template)
@@ -155,8 +155,8 @@ def run_attack(attack_name, headers_string=None, preset=None, api_key=None, url=
 
     run_jailbreak(model, jailbreak, bad_questions, system_prompt)
 
-def run_prompt(preset, api_key=None, url=None, model_name=None, system_prompt=None, prompt=None):
-    model = get_wrapper(preset=preset, api_key=api_key, url=url, model_name=model_name, system_prompt=system_prompt)
+def run_prompt(prompt=None, **kwargs):
+    model = get_wrapper(**kwargs)
     print(model(prompt))
 
 # TODO: Remove this function as it's temporary for testing.

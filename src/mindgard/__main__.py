@@ -4,6 +4,8 @@ import argparse
 import sys
 from typing import List
 
+from .template import Template
+
 from .wrappers import run_attack, run_prompt
 
 from .api_service import ApiService
@@ -74,7 +76,9 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     prompt_test.add_argument('--url', type=str, help='Specify the url for the wrapper', required=False)
     prompt_test.add_argument('--model_name', type=str, help='Specify which model to run againist (OpenAI and Anthropic)', required=False)
     prompt_test.add_argument('--prompt', type=str, help='Specify the prompt to use', required=False)
+    prompt_test.add_argument('--preset_template', type=str, help='Use a preset prompt template.', choices=Template.Models.__dir__(), required=False)
     prompt_test.add_argument('--system_prompt', type=str, help='Text file containing system prompt to use.', required=False)
+    prompt_test.add_argument('--prompt_template', type=str, help='Specify own custom template.', required=False)
     return parser.parse_args(args)
 
 def main() -> None:
@@ -112,7 +116,7 @@ def main() -> None:
     elif args.command == 'attack':
         run_attack(preset=args.preset, headers_string=args.headers, attack_name=args.attack_name, api_key=args.api_key, url=args.url, selector=args.selector, request_template=args.request_template, system_prompt=args.system_prompt, model_name=args.model_name)
     elif args.command == 'prompt':
-        run_prompt(preset=args.preset, api_key=args.api_key, url=args.url, system_prompt=args.system_prompt, prompt=args.prompt)
+        run_prompt(**vars(args))
     else:
         print_to_stderr('Hey give us a command. Use list or auth.') # TODO update
 

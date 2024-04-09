@@ -3,14 +3,22 @@ class Template():
         MISTRAL = "[INST] {system_prompt}{prompt} [/INST]"
         GEMMA = "<bos><start_of_turn>user\n{system_prompt}{prompt}<end_of_turn>"
 
-    def __init__(self, system_prompt_file=None):
-        assert system_prompt_file, "You must specify a system prompt file."
+        def __dir__():
+            return ["MISTRAL", "GEMMA"]
+
+    def __init__(self, system_prompt=None, preset_template=None, prompt_template=None, **kwargs):
+        self.system_prompt = system_prompt
+        self.preset_template = preset_template
+        self.prompt_template = prompt_template
+
+        assert system_prompt, "You must specify a system prompt file."
 
         # Load system prompt from file
         self.system_prompt = """You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature. If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information.\n"""
 
-        # Grab preset model prompt template
-        self.prompt_template = Template.Models.GEMMA
+        if(preset_template):
+            # Grab preset model prompt template
+            self.prompt_template = getattr(Template.Models, preset_template)
 
         # If a prompt template exists validate it.
         # if not set template to default.
