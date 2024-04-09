@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import json
+from typing import Any, List, Literal, Optional
 from anthropic import Anthropic
 import requests
 from openai import OpenAI
@@ -8,29 +9,31 @@ import jsonpath_ng
 from .template import Template
 
 class ModelWrapper(ABC):
-    def __init__(self, template=None):
+    def __init__(self, template: Optional[Template] = None) -> None:
         self.template = template
 
     @abstractmethod
-    def __call__(self, prompt):
+    def __call__(self, prompt: str) -> str:
         pass
     
-    def process_prompt(self, prompt):
+    def process_prompt(self, prompt: str) -> str:
         if(self.template):
             prompt = self.template(prompt)
 
         return prompt
+    
 
 class APIModelWrapper(ModelWrapper):
-    def __init__(self, api_url, request_template=None, selector=None, headers = {}, **kwargs) -> None:
-        super().__init__(**kwargs)
+    def __init__(self, api_url: str, request_template: str = '{prompt}', selector: Optional[str] = None, headers: Optional[dict[str, str]] = None, template: Optional[Template] = None) -> None:
+
+        super().__init__(template)
         
         self.api_url = api_url
         self.request_template = request_template
         self.selector = selector
-        self.headers = headers
+        self.headers = headers or {}
 
-    def __call__(self, prompt) -> dict:
+    def __call__(self, prompt: str) -> str:
         # Apply llm prompt template.
         # TODO Moved this to Model Wrapper.
         prompt = self.process_prompt(prompt)
@@ -55,64 +58,47 @@ class APIModelWrapper(ModelWrapper):
             jsonpath_expr = jsonpath_ng.parse(self.selector)
             match = jsonpath_expr.find(response)
             if match:
-                return [m.value for m in match][0]
+                return match[0].value
+            else:
+                raise Exception(f"Selector {self.selector} did not match any elements in the response. {response=}")
+    
         
         return response
         
 class HuggingFaceWrapper(APIModelWrapper):
-    def __init__(self, api_key = None, api_url = None, **kwargs) -> None:
-        super().__init__(api_url, request_template='{"inputs": "{prompt}"}', selector='[0]["generated_text"]', headers={'Authorization': f'Bearer {api_key}'}, **kwargs)
-
-    def __call__(self, prompt) -> str:
-        # Send prompt to model in required format.
-        response = super().__call__(prompt)
-
-        return response
+    def __init__(self, api_key: str, api_url: str, template: Optional[Template] = None) -> None:
+        super().__init__(api_url, request_template='{"inputs": "{prompt}"}', selector='[0]["generated_text"]', headers={'Authorization': f'Bearer {api_key}'}, template=template)
     
 class OpenAIWrapper(ModelWrapper):
-    def __init__(self, api_key = None, model_name=None, **kwargs) -> None:
+    def __init__(self, api_key: str, model_name: str = "gpt-3.5-turbo") -> None:
         self.api_key = api_key
         self.client = OpenAI(api_key=api_key)
-
-        if model_name:
-            self.model_name = model_name
-        else:
-            self.model_name = "gpt-3.5-turbo"
+        self.model_name = model_name
         
-    def __call__(self, prompt) -> str:
+    def __call__(self, prompt: str) -> str:
         chat = self.client.chat.completions.create(model=self.model_name, messages=[{"role": "system", "content": prompt}])
 
         response = chat.choices[0].message.content 
 
+        if not response:
+            raise Exception("No response from OpenAI")
+
         return response
     
 class AnthropicWrapper(ModelWrapper):
-    def __init__(self, api_key = None, model_name=None, **kwargs) -> None:
+    def __init__(self, api_key: str, model_name: str = "claude-3-opus-20240229") -> None:
         self.api_key = api_key
         self.client = Anthropic(api_key=api_key)
+        self.model_name = model_name
 
-        if model_name:
-            self.model_name = model_name
-        else:
-            self.model_name = "claude-3-opus-20240229"
-
-    def __call__(self, prompt) -> str:
+    def __call__(self, prompt: str) -> str:
         message = self.client.messages.create(max_tokens=1024, messages=[{"role": "user", "content": prompt}], model=self.model_name)
 
         response = message.content[0].text
 
         return response
     
-class CustomMistralWrapper(APIModelWrapper):
-    def __init__(self, api_url = None, **kwargs) -> None:
-        super().__init__(api_url, request_template='{"prompt": "{prompt}"}', selector='["response"]', **kwargs)
-
-    def __call__(self, prompt) -> dict:
-        # Post request to the custom API
-        response = super().__call__(prompt)
-        return response
-    
-def get_wrapper(preset, system_prompt=None, api_key=None, url=None, model_name=None):
+def get_wrapper(preset: Literal['huggingface', 'openai', 'anthropic'], system_prompt=None, api_key=None, url=None, model_name=None):
     if(system_prompt):
         llm_template = Template(system_prompt_file="Test")
 
@@ -122,13 +108,11 @@ def get_wrapper(preset, system_prompt=None, api_key=None, url=None, model_name=N
         model = OpenAIWrapper(api_key=api_key, model_name=model_name)
     elif preset == 'anthropic':
         model = AnthropicWrapper(api_key=api_key, model_name=model_name)
-    elif preset == 'custom_mistral':
-        model = CustomMistralWrapper(api_url=url, template=llm_template)
     
     return model
 
 # TODO: Remove this function as it's temporary for testing.
-def run_attack(attack_name, headers_string=None, preset=None, api_key=None, url=None, model_name=None, system_prompt=None, selector=None, request_template=None):
+def run_attack(attack_name: Literal['devmodev2', 'antigpt'], headers_string: str, preset: Optional[Literal['huggingface', 'openai', 'anthropic']] = None, api_key: Optional[str] = None, url: Optional[str] = None, model_name: Optional[str] = None, system_prompt: Optional[str] = None, selector=None, request_template=None):
     # llm template
     llm_template = Template(system_prompt_file="Test")
     
@@ -143,8 +127,6 @@ def run_attack(attack_name, headers_string=None, preset=None, api_key=None, url=
         model = OpenAIWrapper(api_key=api_key, model_name=model_name)
     elif preset == 'anthropic':
         model = AnthropicWrapper(api_key=api_key, model_name=model_name)
-    elif preset == 'custom_mistral':
-        model = CustomMistralWrapper(api_url=url)
     else:
         # Convert headers string to dictionary
         if headers_string:
@@ -160,7 +142,7 @@ def run_prompt(preset, api_key=None, url=None, model_name=None, system_prompt=No
     print(model(prompt))
 
 # TODO: Remove this function as it's temporary for testing.
-def run_jailbreak(model, jailbreak, questions, system_prompt=False):
+def run_jailbreak(model: ModelWrapper, jailbreak: str, questions: List[str], system_prompt=False):
     for question in questions:
         # Compile prompt
         prompt = f"{jailbreak} {question}"
@@ -176,7 +158,7 @@ def run_jailbreak(model, jailbreak, questions, system_prompt=False):
 
 
 # TODO: Remove this function as it's temporary for testing.
-def get_jailbreak(name):
+def get_jailbreak(name: str):
     # Load jailbreak from file
     with open(f"jailbreak_mocks/{name}.txt", "r") as f:
         jailbreak = f.read()
