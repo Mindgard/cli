@@ -6,6 +6,7 @@ from typing import List
 
 from .api_service import ApiService
 from .list_tests_command import ListTestsCommand
+from .run_test_command import RunTestCommand
 
 from .attacks import get_attacks
 
@@ -75,9 +76,9 @@ def main() -> None:
         res = cmd.run(json_format=bool(args.json), test_id=args.id)
         exit(res.code())
     elif args.command == 'test':
-        if args.target is None:
-            raise Exception("test command requires target argument")
-        res = run_test(target_name=args.target, json_format=bool(args.json), risk_threshold=int(args.risk_threshold))
+        api_service = ApiService()
+        cmd = RunTestCommand(api_service)
+        res = cmd.run(model_name=args.target, json_format=bool(args.json), risk_threshold=int(args.risk_threshold))
         exit(res.code())
     elif args.command == 'tests':
         if args.test_commands == "run":
