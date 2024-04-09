@@ -38,7 +38,7 @@ class APIModelWrapper(ModelWrapper):
         # TODO Moved this to Model Wrapper.
         prompt = self.process_prompt(prompt)
 
-        # Escape characters in prompt)
+        # Escape characters in prompt
         prompt = json.dumps(prompt)
 
         # Format the payload with the prompt
@@ -97,9 +97,11 @@ class AnthropicWrapper(ModelWrapper):
 
         return response
     
-def get_wrapper(preset: Optional[Literal['huggingface', 'openai', 'anthropic']] = None, headers_string: Optional[str] = None, api_key: Optional[str] = None, url: Optional[str] = None, model_name: Optional[str] = None, system_prompt: Optional[str] = None, selector=None, request_template=None, **kwargs):
+def get_wrapper(preset: Optional[Literal['huggingface', 'openai', 'anthropic']] = None, headers_string: Optional[str] = None, api_key: Optional[str] = None, url: Optional[str] = None, model_name: Optional[str] = None, system_prompt: Optional[str] = None, selector=None, request_template=None, **kwargs) -> ModelWrapper:
     if(system_prompt):
         llm_template = Template(system_prompt=system_prompt, **kwargs)
+    else:
+        llm_template = None
 
     # Create model based on preset
     if preset == 'huggingface':
@@ -112,9 +114,9 @@ def get_wrapper(preset: Optional[Literal['huggingface', 'openai', 'anthropic']] 
         # Convert headers string to dictionary
         if headers_string:
             headers = dict(item.split(": ") for item in headers_string.split(", "))
-            model = APIModelWrapper(api_url=url, selector=selector, request_template=request_template, headers=headers)
+            model = APIModelWrapper(api_url=url, selector=selector, request_template=request_template, template=llm_template, headers=headers)
         else:
-            model = APIModelWrapper(api_url=url, selector=selector, request_template=request_template)
+            model = APIModelWrapper(api_url=url, selector=selector, request_template=request_template, template=llm_template)
     
     assert model, "Failed to load model wrapper."
 
