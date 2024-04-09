@@ -33,13 +33,13 @@ class APIModelWrapper(ModelWrapper):
         self.request_template = request_template
     
     def prompt_to_request_payload(self, prompt: str) -> dict[str, Any]:
-        formated_request = self.request_template.replace("{prompt}", prompt)
+        formated_request = self.request_template.replace("{prompt}", repr(prompt))
         return json.loads(formated_request)
 
     def __call__(self, prompt: str) -> str:
         # Apply llm prompt template.
         prompt = self.process_prompt(prompt)
-        
+
         # Convert request template to playload
         request_payload = self.prompt_to_request_payload(prompt)
 
@@ -74,14 +74,21 @@ class HuggingFaceWrapper(APIModelWrapper):
     def __init__(self, api_key: str, api_url: str, **kwargs) -> None:
         super().__init__(
             api_url, 
-            request_template='{"inputs": "{prompt}"}', 
+            request_template='{"inputs": {prompt}}',
             selector='[0]["generated_text"]', 
             headers={'Authorization': f'Bearer {api_key}'}, 
+            **kwargs
         )
+
+        # TODO Handled 503 response from HF models.
+        # add wait_for_model when receving 503.
+        # text-generation -> https://huggingface.co/docs/api-inference/detailed_parameters
 
     
 class OpenAIWrapper(ModelWrapper):
-    def __init__(self, api_key: str, model_name: Optional[str]) -> None:
+    def __init__(self, api_key: str, model_name: Optional[str], **kwargs) -> None:
+        super().__init__(**kwargs)
+
         self.api_key = api_key
         self.client = OpenAI(api_key=api_key)
         self.model_name = model_name or "gpt-3.5-turbo"
@@ -111,7 +118,9 @@ class OpenAIWrapper(ModelWrapper):
 #         )
 
 class AnthropicWrapper(ModelWrapper):
-    def __init__(self, api_key: str, model_name: Optional[str]) -> None:
+    def __init__(self, api_key: str, model_name: Optional[str], **kwargs) -> None:
+        super().__init__(**kwargs)
+
         self.api_key = api_key
         self.client = Anthropic(api_key=api_key)
         self.model_name = model_name or "claude-3-opus-20240229"

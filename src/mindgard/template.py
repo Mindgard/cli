@@ -1,12 +1,14 @@
+from typing import Literal, Optional
+
 class Template():
     class Models:
         MISTRAL = "[INST] {system_prompt}{prompt} [/INST]"
         GEMMA = "<bos><start_of_turn>user\n{system_prompt}{prompt}<end_of_turn>"
 
-        def __dir__():
+        def __dir__() -> list[str]:
             return ["MISTRAL", "GEMMA"]
 
-    def __init__(self, system_prompt=None, preset_template=None, prompt_template=None, **kwargs):
+    def __init__(self, system_prompt: Optional[str] = None, preset_template: Optional[Literal["MISTRAL", "GEMMA"]] = None, prompt_template: Optional[str] = None, **kwargs):
         self.system_prompt = system_prompt
         self.preset_template = preset_template
         self.prompt_template = prompt_template
@@ -27,21 +29,21 @@ class Template():
         else:
             self.prompt_template = "{system_prompt}{prompt}"
 
-    def __call__(self, prompt):
+    def __call__(self, prompt: str) -> str:
         #Applies the template to the given prompt
         return self.prompt_template.format(
             system_prompt=self.system_prompt,
             prompt=prompt
         )
     
-    def __validate_prompt_template(self, template):
+    def __validate_prompt_template(self, template: str):
         system_prompt_check = self.__validate_var("{system_prompt}", template)
         assert system_prompt_check, "{system_prompt} tag is missing from provided template."
 
         prompt_check = self.__validate_var("{prompt}", template)
         assert prompt_check, "{prompt} tag is missing from provided template."
 
-    def __validate_var(self, var, template):
+    def __validate_var(self, var: str, template: str) -> bool:
         if(var in template):
             return True
         return False
