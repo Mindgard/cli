@@ -1,0 +1,1 @@
+{"id": "test_id", "hasFinished": true, "risk": 50, "attacks": [{"id": "attack_id1", "attack": "myattack", "state": 2, "risk": 12}]}

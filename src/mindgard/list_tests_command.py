@@ -1,12 +1,10 @@
 
 import json
+from typing import Optional
 from rich.console import Console, Group
-from rich.table import Table
 
-from rich import box
 from rich.panel import Panel
 from rich.align import Align
-from rich.layout import Layout
 
 from .utils import CliResponse
 
@@ -20,7 +18,7 @@ class ListTestsCommand():
         self._api = api_service
 
     @require_auth
-    def run(self, access_token:str, test_id:str, json_format:bool) -> CliResponse:
+    def run(self, access_token:str, json_format:bool, test_id:Optional[str]) -> CliResponse:
         """
         Run the command.
 
@@ -29,7 +27,10 @@ class ListTestsCommand():
 
         console = Console()
         
-        tests_res = self._api.get_tests(access_token)
+        if test_id is None:
+            tests_res = self._api.get_tests(access_token)
+        else:
+            tests_res = [self._api.get_test(access_token, test_id=test_id)]
 
         if json_format is True:
             print(json.dumps(tests_res))

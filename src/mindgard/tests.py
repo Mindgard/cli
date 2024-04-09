@@ -5,7 +5,6 @@ import sys
 import time
 from typing import Any, Dict, List, Optional
 
-from requests import Response
 import requests
 from tabulate import tabulate
 
