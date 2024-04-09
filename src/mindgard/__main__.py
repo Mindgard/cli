@@ -115,12 +115,11 @@ def main() -> None:
         res = get_attacks(json_format=args.json, attack_id=args.id)
         exit(res.code())
     elif args.command == 'attack':
-        run_attack(preset=args.preset, headers_string=args.headers, attack_name=args.attack_name, api_key=args.api_key, url=args.url, selector=args.selector, request_template=args.request_template, system_prompt=args.system_prompt, model_name=args.model_name)
+        run_attack(**vars(args))
     elif args.command == 'prompt':
         run_prompt(**vars(args))
     else:
         print_to_stderr('Hey give us a command. Use list or auth.') # TODO update
-
 
 if __name__ == '__main__':
     try:

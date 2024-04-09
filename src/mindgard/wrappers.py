@@ -62,7 +62,6 @@ class APIModelWrapper(ModelWrapper):
             else:
                 raise Exception(f"Selector {self.selector} did not match any elements in the response. {response=}")
     
-        
         return response
         
 class HuggingFaceWrapper(APIModelWrapper):
@@ -98,27 +97,9 @@ class AnthropicWrapper(ModelWrapper):
 
         return response
     
-def get_wrapper(preset: Literal['huggingface', 'openai', 'anthropic'], system_prompt=None, api_key=None, url=None, model_name=None, **kwargs):
+def get_wrapper(preset: Optional[Literal['huggingface', 'openai', 'anthropic']] = None, headers_string: Optional[str] = None, api_key: Optional[str] = None, url: Optional[str] = None, model_name: Optional[str] = None, system_prompt: Optional[str] = None, selector=None, request_template=None, **kwargs):
     if(system_prompt):
         llm_template = Template(system_prompt=system_prompt, **kwargs)
-
-    if preset == 'huggingface':
-        model = HuggingFaceWrapper(api_key=api_key, api_url=url, template=llm_template)
-    elif preset == 'openai':
-        model = OpenAIWrapper(api_key=api_key, model_name=model_name)
-    elif preset == 'anthropic':
-        model = AnthropicWrapper(api_key=api_key, model_name=model_name)
-    
-    return model
-
-# TODO: Remove this function as it's temporary for testing.
-def run_attack(attack_name: Literal['devmodev2', 'antigpt'], headers_string: str, preset: Optional[Literal['huggingface', 'openai', 'anthropic']] = None, api_key: Optional[str] = None, url: Optional[str] = None, model_name: Optional[str] = None, system_prompt: Optional[str] = None, selector=None, request_template=None):
-    # llm template
-    llm_template = Template(system_prompt_file="Test")
-    
-    # Setup jailbreak and bad questions
-    jailbreak = get_jailbreak(attack_name)
-    bad_questions = get_bad_questions()
 
     # Create model based on preset
     if preset == 'huggingface':
@@ -134,10 +115,22 @@ def run_attack(attack_name: Literal['devmodev2', 'antigpt'], headers_string: str
             model = APIModelWrapper(api_url=url, selector=selector, request_template=request_template, headers=headers)
         else:
             model = APIModelWrapper(api_url=url, selector=selector, request_template=request_template)
+    
+    assert model, "Failed to load model wrapper."
 
-    run_jailbreak(model, jailbreak, bad_questions, system_prompt)
+    return model
 
-def run_prompt(prompt=None, **kwargs):
+# TODO: Remove this function as it's temporary for testing.
+def run_attack(attack_name: Literal['devmodev2', 'antigpt'], **kwargs):
+    # Setup jailbreak and bad questions
+    jailbreak = get_jailbreak(attack_name)
+    bad_questions = get_bad_questions()
+
+    model = get_wrapper(**kwargs)
+
+    run_jailbreak(model, jailbreak, bad_questions, system_prompt=False)
+
+def run_prompt(prompt: str, **kwargs):
     model = get_wrapper(**kwargs)
     print(model(prompt))
 
@@ -155,7 +148,6 @@ def run_jailbreak(model: ModelWrapper, jailbreak: str, questions: List[str], sys
         response = model(prompt)
         print("\nPrompt:", question)
         print(response)
-
 
 # TODO: Remove this function as it's temporary for testing.
 def get_jailbreak(name: str):
