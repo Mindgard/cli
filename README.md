@@ -17,7 +17,7 @@ Test your AI model's security through CLI alone
 
 ### Running tests:
 
-- `pytest tests/module`
+- `pytest tests/{unit,module}`
 
 OR
 
