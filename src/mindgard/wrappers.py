@@ -78,7 +78,7 @@ class OpenAIWrapper(ModelWrapper):
             self.model_name = model_name
         else:
             self.model_name = "gpt-3.5-turbo"
-
+        
     def __call__(self, prompt) -> str:
         chat = self.client.chat.completions.create(model=self.model_name, messages=[{"role": "system", "content": prompt}])
 
