@@ -70,10 +70,14 @@ class HuggingFaceWrapper(APIModelWrapper):
         return response
     
 class OpenAIWrapper(ModelWrapper):
-    def __init__(self, api_key = None, model_name="gpt-3.5-turbo", **kwargs) -> None:
+    def __init__(self, api_key = None, model_name=None, **kwargs) -> None:
         self.api_key = api_key
         self.client = OpenAI(api_key=api_key)
-        self.model_name = model_name
+
+        if model_name:
+            self.model_name = model_name
+        else:
+            self.model_name = "gpt-3.5-turbo"
 
     def __call__(self, prompt) -> str:
         chat = self.client.chat.completions.create(model=self.model_name, messages=[{"role": "system", "content": prompt}])
@@ -83,10 +87,14 @@ class OpenAIWrapper(ModelWrapper):
         return response
     
 class AnthropicWrapper(ModelWrapper):
-    def __init__(self, api_key = None, model_name="claude-3-opus-20240229", **kwargs) -> None:
+    def __init__(self, api_key = None, model_name=None, **kwargs) -> None:
         self.api_key = api_key
         self.client = Anthropic(api_key=api_key)
-        self.model_name = model_name
+
+        if model_name:
+            self.model_name = model_name
+        else:
+            self.model_name = "claude-3-opus-20240229"
 
     def __call__(self, prompt) -> str:
         message = self.client.messages.create(max_tokens=1024, messages=[{"role": "user", "content": prompt}], model=self.model_name)
