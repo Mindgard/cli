@@ -3,21 +3,21 @@ import json
 from typing import Any, Callable, Dict, List, NotRequired, Optional, TypedDict
 
 import pytest
-import requests
 
 from ...src.mindgard.__main__ import (get_attacks, get_tests,
                                       run_test)
+
+from ...src.mindgard.utils import CliResponse
 from .conftest import example_ids
 
 
 class CommandTestCase(TypedDict):
-    command: Callable[..., Optional[requests.Response]]
+    command: Callable[..., CliResponse]
     kwargs: Dict[str, Any]
     expected_stdout: Optional[List[str]]
     expected_error: Optional[List[str]]
     custom_test: NotRequired[bool]
-    status_code: NotRequired[int]
-    fails: NotRequired[bool]
+    expected_response_code: int
 
 
 # This is suitable for CLI routes that return a requests.Response object

@@ -13,15 +13,15 @@ def test_cli_help() -> None:
     assert 'usage: mindgard [command] [options]' in result.stdout
 
 
-def test_cli_attackcategories() -> None:
-    result = subprocess.run(['python3', '-m', 'mindgard', 'attackcategories'], capture_output=True, text=True)
-    assert result.returncode == 0
+def test_cli_command_requiring_login() -> None:
+    result = subprocess.run(['python3', '-m', 'mindgard', 'list', 'tests'], capture_output=True, text=True)
+    assert result.returncode == 2
     assert 'First authenticate with Mindgard API.' in result.stderr
 
 
 def test_cli_auth() -> None:
     try:
-        subprocess.run(['python3', '-m', 'mindgard', 'auth'], capture_output=True, text=True, timeout=2)
+        subprocess.run(['python3', '-m', 'mindgard', 'login'], capture_output=True, text=True, timeout=2)
     except subprocess.TimeoutExpired as e:
         if (hasattr(e, 'stdout')) and e.stdout:
             # TODO: we don't hit this - so we are currently only asserting the exception type

@@ -41,5 +41,5 @@ git-release:
 	git commit -nm "Release $(RELEASE_TAG)"
 	git push
 
-release: check-no-unstaged-changes increment-patch-number-and-build upload-to-testpypi system-tests pytest upload-to-pypi git-release
+release: check-no-unstaged-changes pytest increment-patch-number-and-build upload-to-testpypi system-tests upload-to-pypi git-release
 	@echo "Done"
