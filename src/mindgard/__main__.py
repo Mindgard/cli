@@ -110,7 +110,7 @@ def main() -> None:
         res = get_attacks(json_format=args.json, attack_id=args.id)
         exit(res.code())
     elif args.command == 'attack':
-        rrun_attack(preset=args.preset, headers_string=args.headers, attack_name=args.attack_name, api_key=args.api_key, url=args.url, selector=args.selector, request_template=args.request_template, system_prompt=args.system_prompt)
+        run_attack(preset=args.preset, headers_string=args.headers, attack_name=args.attack_name, api_key=args.api_key, url=args.url, selector=args.selector, request_template=args.request_template, system_prompt=args.system_prompt)
     elif args.command == 'prompt':
         run_prompt(preset=args.preset, api_key=args.api_key, url=args.url, system_prompt=args.system_prompt, prompt=args.prompt)
     else:
