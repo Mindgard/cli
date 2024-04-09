@@ -6,7 +6,6 @@ from anthropic.types import MessageParam
 import requests
 from openai import OpenAI
 import jsonpath_ng
-import ast
 
 from .template import Template
 
@@ -18,13 +17,13 @@ class ModelWrapper(ABC):
     def __call__(self, prompt: str) -> str:
         pass
 
-    def process_prompt(self, prompt):
+    def process_prompt(self, prompt: str) -> str:
         if(self.template):
             return self.template(prompt)
         return prompt
 
 class APIModelWrapper(ModelWrapper):
-    def __init__(self, api_url: str, request_template: Optional[str] = None, selector: Optional[str] = None, headers: Optional[dict[str, str]] = None, system_prompt: Optional[str] = None, **kwargs) -> None:
+    def __init__(self, api_url: str, request_template: Optional[str] = None, selector: Optional[str] = None, headers: Optional[dict[str, str]] = None, **kwargs) -> None:
         super().__init__(**kwargs)
 
         # TODO: do we want to default to a system_prompt
@@ -72,13 +71,12 @@ class APIModelWrapper(ModelWrapper):
 # $ mindgard attack devmodev2 --url GPU-A100-URL/infer --selector '["response"]' --request_template '{"prompt": "[INST] {system_prompt} {prompt} [/INST]"}' --system_prompt test
 
 class HuggingFaceWrapper(APIModelWrapper):
-    def __init__(self, api_key: str, api_url: str, system_prompt: Optional[str] = None, **kwargs) -> None:
+    def __init__(self, api_key: str, api_url: str, **kwargs) -> None:
         super().__init__(
             api_url, 
             request_template='{"inputs": "{prompt}"}', 
             selector='[0]["generated_text"]', 
             headers={'Authorization': f'Bearer {api_key}'}, 
-            system_prompt=system_prompt
         )
 
     
@@ -137,15 +135,15 @@ def get_wrapper(preset: Optional[Literal['huggingface', 'openai', 'anthropic']] 
 
     # Create model based on preset
     if preset == 'huggingface':
-        model = HuggingFaceWrapper(api_key=api_key, api_url=url, system_prompt=system_prompt, template=llm_template)
+        model = HuggingFaceWrapper(api_key=api_key, api_url=url, template=llm_template)
     elif preset == 'openai':
         if not api_key:
             raise Exception("OpenAI requires an API key.")
-        model = OpenAIWrapper(api_key=api_key, system_prompt=system_prompt, model_name=model_name)
+        model = OpenAIWrapper(api_key=api_key, model_name=model_name, lm_template=llm_template)
     elif preset == 'anthropic':
         if not api_key:
             raise Exception("Anthropic requires an API key.")
-        model = AnthropicWrapper(api_key=api_key, model_name=model_name, system_prompt=system_prompt)
+        model = AnthropicWrapper(api_key=api_key, model_name=model_name, llm_template=llm_template)
     else:
         # Convert headers string to dictionary
         if headers_string:
