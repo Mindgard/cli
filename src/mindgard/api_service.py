@@ -18,9 +18,39 @@ class ApiService():
         # augment the output with the shortened url
         for test in data:
             test_id = test["id"]
-            test["url"] = f"https://sandbox.mindgard.ai/r/tests/{test_id}"
+            test["url"] = f"https://sandbox.mindgard.ai/r/test/{test_id}"
             for attack in test["attacks"]:
                 attack_id = attack["id"]
                 attack["url"] = f"https://sandbox.mindgard.ai/r/attack/{attack_id}"
 
+        return data
+
+    def get_test(self, access_token: str, test_id:str) -> Dict[str, Any]:
+        url = f"{API_BASE}/assessments/{test_id}"
+
+        res = requests.get(url, headers={
+            "Authorization": f"Bearer {access_token}",
+            "User-Agent": f"mindgard/{VERSION}"
+        })
+        
+        res.raise_for_status()
+        
+        data: Dict[str, Any] = res.json()
+
+        data["url"] = f"https://sandbox.mindgard.ai/r/test/{test_id}"
+        for attack in data["attacks"]:
+            attack_id = attack["id"]
+            attack["url"] = f"https://sandbox.mindgard.ai/r/attack/{attack_id}"
+
+        return data
+
+    def submit_test(self, access_token: str, target_name:str) -> Dict[str, Any]:
+        url = f"{API_BASE}/assessments"
+        post_body = {"mindgardModelName": target_name}
+        res = requests.post(url, headers={
+            "Authorization": f"Bearer {access_token}",
+            "User-Agent": f"mindgard/{VERSION}"
+        }, json=post_body)
+        res.raise_for_status()
+        data: Dict[str, Any] = res.json()
         return data

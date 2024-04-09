@@ -6,7 +6,7 @@ from typing import Any, Callable, Optional, TypeVar
 from functools import wraps
 
 import requests
-from auth0.authentication.token_verifier import (AsymmetricSignatureVerifier,
+from auth0.authentication.token_verifier import (AsymmetricSignatureVerifier, # type: ignore
                                                  TokenVerifier)
 
 from .constants import AUTH0_AUDIENCE, AUTH0_CLIENT_ID, AUTH0_DOMAIN
