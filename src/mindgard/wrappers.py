@@ -21,7 +21,6 @@ class ModelWrapper(ABC):
             prompt = self.template(prompt)
 
         return prompt
-    
 
 class APIModelWrapper(ModelWrapper):
     def __init__(self, api_url: str, request_template: str = '{prompt}', selector: Optional[str] = None, headers: Optional[dict[str, str]] = None, template: Optional[Template] = None) -> None:
