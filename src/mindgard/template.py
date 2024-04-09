@@ -6,9 +6,15 @@ class Template():
         self.system_prompt = """You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature. If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information.\n"""
 
         # Check provided template syntax contains system_prompt and prompt tags.
-        self.prompt_template = "[INST] {system_prompt} {prompt} [/INST]"
-        self.__validate_prompt_template(self.prompt_template)
+        #self.prompt_template = "[INST] {system_prompt} {prompt} [/INST]"
+        self.prompt_template = "<bos><start_of_turn>user\n{system_prompt}{prompt}<end_of_turn>"
 
+        # If a prompt template exists validate it.
+        # if not set template to default.
+        if(self.prompt_template):
+            self.__validate_prompt_template(self.prompt_template)
+        else:
+            self.prompt_template = "{system_prompt}{prompt}"
 
     def __call__(self, prompt):
         #Applies the template to the given prompt
@@ -18,7 +24,6 @@ class Template():
         )
     
     def __validate_prompt_template(self, template):
-        # Validate if the custom template works
         system_prompt_check = self.__validate_var("{system_prompt}", template)
         assert system_prompt_check, "{system_prompt} tag is missing from provided template."
 
