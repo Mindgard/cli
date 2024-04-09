@@ -4,6 +4,8 @@ import argparse
 import sys
 from typing import List
 
+from .wrappers import run_attack, run_prompt
+
 from .api_service import ApiService
 from .list_tests_command import ListTestsCommand
 from .run_test_command import RunTestCommand
@@ -54,9 +56,27 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     list_test_parser.add_argument('--json', action="store_true", help='Return json output', required=False)
     list_test_parser.add_argument('--id', type=str, help='Get the details of a specific test.', required=False)
 
-    return parser.parse_args(args)
-    
+    # For testing purposes
+    wrapper_parser = subparsers.add_parser('attack', help='Attack commands')
+    wrapper_parser.add_argument('attack_name', nargs='?', type=str)
+    wrapper_parser.add_argument('--headers', type=str, help='The headers to use', required=False)
+    wrapper_parser.add_argument('--preset', type=str, help='The preset to use', choices=['huggingface', 'openai', 'anthropic', 'custom_mistral'], required=False)
+    wrapper_parser.add_argument('--api_key', type=str, help='Specify the API key for the wrapper', required=False)
+    wrapper_parser.add_argument('--url', type=str, help='Specify the url for the wrapper', required=False)
+    wrapper_parser.add_argument('--model_name', type=str, help='Specify which model to run againist (OpenAI and Anthropic)', required=False)
+    wrapper_parser.add_argument('--prompt', type=str, help='Specify the prompt to use', required=False)
+    wrapper_parser.add_argument('--system_prompt', type=str, help='Text file containing system prompt to use.', required=False)
+    wrapper_parser.add_argument('--selector', type=str, help='The selector to retrieve the text response from the LLM response JSON.', required=False)
+    wrapper_parser.add_argument('--request_template', type=str, help='The template to wrap the API request in.', required=False)
 
+    prompt_test = subparsers.add_parser('prompt', help='Attack commands')
+    prompt_test.add_argument('--preset', type=str, help='The preset to use', choices=['huggingface', 'openai', 'anthropic', 'custom_mistral'], required=True)
+    prompt_test.add_argument('--api_key', type=str, help='Specify the API key for the wrapper', required=False)
+    prompt_test.add_argument('--url', type=str, help='Specify the url for the wrapper', required=False)
+    prompt_test.add_argument('--model_name', type=str, help='Specify which model to run againist (OpenAI and Anthropic)', required=False)
+    prompt_test.add_argument('--prompt', type=str, help='Specify the prompt to use', required=False)
+    prompt_test.add_argument('--system_prompt', type=str, help='Text file containing system prompt to use.', required=False)
+    return parser.parse_args(args)
 
 def main() -> None:
     args = parse_args(sys.argv[1:])
@@ -90,6 +110,10 @@ def main() -> None:
     elif args.command == 'attacks':
         res = get_attacks(json_format=args.json, attack_id=args.id)
         exit(res.code())
+    elif args.command == 'attack':
+        run_attack(preset=args.preset, headers_string=args.headers, attack_name=args.attack_name, api_key=args.api_key, url=args.url, selector=args.selector, request_template=args.request_template, system_prompt=args.system_prompt, model_name=args.model_name)
+    elif args.command == 'prompt':
+        run_prompt(preset=args.preset, api_key=args.api_key, url=args.url, system_prompt=args.system_prompt, prompt=args.prompt)
     else:
         print_to_stderr('Hey give us a command. Use list or auth.') # TODO update
 
