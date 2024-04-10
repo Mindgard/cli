@@ -3,10 +3,10 @@
 
 import json
 from typing import Any, Dict, List, Optional
-from requests import Response
+from requests import Response, HTTPError
 from tabulate import tabulate
 
-from .utils import api_get,CliResponse
+from .utils import api_get,CliResponse, print_to_stderr
 from .auth import require_auth
 
 
@@ -20,7 +20,16 @@ def display_attacks_results(data: List[Dict[str, Any]]) -> None:
 @require_auth
 def get_attacks(access_token: str, json_format: bool = False, attack_id: Optional[str] = None) -> CliResponse:
     url = f"https://api.sandbox.mindgard.ai/api/v1/results/{attack_id}" if attack_id else "https://api.sandbox.mindgard.ai/api/v1/users/experiments"
-    res = api_get(url, access_token)
+    try:
+        res = api_get(url, access_token)
+    except HTTPError as e:
+        if "Bad Request" in str(e):
+            error_message_addon = "Check the id you provided." if attack_id else "Contact Mindgard support."
+            print_to_stderr("Bad Request when getting attack. " + error_message_addon)
+            return CliResponse(2)
+        else:
+            raise e
+        
     data: List[Dict[str, Any]] = res.json() if isinstance(res.json(), list) else [res.json()] # TODO - res.json has different strucutre in sinlge vs multi
     # TODO: URGENT: single resource shoudl return id at the top level
 

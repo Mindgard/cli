@@ -54,3 +54,29 @@ class ApiService():
         res.raise_for_status()
         data: Dict[str, Any] = res.json()
         return data
+
+    def fetch_llm_prompts(self, access_token: str) -> Dict[str, Any]:
+        url = f"{API_BASE}/llm_tests/prompts"
+
+        res = requests.get(url, headers={
+            "Authorization": f"Bearer {access_token}",
+            "User-Agent": f"mindgard/{VERSION}"
+        })
+        
+        res.raise_for_status()
+        
+        data: Dict[str, Any] = res.json()
+        return data
+    
+    def submit_llm_responses(self, access_token: str, responses:Dict[str, Any]) -> Dict[str, Any]:
+        url = f"{API_BASE}/llm_tests/responses"
+
+        res = requests.post(url, headers={
+            "Authorization": f"Bearer {access_token}",
+            "User-Agent": f"mindgard/{VERSION}"
+        }, json=responses)
+        
+        res.raise_for_status()
+        
+        data: Dict[str, Any] = res.json()
+        return data

@@ -13,8 +13,6 @@ class ModelWrapper(ABC):
     @abstractmethod
     def __call__(self, prompt: str) -> str:
         pass
-    
-
 
 class APIModelWrapper(ModelWrapper):
     def __init__(self, api_url: str, request_template: Optional[str] = None, selector: Optional[str] = None, headers: Optional[dict[str, str]] = None, system_prompt: Optional[str] = None) -> None:
@@ -44,6 +42,9 @@ class APIModelWrapper(ModelWrapper):
         request_payload = self.prompt_to_request_payload(prompt)
 
         # Make the API call
+        # import time
+        # time.sleep(0.5)
+        # return "I can't assist with that."
         response = requests.post(self.api_url, headers=self.headers, json=request_payload)
 
         if response.status_code != 200:
@@ -146,6 +147,38 @@ def get_wrapper(preset: Literal['huggingface', 'openai', 'anthropic'], system_pr
         model = AnthropicWrapper(api_key=api_key, model_name=model_name)
     
     return model
+
+
+def get_model_wrapper(
+    headers_string: Optional[str], 
+    preset: Optional[Literal['huggingface', 'openai', 'anthropic']] = None, 
+    api_key: Optional[str] = None, 
+    url: Optional[str] = None, 
+    model_name: Optional[str] = None, 
+    system_prompt: Optional[str] = None, 
+    selector=None, 
+    request_template=None
+) -> ModelWrapper:
+    # llm template
+    llm_template = Template(system_prompt_file="Test")
+
+    # Create model based on preset
+    if preset == 'huggingface':
+        return HuggingFaceWrapper(api_key=api_key, api_url=url, template=llm_template)
+    elif preset == 'openai':
+        return OpenAIWrapper(api_key=api_key, model_name=model_name)
+    elif preset == 'anthropic':
+        return AnthropicWrapper(api_key=api_key, model_name=model_name)
+    else:
+        # Convert headers string to dictionary
+        if headers_string:
+            headers = dict(item.split(": ") for item in headers_string.split(", "))
+            return APIModelWrapper(api_url=url, selector=selector, request_template=request_template, headers=headers)
+        else:
+            return APIModelWrapper(api_url=url, selector=selector, request_template=request_template)
+
+
+
 
 # TODO: Remove this function as it's temporary for testing.
 def run_attack(

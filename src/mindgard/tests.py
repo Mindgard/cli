@@ -10,7 +10,7 @@ from tabulate import tabulate
 
 from .constants import VERSION
 
-from .utils import api_get, api_post, CliResponse
+from .utils import api_get, api_post, CliResponse, print_to_stderr
 
 from .auth import require_auth
 
@@ -49,13 +49,22 @@ def api_get_tests(access_token: str, test_id: Optional[str] = None) -> List[Dict
 
     for item in data:
         test_id = item["id"]
-        item["url"] = f"https://sandbox.mindgard.ai/r/tests/{test_id}"
+        item["url"] = f"https://sandbox.mindgard.ai/r/test/{test_id}"
 
     return data
 
 @require_auth
 def get_tests(access_token: str, json_format: bool = False, test_id: Optional[str] = None) -> CliResponse:
-    data = api_get_tests(access_token, test_id)
+    try:
+        data = api_get_tests(access_token, test_id)
+    except requests.HTTPError as e:
+        if "Bad Request" in str(e):
+            error_message_addon = "Check the id you provided." if test_id else "Contact Mindgard support."
+            print_to_stderr("Bad Request when getting test. " + error_message_addon)
+            return CliResponse(2)
+        else:
+            raise e
+
     if json_format:
         print(json.dumps(data))
     else:

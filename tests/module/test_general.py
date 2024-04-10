@@ -18,6 +18,7 @@ class CommandTestCase(TypedDict):
     expected_error: Optional[List[str]]
     custom_test: NotRequired[bool]
     expected_response_code: int
+    raises: bool
 
 
 # This is suitable for CLI routes that return a requests.Response object
@@ -29,6 +30,7 @@ test_cases: List[CommandTestCase] = [
         "expected_stdout": ['"id":', '"model":', '"dataset":', '"attack":', '"url":'],
         "expected_error": None,
         "expected_response_code": 0,
+        "raises": False,
     },
     {
         "command": get_attacks,
@@ -36,6 +38,7 @@ test_cases: List[CommandTestCase] = [
         "expected_stdout": ["--------------------", "id", "model", "dataset", "attack"],
         "expected_error": None,
         "expected_response_code": 0,
+        "raises": False,
     },
     {
         "command": get_attacks,
@@ -43,6 +46,7 @@ test_cases: List[CommandTestCase] = [
         "expected_stdout": ['"risk_text": [{'],
         "expected_error": None,
         "expected_response_code": 0,
+        "raises": False,
     },
     {
         "command": get_attacks,
@@ -50,6 +54,7 @@ test_cases: List[CommandTestCase] = [
         "expected_stdout": ['"id":', '"model":', '"dataset":', '"attack":'],
         "expected_error": None,
         "expected_response_code": 0,
+        "raises": False,
     },
     {
         "command": get_attacks,
@@ -57,6 +62,7 @@ test_cases: List[CommandTestCase] = [
         "expected_stdout": None,
         "expected_error": ['Bad Request'],
         "expected_response_code": 2,
+        "raises": False,
     },
     {
         "command": get_tests,
@@ -64,6 +70,7 @@ test_cases: List[CommandTestCase] = [
         "expected_stdout": ["------------------------", "attack_id", "Completed"],
         "expected_error": None,
         "expected_response_code": 0,
+        "raises": False,
     },
     {
         "command": get_tests,
@@ -71,6 +78,7 @@ test_cases: List[CommandTestCase] = [
         "expected_stdout": ['[{"id": "', '"hasFinished": true', '"url":'],
         "expected_error": None,
         "expected_response_code": 0,
+        "raises": False,
     },
     {
         "command": get_tests,
@@ -78,6 +86,7 @@ test_cases: List[CommandTestCase] = [
         "expected_stdout": ['{"id": "', '"hasFinished": true'],
         "expected_error": None,
         "expected_response_code": 0,
+        "raises": False,
     },
     {
         "command": get_tests,
@@ -85,6 +94,7 @@ test_cases: List[CommandTestCase] = [
         "expected_stdout": ["------------------------", "attack_id", "Completed"],        
         "expected_error": None,
         "expected_response_code": 0,
+        "raises": False,
     },
     {
         "command": get_tests,
@@ -92,6 +102,7 @@ test_cases: List[CommandTestCase] = [
         "expected_stdout": None,
         "expected_error": ['Bad Request'],
         "expected_response_code": 2,
+        "raises": False,
     },
     {
         "command": run_test,
@@ -99,6 +110,7 @@ test_cases: List[CommandTestCase] = [
         "expected_stdout": ['{"id": "'],
         "expected_error": None,
         "expected_response_code": 0,
+        "raises": False,
     },
     {
         "command": run_test,
@@ -106,6 +118,7 @@ test_cases: List[CommandTestCase] = [
         "expected_stdout": ['above threshold of'],
         "expected_error": None,
         "expected_response_code": 1, # risk threshold exit code
+        "raises": False,
     },
     {
         "command": run_test,
@@ -113,6 +126,7 @@ test_cases: List[CommandTestCase] = [
         "expected_stdout": ['under threshold of'],
         "expected_error": None,
         "expected_response_code": 0,
+        "raises": False,
     },
     {   
         "custom_test": True,
@@ -121,6 +135,7 @@ test_cases: List[CommandTestCase] = [
         "expected_stdout": ['below threshold of'],
         "expected_error": None,
         "expected_response_code": 1, # risk threshold exit code
+        "raises": False,
     }
 ]
 
@@ -153,9 +168,12 @@ def check_stdout(test_case: CommandTestCase, out: str) -> None:
 @pytest.mark.parametrize("test_case", non_custom_test_cases, ids=lambda x: create_custom_name(x))
 def test_cli_routes(test_case: CommandTestCase, capfd: pytest.CaptureFixture[str]) -> None:
     
-    res = test_case["command"](**test_case["kwargs"])
-
-    assert res.code() == test_case["expected_response_code"]
+    if test_case["raises"]:
+        with pytest.raises(Exception):
+            res = test_case["command"](**test_case["kwargs"])
+    else:
+        res = test_case["command"](**test_case["kwargs"])
+        assert res.code() == test_case["expected_response_code"]
 
     # Check stdout and stderr
     out, err = capfd.readouterr()

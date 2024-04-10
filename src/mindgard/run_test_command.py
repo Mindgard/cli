@@ -95,7 +95,7 @@ class RunTestCommand(): # called 'RunTest..' to avoid pytest thinking it's a tes
                 overall_progress.update(overall_task, completed=completed)
         
 
-        table = Table(title=f"Results - https://sandbox.mindgard.ai/r/tests/{test_id}", width=80)
+        table = Table(title=f"Results - https://sandbox.mindgard.ai/r/test/{test_id}", width=80)
         table.add_column("Pass", style="cyan")
         table.add_column("Name", style="magenta")
         table.add_column("Risk", justify="right", style="green")

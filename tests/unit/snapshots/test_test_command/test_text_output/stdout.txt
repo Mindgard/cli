@@ -1,9 +1,9 @@
 submitting test [done]
 
 overall ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:00                   
-attack myattack [done]                                                                       Results - https://sandbox.mindgard.ai/r/tests/test_id              
+attack myattack [done]                                                                        Results - https://sandbox.mindgard.ai/r/test/test_id              
 ┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┓
 ┃ Pass                ┃ Name                              ┃               Risk ┃
 ┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━┩
-│ ✔️                   │ myattack                          │                 12 │
+│ ✅️                  │ myattack                          │                 12 │
 └─────────────────────┴───────────────────────────────────┴────────────────────┘

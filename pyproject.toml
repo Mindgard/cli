@@ -21,6 +21,7 @@ anthropic = "^0.23.1"
 openai = "^1.16.2"
 jsonpath-ng = "^1.6.1"
 rich = "^13.7.1"
+toml = "^0.10.2"
 
 
 [tool.poetry.group.dev.dependencies]

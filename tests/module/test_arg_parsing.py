@@ -20,7 +20,7 @@ argparse_success_test_cases: List[Tuple[str, Namespace]] = [
     ("attacks --json", Namespace(command='attacks', json=True, id=None)),
     ("attacks --json --id 123", Namespace(command='attacks', json=True, id='123')),
     # new cli structure:
-    ("test cfp_faces", Namespace(command='test', target='cfp_faces', json=False, risk_threshold=80)),
+    ("sandboxtest cfp_faces", Namespace(command='sandboxtest', target='cfp_faces', json=False, risk_threshold=80)),
 
     ("list tests", Namespace(command='list', list_command='tests', json=False, id=None)),
     ("list tests --json", Namespace(command='list', list_command='tests', json=True, id=None)),

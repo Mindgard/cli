@@ -119,10 +119,8 @@ def require_auth(func: Callable[..., CliResponse]) -> Callable[..., CliResponse]
             if "Unauthorized" in str(e):
                 print_to_stderr("Access token is invalid. Please re-authenticate using `mindgard login`")
                 clear_token()
+                return CliResponse(2)
             else:
-                print_to_stderr(f"An error occurred: {type(e)}:{e}")
-        except Exception as e:
-            print_to_stderr(f"An error occurred: {type(e)}:{e}")
-        return CliResponse(2)
+                raise e
     return wrapper
 
