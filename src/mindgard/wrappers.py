@@ -135,19 +135,6 @@ class AnthropicWrapper(ModelWrapper):
         response = message.content[0].text
 
         return response
-    
-def get_wrapper(preset: Literal['huggingface', 'openai', 'anthropic'], system_prompt=None, api_key=None, url=None, model_name=None):
-    if system_prompt:
-        llm_template = Template(system_prompt_file="Test")
-
-    if preset == 'huggingface':
-        model = HuggingFaceWrapper(api_key=api_key, api_url=url, template=llm_template)
-    elif preset == 'openai':
-        model = OpenAIWrapper(api_key=api_key, system_prompt=system_prompt, model_name=model_name)
-    elif preset == 'anthropic':
-        model = AnthropicWrapper(api_key=api_key, model_name=model_name)
-    
-    return model
 
 
 def get_model_wrapper(
@@ -157,16 +144,24 @@ def get_model_wrapper(
     url: Optional[str] = None, 
     model_name: Optional[str] = None, 
     system_prompt: Optional[str] = None, 
-    selector=None, 
-    request_template=None
+    selector: Optional[str] = None, 
+    request_template: Optional[str] = None
 ) -> ModelWrapper:
 
     # Create model based on preset
     if preset == 'huggingface':
+        if not api_key:
+            raise ExpectedError("`api_key` argument is required when using the 'huggingface' preset.")
+        if not url:
+            raise ExpectedError("`url` argument is required when using the 'huggingface' preset.")
         return HuggingFaceWrapper(api_key=api_key, api_url=url, system_prompt=system_prompt)
     elif preset == 'openai':
+        if not api_key:
+            raise ExpectedError("`api_key` argument is required when using the 'openai' preset.")
         return OpenAIWrapper(api_key=api_key, model_name=model_name, system_prompt=system_prompt)
     elif preset == 'anthropic':
+        if not api_key:
+            raise ExpectedError("`api_key` argument is required when using the 'anthropic' preset.")
         return AnthropicWrapper(api_key=api_key, model_name=model_name, system_prompt=system_prompt)
     else:
         if not url:
