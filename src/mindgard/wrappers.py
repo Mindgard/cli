@@ -43,7 +43,7 @@ class APIModelWrapper(ModelWrapper):
 
         # Make the API call
         # import time
-        # time.sleep(0.5)
+        # time.sleep(0.1)
         # return "I can't assist with that."
         response = requests.post(self.api_url, headers=self.headers, json=request_payload)
 

@@ -2,7 +2,7 @@
 
 import argparse
 import sys
-from typing import List
+from typing import List, cast
 import toml
 from rich.console import Console
 
@@ -148,7 +148,7 @@ def main() -> None:
 
         api_service = ApiService()
         cmd = LLMTestCommand(api_service=api_service, model_wrapper=model_wrapper)
-        res = cmd.run(target=args.target, json_format=bool(args.json), risk_threshold=int(args.risk_threshold))
+        res = cmd.run(target=final_args["target"], json_format=bool(final_args["json"]), risk_threshold=int(cast(str, final_args["risk_threshold"])))
         exit(res.code())
     elif args.command == 'prompt':
         run_prompt(preset=args.preset, api_key=args.api_key, url=args.url, system_prompt=args.system_prompt, prompt=args.prompt)
