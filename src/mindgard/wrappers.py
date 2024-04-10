@@ -162,19 +162,19 @@ def get_model_wrapper(
 
     # Create model based on preset
     if preset == 'huggingface':
-        return HuggingFaceWrapper(api_key=api_key, api_url=url)
+        return HuggingFaceWrapper(api_key=api_key, api_url=url, system_prompt=system_prompt)
     elif preset == 'openai':
-        return OpenAIWrapper(api_key=api_key, model_name=model_name)
+        return OpenAIWrapper(api_key=api_key, model_name=model_name, system_prompt=system_prompt)
     elif preset == 'anthropic':
-        return AnthropicWrapper(api_key=api_key, model_name=model_name)
+        return AnthropicWrapper(api_key=api_key, model_name=model_name, system_prompt=system_prompt)
     else:
         if not url:
             raise ExpectedError("`url` argument is required when not using a preset configuration.")
         # Convert headers string to dictionary
         if headers_string:
             headers = dict(item.split(": ") for item in headers_string.split(", "))
-            return APIModelWrapper(api_url=url, selector=selector, request_template=request_template, headers=headers)
+            return APIModelWrapper(api_url=url, selector=selector, request_template=request_template, headers=headers, system_prompt=system_prompt)
         else:
-            return APIModelWrapper(api_url=url, selector=selector, request_template=request_template)
+            return APIModelWrapper(api_url=url, selector=selector, request_template=request_template, system_prompt=system_prompt)
 
 
