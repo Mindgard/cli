@@ -102,7 +102,7 @@ class RunTestCommand(): # called 'RunTest..' to avoid pytest thinking it's a tes
 
         for attack in test_res["attacks"]:
             risk = attack["risk"]
-            emoji = "❌" if risk > risk_threshold else "✔️"
+            emoji = "❌‍" if risk > risk_threshold else "✅️"
             table.add_row(emoji, attack["attack"], str(risk))
 
 
