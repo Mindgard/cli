@@ -7,7 +7,6 @@ import requests
 from openai import OpenAI
 import jsonpath_ng
 
-from .template import Template
 
 class ModelWrapper(ABC):
     @abstractmethod
@@ -178,80 +177,5 @@ def get_model_wrapper(
             return APIModelWrapper(api_url=url, selector=selector, request_template=request_template, headers=headers)
         else:
             return APIModelWrapper(api_url=url, selector=selector, request_template=request_template)
-
-
-
-
-# TODO: Remove this function as it's temporary for testing.
-def run_attack(
-        attack_name: Literal['devmodev2', 'antigpt'], 
-        headers_string: str, 
-        preset: Optional[Literal['huggingface', 'openai', 'anthropic']] = None, 
-        api_key: Optional[str] = None, 
-        url: Optional[str] = None, 
-        model_name: Optional[str] = None, 
-        system_prompt: Optional[str] = None, 
-        selector=None, 
-        request_template=None
-    ):
-    # Setup jailbreak and bad questions
-    jailbreak = get_jailbreak(attack_name)
-    bad_questions = get_bad_questions()
-
-    # Create model based on preset
-    if preset == 'huggingface':
-        model = HuggingFaceWrapper(api_key=api_key, api_url=url, system_prompt=system_prompt)
-    elif preset == 'openai':
-        if not api_key:
-            raise Exception("OpenAI requires an API key.")
-        model = OpenAIWrapper(api_key=api_key, system_prompt=system_prompt, model_name=model_name)
-    elif preset == 'anthropic':
-        if not api_key:
-            raise Exception("Anthropic requires an API key.")
-        model = AnthropicWrapper(api_key=api_key, model_name=model_name, system_prompt=system_prompt)
-    else:
-        # Convert headers string to dictionary
-        if headers_string:
-            headers = dict(item.split(": ") for item in headers_string.split(", "))
-            model = APIModelWrapper(api_url=url, selector=selector, request_template=request_template, headers=headers)
-        else:
-            model = APIModelWrapper(api_url=url, selector=selector, request_template=request_template)
-
-    run_jailbreak(model, jailbreak, bad_questions)
-
-def run_prompt(preset, api_key=None, url=None, model_name=None, system_prompt=None, prompt=None):
-    model = get_wrapper(preset=preset, api_key=api_key, url=url, model_name=model_name, system_prompt=system_prompt)
-    print(model(prompt))
-
-# TODO: Remove this function as it's temporary for testing.
-def run_jailbreak(model: ModelWrapper, jailbreak: str, questions: List[str]):
-    for question in questions:
-        # Compile prompt
-        prompt = f"{jailbreak} {question}"
-
-        # Send to model
-        response = model(prompt)
-        print("\nPrompt:", question)
-        print(response)
-
-
-# TODO: Remove this function as it's temporary for testing.
-def get_jailbreak(name: str):
-    # Load jailbreak from file
-    with open(f"jailbreak_mocks/{name}.txt", "r") as f:
-        jailbreak = f.read()
-
-    return jailbreak
-
-# TODO: Remove this function as it's temporary for testing.
-def get_bad_questions():
-    # Load bad questions from file
-    with open("jailbreak_mocks/bad_questions.txt", "r") as f:
-        bad_questions = f.read()
-
-    # Split by newline
-    bad_questions = bad_questions.split("\n")
-
-    return bad_questions
 
 

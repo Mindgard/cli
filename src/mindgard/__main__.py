@@ -2,12 +2,11 @@
 
 import argparse
 import sys
+import traceback
 from typing import List, cast
 import toml
-from rich.console import Console
 
-from .wrappers import run_attack, run_prompt, get_model_wrapper
-from .template import Template
+from .wrappers import get_model_wrapper
 
 from .api_service import ApiService
 from .list_tests_command import ListTestsCommand
@@ -160,8 +159,6 @@ def main() -> None:
         cmd = LLMTestCommand(api_service=api_service, model_wrapper=model_wrapper)
         res = cmd.run(target=final_args["target"], json_format=bool(final_args["json"]), risk_threshold=int(cast(str, final_args["risk_threshold"])))
         exit(res.code())
-    elif args.command == 'prompt':
-        run_prompt(preset=args.preset, api_key=args.api_key, url=args.url, system_prompt=args.system_prompt, prompt=args.prompt)
     else:
         print_to_stderr('Hey give us a command. Use list or auth.') # TODO update
 
@@ -170,5 +167,5 @@ if __name__ == '__main__':
     try:
         main()
     except Exception:
-        Console().print_exception()
+        traceback.print_exc()
         exit(2)

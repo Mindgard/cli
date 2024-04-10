@@ -1,15 +1,10 @@
 
-import json
 from typing import Dict, Any
-from time import sleep
-from concurrent.futures import ThreadPoolExecutor
 from rich.console import Console
 from rich.table import Table
-from rich.live import Live
-from rich.progress import Progress, SpinnerColumn, TaskID
+from rich.progress import Progress, TaskID
 
 from .wrappers import ModelWrapper
-from .template import Template
 
 from .utils import CliResponse
 
