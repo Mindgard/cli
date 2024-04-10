@@ -1,8 +1,11 @@
 
+import json
+import sys
 from typing import Dict, Any
 from rich.console import Console
 from rich.table import Table
 from rich.progress import Progress, TaskID
+from rich import print_json
 
 from .wrappers import ModelWrapper
 
@@ -24,7 +27,9 @@ class LLMTestCommand():
         self._poll_interval = poll_interval
         
     def run_inner(self, access_token:str, target:str, json_format:bool, risk_threshold:int) -> CliResponse:
-        console = Console()
+        progress_console = Console(file=sys.stderr)
+        output_console  = Console()
+
         prompts_resp = self._api.fetch_llm_prompts(access_token)
         attacks = prompts_resp["attacks"]
 
@@ -32,7 +37,7 @@ class LLMTestCommand():
         for attack in attacks:
             overall_total += len(attack["jailbreakPrompts"])
 
-        attacks_progress = Progress()
+        attacks_progress = Progress(console=progress_console)
         all_attacks_progress = attacks_progress.add_task("all", total=overall_total)
         attacks_task_map: Dict[str, TaskID] = {}
         for attack in attacks:
@@ -54,17 +59,22 @@ class LLMTestCommand():
          
         test_res = self._api.get_test(access_token, test_id=submit_responses_resp["id"])
         test_id = test_res["id"]
-        table = Table(title=f"Results - https://sandbox.mindgard.ai/r/test/{test_id}", width=80)
-        table.add_column("Pass", style="cyan")
-        table.add_column("Name", style="magenta")
-        table.add_column("Risk", justify="right", style="green")
 
-        for attack in test_res["attacks"]:
-            risk = attack["risk"]
-            emoji = "❌" if risk > risk_threshold else "✔️"
-            table.add_row(emoji, attack["attack"], str(risk))
+        if json_format is True:
+            print_json(data=test_res)
+            # output_console.print(json.dumps(test_res))
+        else:
+            table = Table(title=f"Results - https://sandbox.mindgard.ai/r/test/{test_id}", width=80)
+            table.add_column("Pass", style="cyan")
+            table.add_column("Name", style="magenta")
+            table.add_column("Risk", justify="right", style="green")
 
-        console.print(table)
+            for attack in test_res["attacks"]:
+                risk = attack["risk"]
+                emoji = "❌" if risk > risk_threshold else "✔️"
+                table.add_row(emoji, attack["attack"], str(risk))
+
+            output_console.print(table)
 
         return CliResponse(self.calculate_exit_code(test_res=test_res,risk_threshold=risk_threshold))
     
