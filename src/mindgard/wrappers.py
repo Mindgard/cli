@@ -158,12 +158,10 @@ def get_model_wrapper(
     selector=None, 
     request_template=None
 ) -> ModelWrapper:
-    # llm template
-    llm_template = Template(system_prompt_file="Test")
 
     # Create model based on preset
     if preset == 'huggingface':
-        return HuggingFaceWrapper(api_key=api_key, api_url=url, template=llm_template)
+        return HuggingFaceWrapper(api_key=api_key, api_url=url)
     elif preset == 'openai':
         return OpenAIWrapper(api_key=api_key, model_name=model_name)
     elif preset == 'anthropic':

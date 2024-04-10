@@ -8,13 +8,6 @@ from ...src.mindgard.__main__ import parse_args
 
 argparse_success_test_cases: List[Tuple[str, Namespace]] = [
     ("login", Namespace(command='login')),
-    ("tests", Namespace(command='tests', test_commands=None, json=False, id=None)),
-    ("tests --json", Namespace(command='tests', test_commands=None, json=True, id=None)),
-    ("tests --id 123", Namespace(command='tests', test_commands=None, json=False, id='123')),
-    ("tests --json --id 123", Namespace(command='tests', test_commands=None, json=True, id='123')),
-    ("tests run --name cfp_faces", Namespace(command='tests', test_commands='run', name='cfp_faces', json=False, id=None, risk_threshold=80)),
-    ("tests run --name cfp_faces --risk-threshold 23", Namespace(command='tests', test_commands='run', name='cfp_faces', json=False, id=None, risk_threshold=23)),
-    ("tests run --name cfp_faces --json", Namespace(command='tests', test_commands='run', name='cfp_faces', json=True, id=None, risk_threshold=80)),
     ("attacks", Namespace(command='attacks', json=False, id=None)),
     ("attacks --id 123", Namespace(command='attacks', json=False, id='123')),
     ("attacks --json", Namespace(command='attacks', json=True, id=None)),

@@ -28,30 +28,15 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     subparsers = parser.add_subparsers(dest='command', title='commands', description='Use these commands to interact with the Mindgard API')
     subparsers.add_parser('login', help='Login to the Mindgard platform')
 
-    # TODO: think about more streamlined command for running a test
-    tests_parser = subparsers.add_parser('tests', help='See the tests you\'ve run.') # TODO: better help text
-    tests_parser.add_argument('--json', action="store_true", help='Output the info in JSON format.', required=False) # TODO: don't allow this if run comes after
-    tests_parser.add_argument('--id', type=str, help='Get the details of a specific test.', required=False)
-    
-    tests_subparsers = tests_parser.add_subparsers(dest='test_commands', title='test_commands', description='Perform actions against tests')
-    tests_run_parser = tests_subparsers.add_parser('run', help='Run a test.')
-    
-    # TODO: links to view results in the UI for images etc
-    tests_run_parser.add_argument('--name', type=str, help='The attack to tests.', required=True, choices=['cfp_faces', 'mistral'])
-    tests_run_parser.add_argument('--json', action="store_true", help='Initiate test and return id that can be used to check status.', required=False)
-    tests_run_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=80)
-
     # TODO: better error message if someone provides an id that is for the wrong resource eg attacks or tests
     attack_parser = subparsers.add_parser('attacks', help='See the attacks you\'ve run.') # TODO: alias single version of plural nouns
     attack_parser.add_argument('--json', action="store_true", help='Output the info in JSON format.', required=False)
     attack_parser.add_argument('--id', type=str, help='Get the details of a specific attack.', required=False)
 
-    # from here is new command structure which we're incrementally adding
-    test_parser = subparsers.add_parser('sandboxtest', help='Test a model')
-    # since this feels nonsensical, here's a link: https://docs.python.org/3/library/argparse.html#nargs
-    test_parser.add_argument('target', nargs='?', type=str)
-    test_parser.add_argument('--json', action="store_true", help='Return json output', required=False)
-    test_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=80)
+    sandbox_test_parser = subparsers.add_parser('sandboxtest', help='Test a model')
+    sandbox_test_parser.add_argument('target', nargs='?', type=str, choices=['cfp_faces', 'mistral'])
+    sandbox_test_parser.add_argument('--json', action="store_true", help='Return json output', required=False)
+    sandbox_test_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=80)
 
     list_parser = subparsers.add_parser('list', help='List items')
     list_subparsers = list_parser.add_subparsers(dest='list_command')
