@@ -4,6 +4,7 @@ import argparse
 import sys
 import traceback
 from typing import List, cast
+from .error import ExpectedError
 import toml
 
 from .wrappers import get_model_wrapper
@@ -144,6 +145,9 @@ def main() -> None:
 if __name__ == '__main__':
     try:
         main()
+    except ExpectedError as e:
+        print_to_stderr(str(e))
+        exit(2)
     except Exception:
         traceback.print_exc()
         exit(2)

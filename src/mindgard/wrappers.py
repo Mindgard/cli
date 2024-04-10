@@ -3,6 +3,7 @@ import json
 from typing import Any, List, Literal, Optional
 from anthropic import Anthropic
 from anthropic.types import MessageParam
+from .error import ExpectedError
 import requests
 from openai import OpenAI
 import jsonpath_ng
@@ -168,7 +169,7 @@ def get_model_wrapper(
         return AnthropicWrapper(api_key=api_key, model_name=model_name)
     else:
         if not url:
-            raise Exception("`url` argument is required when not using a preset configuration.")
+            raise ExpectedError("`url` argument is required when not using a preset configuration.")
         # Convert headers string to dictionary
         if headers_string:
             headers = dict(item.split(": ") for item in headers_string.split(", "))
