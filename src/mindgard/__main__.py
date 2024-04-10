@@ -59,6 +59,9 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     list_test_parser = list_subparsers.add_parser('tests', help='List tests')
     list_test_parser.add_argument('--json', action="store_true", help='Return json output', required=False)
     list_test_parser.add_argument('--id', type=str, help='Get the details of a specific test.', required=False)
+    list_attack_parser = list_subparsers.add_parser('attacks', help='List attacks')
+    list_attack_parser.add_argument('--json', action="store_true", help='Return json output', required=False)
+    list_attack_parser.add_argument('--id', type=str, help='Get the details of a specific attack.', required=False)
 
     # For testing purposes
     wrapper_parser = subparsers.add_parser('test', help='Attack commands')
@@ -97,11 +100,17 @@ def main() -> None:
     
     if args.command == 'login':
         login()
-    elif args.command == 'list' and args.list_command == 'tests':
-        api_service = ApiService()
-        cmd = ListTestsCommand(api_service)
-        res = cmd.run(json_format=bool(args.json), test_id=args.id)
-        exit(res.code())
+    elif args.command == 'list':
+        if args.list_command == 'tests':
+            api_service = ApiService()
+            cmd = ListTestsCommand(api_service)
+            res = cmd.run(json_format=bool(args.json), test_id=args.id)
+            exit(res.code())
+        elif args.list_command == 'attacks':
+            res = get_attacks(json_format=args.json, attack_id=args.id)
+            exit(res.code())
+        else:
+            print_to_stderr('Hey give us a command. Use `list tests` or `list attacks`.')
     elif args.command == 'sandboxtest':
         api_service = ApiService()
         cmd = RunTestCommand(api_service)
@@ -134,7 +143,8 @@ def main() -> None:
         final_args = {k: v or toml_args.get(k) for k,v in vars(args).items()}
 
         # print(final_args)
-
+        
+        # TODO: add a check for required args
         model_wrapper = get_model_wrapper(
             preset=final_args["preset"], 
             headers_string=final_args["headers"], 
