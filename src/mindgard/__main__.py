@@ -78,13 +78,6 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     wrapper_parser.add_argument('--selector', type=str, help='The selector to retrieve the text response from the LLM response JSON.', required=False)
     wrapper_parser.add_argument('--request_template', type=str, help='The template to wrap the API request in.', required=False)
 
-    prompt_test = subparsers.add_parser('prompt', help='Attack commands')
-    prompt_test.add_argument('--preset', type=str, help='The preset to use', choices=['huggingface', 'openai', 'anthropic', 'custom_mistral'], required=True)
-    prompt_test.add_argument('--api_key', type=str, help='Specify the API key for the wrapper', required=False)
-    prompt_test.add_argument('--url', type=str, help='Specify the url for the wrapper', required=False)
-    prompt_test.add_argument('--model_name', type=str, help='Specify which model to run againist (OpenAI and Anthropic)', required=False)
-    prompt_test.add_argument('--prompt', type=str, help='Specify the prompt to use', required=False)
-    prompt_test.add_argument('--system_prompt', type=str, help='Text file containing system prompt to use.', required=False)
     return parser.parse_args(args)
 
 def main() -> None:
