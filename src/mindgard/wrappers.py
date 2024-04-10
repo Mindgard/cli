@@ -15,7 +15,7 @@ class ModelWrapper(ABC):
         pass
 
 class APIModelWrapper(ModelWrapper):
-    def __init__(self, api_url: str, request_template: Optional[str] = None, selector: Optional[str] = None, headers: Optional[dict[str, str]] = None, system_prompt: Optional[str] = None) -> None:
+    def __init__(self, api_url: str, request_template: Optional[str] = None, selector: Optional[str] = None, headers: Optional[dict[str, str]] = None, system_prompt: Optional[str] = None) -> None:      
         # TODO: do we want to default to a system_prompt
         self.system_prompt = system_prompt or ""
         self.selector = selector
@@ -25,7 +25,7 @@ class APIModelWrapper(ModelWrapper):
 
         if '{prompt}' not in self.request_template or '{system_prompt}' not in self.request_template:
             raise Exception("Request template must contain '{prompt}' and '{system_prompt}'.")
-    
+            
     def prompt_to_request_payload(self, prompt: str) -> dict[str, Any]:
         # Dump to escape quote marks that are inside the prompt/system_prompt
         prompt = json.dumps(prompt)
@@ -170,6 +170,8 @@ def get_model_wrapper(
     elif preset == 'anthropic':
         return AnthropicWrapper(api_key=api_key, model_name=model_name)
     else:
+        if not url:
+            raise Exception("`url` argument is required when not using a preset configuration.")
         # Convert headers string to dictionary
         if headers_string:
             headers = dict(item.split(": ") for item in headers_string.split(", "))
