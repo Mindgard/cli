@@ -21,7 +21,7 @@ class APIModelWrapper(ModelWrapper):
         self.selector = selector
         self.headers = headers or {}
         self.api_url = api_url
-        self.request_template = request_template or "{system_prompt} {prompt}".strip()
+        self.request_template = request_template or '{"prompt": "{system_prompt} {prompt}"}'
 
         if '{prompt}' not in self.request_template or '{system_prompt}' not in self.request_template:
             raise Exception("Request template must contain '{prompt}' and '{system_prompt}'.")
@@ -35,6 +35,7 @@ class APIModelWrapper(ModelWrapper):
         payload = self.request_template.replace("{prompt}", prompt[1:-1])
         payload = payload.replace("{system_prompt}", system_prompt[1:-1])
 
+        # should handle non-json payload (or single string)
         payload = json.loads(payload)
         return payload
 
