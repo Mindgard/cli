@@ -1,6 +1,9 @@
 import os
 import tempfile
 from unittest import mock
+import requests_mock
+
+from ...src.mindgard.constants import AUTH0_DOMAIN
 
 from ...src.mindgard.auth import (clear_token, get_config_directory,
                                   get_token_file, load_access_token)
@@ -25,9 +28,13 @@ def test_token_clearing() -> None:
             assert not os.path.exists(token_file)
 
 
-def test_token_load() -> None:
+def test_token_load(requests_mock: requests_mock.Mocker) -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         with mock.patch.dict(os.environ, {"MINDGARD_CONFIG_DIR": tmpdir}):
+            requests_mock.post(
+                'https://{}/oauth/token'.format(AUTH0_DOMAIN), 
+                json={'access_token': 'test token'}
+            )
             token_file = get_token_file()
             with open(token_file, 'w') as f:
                 f.write('test token')
