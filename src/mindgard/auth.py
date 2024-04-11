@@ -60,7 +60,7 @@ def login() -> None:
 
     device_code_payload = {
         'client_id': AUTH0_CLIENT_ID,
-        'scope': 'openid profile email',
+        'scope': 'openid profile email offline_access',
         'audience': AUTH0_AUDIENCE
     }
     device_code_response = requests.post('https://{}/oauth/device/code'.format(AUTH0_DOMAIN), data=device_code_payload)
