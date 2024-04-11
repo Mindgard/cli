@@ -78,7 +78,7 @@ class HuggingFaceWrapper(APIModelWrapper):
     def __init__(self, api_key: str, api_url: str, system_prompt: Optional[str] = None) -> None:
         super().__init__(
             api_url, 
-            request_template='{"prompt": "[INST] {system_prompt} {prompt} [/INST]"}', 
+            request_template='{"inputs": "[INST] {system_prompt} {prompt} [/INST]"}', 
             selector='[0]["generated_text"]', 
             headers={'Authorization': f'Bearer {api_key}'}, 
             system_prompt=system_prompt
