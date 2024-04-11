@@ -2,7 +2,7 @@
 
 import os
 import time
-from typing import Any, Callable, Optional, TypeVar
+from typing import Any, Callable, Optional, TypeVar, cast
 from functools import wraps
 
 import requests
@@ -43,11 +43,26 @@ def validate_id_token(id_token: str) -> None:
 
 
 def load_access_token() -> Optional[str]:
-    if os.path.exists(get_token_file()):
+    """
+    Reads refresh token from file or environment variable and returns a new access token
+    Returns None if no refresh token is found
+    """
+    refresh_token = os.environ.get('MINDGARD_API_KEY')
+    if not refresh_token and os.path.exists(get_token_file()):
         with open(get_token_file(), 'r') as f:
-            token = f.read()
-            if token:
-                return token
+            refresh_token = f.read()
+
+    if refresh_token:
+        access_token = requests.post(
+            'https://{}/oauth/token'.format(AUTH0_DOMAIN),
+            data={
+                'grant_type': 'refresh_token',
+                'client_id': AUTH0_CLIENT_ID,
+                'audience': AUTH0_AUDIENCE,
+                'refresh_token': refresh_token
+            }
+        ).json().get('access_token')
+        return cast(str, access_token)
     return None
     
 
@@ -94,7 +109,7 @@ def login() -> None:
             print('Authenticated!')
             os.makedirs(get_config_directory(), exist_ok=True)
             with open(get_token_file(), 'w') as f:
-                f.write(token_data['access_token'])
+                f.write(token_data['refresh_token'])
             authenticated = True
         elif token_data['error'] not in ('authorization_pending', 'slow_down'):
             error = token_data.get('error_description', 'Error authenticating the user. Please wait 30s and try again.')

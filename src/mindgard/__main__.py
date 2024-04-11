@@ -34,7 +34,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     attack_parser.add_argument('--json', action="store_true", help='Output the info in JSON format.', required=False)
     attack_parser.add_argument('--id', type=str, help='Get the details of a specific attack.', required=False)
 
-    sandbox_test_parser = subparsers.add_parser('sandboxtest', help='Test a model')
+    sandbox_test_parser = subparsers.add_parser('sandbox', help='Test a mindgard example model')
     sandbox_test_parser.add_argument('target', nargs='?', type=str, choices=['cfp_faces', 'mistral'])
     sandbox_test_parser.add_argument('--json', action="store_true", help='Return json output', required=False)
     sandbox_test_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=80)
@@ -89,7 +89,7 @@ def main() -> None:
             exit(res.code())
         else:
             print_to_stderr('Hey give us a command. Use `list tests` or `list attacks`.')
-    elif args.command == 'sandboxtest':
+    elif args.command == 'sandbox':
         api_service = ApiService()
         cmd = RunTestCommand(api_service)
         res = cmd.run(model_name=args.target, json_format=bool(args.json), risk_threshold=int(args.risk_threshold))
