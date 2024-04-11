@@ -71,7 +71,7 @@ class LLMTestCommand():
 
             for attack in test_res["attacks"]:
                 risk = attack["risk"]
-                emoji = "❌" if risk > risk_threshold else "✔️"
+                emoji = "❌" if risk > risk_threshold else "✅"
                 table.add_row(emoji, attack["attack"], str(risk))
 
             output_console.print(table)
