@@ -139,7 +139,7 @@ def main() -> None:
         res = cmd.run(target=final_args["target"], json_format=bool(final_args["json"]), risk_threshold=int(cast(str, final_args["risk_threshold"])))
         exit(res.code())
     else:
-        print_to_stderr('Hey give us a command. Use list or auth.') # TODO update
+        print_to_stderr('Which command are you looking for? See: $ mindgard --help')
 
 
 if __name__ == '__main__':
