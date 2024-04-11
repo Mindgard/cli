@@ -54,7 +54,7 @@ def _helper_fixtures() -> Fixture:
     )
 
 
-def test_json_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot):
+def test_text_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot):
     fixture = _helper_fixtures()
 
     test_cmd = LLMTestCommand(
@@ -65,6 +65,29 @@ def test_json_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot):
     res = test_cmd.run_inner(
         target="something",
         access_token=fixture.access_token,
+        json_format=False,
+        risk_threshold=80,
+    )
+
+    assert res.code() == 0
+    captured = capsys.readouterr()
+    stdout = captured.out
+    stderr = captured.err
+    snapshot.assert_match(stdout, 'stdout.txt') # type: ignore
+    snapshot.assert_match(stderr, 'stderr.txt') # type: ignore
+
+def test_json_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot):
+    fixture = _helper_fixtures()
+
+    test_cmd = LLMTestCommand(
+        api_service=fixture.api_service, 
+        model_wrapper=fixture.model_wrapper,
+        poll_interval=0.1
+    )
+    
+    res = test_cmd.run_inner(
+        target="something",
+        access_token=fixture.access_token,
         json_format=True,
         risk_threshold=80,
     )
@@ -72,23 +95,9 @@ def test_json_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot):
     assert res.code() == 0
     captured = capsys.readouterr()
     stdout = captured.out
-    snapshot.assert_match(stdout, 'stdout.json')
-
-# def test_text_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot):
-#     fixture = _helper_fixtures()
-
-#     test_cmd = RunTestCommand(api_service=fixture.api_service, poll_interval=0.1)
-#     res = test_cmd.run_inner(
-#         access_token=fixture.access_token,
-#         model_name=fixture.model_name,
-#         json_format=False,
-#         risk_threshold=80,
-#     )
-
-#     assert res.code() == 0
-#     captured = capsys.readouterr()
-#     stdout = captured.out
-#     snapshot.assert_match(stdout, 'stdout.txt') # type: ignore
+    stderr = captured.err
+    snapshot.assert_match(stdout, 'stdout.json') # type: ignore
+    snapshot.assert_match(stderr, 'stderr.txt') # type: ignore
 
 # def test_risk_threshold_pass():
 #     fixture = _helper_fixtures()
