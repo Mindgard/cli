@@ -114,7 +114,7 @@ def main() -> None:
             else:
                 raise ExpectedError(f"Config file not found: {config_file=}. Check that the file exists on disk.")
 
-        final_args = {k: v or toml_args.get(k) for k, v in vars(args).items()}
+        final_args = {k: v or toml_args.get(k) or toml_args.get(k.replace("_", "-")) for k, v in vars(args).items()}
 
         # TODO: add a check for required args
         model_wrapper = get_model_wrapper(
