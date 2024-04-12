@@ -128,6 +128,8 @@ def get_model_wrapper(
             raise ExpectedError("`api_key` argument is required when using the 'huggingface' preset.")
         if not url:
             raise ExpectedError("`url` argument is required when using the 'huggingface' preset.")
+        if not request_template:
+            raise ExpectedError("`request_template` argument is required when using the 'huggingface' preset.")
         return HuggingFaceWrapper(api_key=api_key, api_url=url, system_prompt=system_prompt, request_template=request_template)
     elif preset == 'openai':
         if not api_key:
