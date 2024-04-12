@@ -1,13 +1,19 @@
 {
   "id": "test_id",
   "hasFinished": true,
-  "risk": 50,
+  "risk": 25,
   "attacks": [
     {
       "id": "attack_id1",
       "attack": "myattack",
       "state": 2,
-      "risk": 12
+      "risk": 23
+    },
+    {
+      "id": "attack_id1",
+      "attack": "myattack",
+      "state": 2,
+      "risk": 25
     }
   ]
 }

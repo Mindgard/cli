@@ -35,12 +35,17 @@ def _helper_fixtures() -> Fixture:
     api_service.get_test = MagicMock(return_value={
         "id" : "test_id",
         "hasFinished" : True,
-        "risk" : 50,
+        "risk" : 25,
         "attacks" : [{
             "id" : "attack_id1",
             "attack" : "myattack",
             "state": 2,
-            "risk": 12,
+            "risk": 23,
+        },{
+            "id" : "attack_id1",
+            "attack" : "myattack",
+            "state": 2,
+            "risk": 25,
         }]
     })
 

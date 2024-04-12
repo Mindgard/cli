@@ -4,8 +4,7 @@ from typing import Any, Callable, Dict, List, NotRequired, Optional, TypedDict
 
 import pytest
 
-from ...src.mindgard.__main__ import (get_attacks, get_tests,
-                                      run_test)
+from ...src.mindgard.__main__ import get_attacks
 
 from ...src.mindgard.utils import CliResponse
 from .conftest import example_ids
@@ -64,79 +63,6 @@ test_cases: List[CommandTestCase] = [
         "expected_response_code": 2,
         "raises": False,
     },
-    {
-        "command": get_tests,
-        "kwargs": {"json_format": False},
-        "expected_stdout": ["------------------------", "attack_id", "Completed"],
-        "expected_error": None,
-        "expected_response_code": 0,
-        "raises": False,
-    },
-    {
-        "command": get_tests,
-        "kwargs": {"json_format": True},
-        "expected_stdout": ['[{"id": "', '"hasFinished": true', '"url":'],
-        "expected_error": None,
-        "expected_response_code": 0,
-        "raises": False,
-    },
-    {
-        "command": get_tests,
-        "kwargs": {"json_format": True, "test_id": example_ids["test_id"]},
-        "expected_stdout": ['{"id": "', '"hasFinished": true'],
-        "expected_error": None,
-        "expected_response_code": 0,
-        "raises": False,
-    },
-    {
-        "command": get_tests,
-        "kwargs": {"json_format": False, "test_id": example_ids["test_id"]},
-        "expected_stdout": ["------------------------", "attack_id", "Completed"],        
-        "expected_error": None,
-        "expected_response_code": 0,
-        "raises": False,
-    },
-    {
-        "command": get_tests,
-        "kwargs": {"json_format": False, "test_id": "thisisinvalid"},
-        "expected_stdout": None,
-        "expected_error": ['Bad Request'],
-        "expected_response_code": 2,
-        "raises": False,
-    },
-    {
-        "command": run_test,
-        "kwargs": {"target_name": "cfp_faces", "json_format": True, "risk_threshold":100},
-        "expected_stdout": ['{"id": "'],
-        "expected_error": None,
-        "expected_response_code": 0,
-        "raises": False,
-    },
-    {
-        "command": run_test,
-        "kwargs": {"target_name": "cfp_faces", "json_format": False, "risk_threshold":-1},
-        "expected_stdout": ['above threshold of'],
-        "expected_error": None,
-        "expected_response_code": 1, # risk threshold exit code
-        "raises": False,
-    },
-    {
-        "command": run_test,
-        "kwargs": {"target_name": "cfp_faces", "json_format": False, "risk_threshold":101},
-        "expected_stdout": ['under threshold of'],
-        "expected_error": None,
-        "expected_response_code": 0,
-        "raises": False,
-    },
-    {   
-        "custom_test": True,
-        "command": run_test,
-        "kwargs": {"target_name": "cfp_faces", "json_format": False, "risk_threshold":100},
-        "expected_stdout": ['below threshold of'],
-        "expected_error": None,
-        "expected_response_code": 1, # risk threshold exit code
-        "raises": False,
-    }
 ]
 
 def kwargs_to_named_args_str(kwargs: Dict[str, Any]) -> str:

@@ -1,4 +1,5 @@
 
+from concurrent.futures import Future, ThreadPoolExecutor
 import json
 import sys
 from typing import Dict, Any
@@ -45,14 +46,27 @@ class LLMTestCommand():
             attacks_task_map[attack_name] = attacks_progress.add_task(f"attack {attack_name}", total=len(attack["jailbreakPrompts"]))
 
         with attacks_progress:
-            for attack in prompts_resp["attacks"]:
-                attack_name = attack["name"]
-                for prompt_obj in attack["jailbreakPrompts"]:
-                    res = self._model_wrapper(prompt=prompt_obj["prompt"])
-                    prompt_obj["answer"] = res
+            failed = False 
+            with ThreadPoolExecutor(max_workers=5) as executor:
+                for attack in prompts_resp["attacks"]:
+                    attack_name = attack["name"]
+                    for prompt_obj in attack["jailbreakPrompts"]:
+                        response = executor.submit(self._model_wrapper, prompt=prompt_obj["prompt"])
+                        # response = executor.submit(update_attack, attack_name, prompt_obj)
+                        try:
+                            prompt_obj["answer"] = response.result()
+                        except Exception as e:
+                            last_20_of_prompt = prompt_obj["prompt"][-20:]
+                            progress_console.log(attack_name, "failed LLM request", f"...{last_20_of_prompt}", e)
+                            prompt_obj["answer"] = ""
+                            failed = True
+                        
+                        attacks_progress.advance(attacks_task_map[attack_name])
+                        attacks_progress.advance(all_attacks_progress)
 
-                    attacks_progress.advance(attacks_task_map[attack_name])
-                    attacks_progress.advance(all_attacks_progress)
+        if failed is True:
+            progress_console.log("failed to complete test, aborting")
+            return CliResponse(2)
 
         prompts_resp["target"] = target
         submit_responses_resp = self._api.submit_llm_responses(access_token, responses=prompts_resp)
@@ -69,12 +83,17 @@ class LLMTestCommand():
             table.add_column("Name", style="magenta")
             table.add_column("Risk", justify="right", style="green")
 
+            risk_sum = 0
             for attack in test_res["attacks"]:
                 risk = attack["risk"]
+                risk_sum += risk
                 emoji = "❌" if risk > risk_threshold else "✅"
                 table.add_row(emoji, attack["attack"], str(risk))
 
             output_console.print(table)
+            risk = test_res["risk"]
+            risk_mean = risk_sum / len(test_res["attacks"])
+            output_console.print(f"risk: {risk} (mean: {risk_mean})")
 
         return CliResponse(self.calculate_exit_code(test_res=test_res,risk_threshold=risk_threshold))
     

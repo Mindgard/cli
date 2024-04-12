@@ -18,7 +18,6 @@ from .attacks import get_attacks
 
 from .auth import login
 from .constants import VERSION
-from .tests import get_tests, run_test
 from .utils import is_version_outdated, print_to_stderr
 
 
@@ -37,7 +36,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     sandbox_test_parser = subparsers.add_parser('sandbox', help='Test a mindgard example model')
     sandbox_test_parser.add_argument('target', nargs='?', type=str, choices=['cfp_faces', 'mistral'])
     sandbox_test_parser.add_argument('--json', action="store_true", help='Return json output', required=False)
-    sandbox_test_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=80)
+    sandbox_test_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=60)
 
     list_parser = subparsers.add_parser('list', help='List items')
     list_subparsers = list_parser.add_subparsers(dest='list_command')
@@ -52,7 +51,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     test_parser = subparsers.add_parser('test', help='Attack commands')
     test_parser.add_argument('target', nargs='?', type=str)
     test_parser.add_argument('--config-file', type=str, help='Path to mindgard.toml config file', default=None, required=False)
-    test_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=80)
+    test_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=55)
     test_parser.add_argument('--json', action="store_true", help='Output the info in JSON format.', required=False)
     test_parser.add_argument('--headers', type=str, help='The headers to use', required=False)
     test_parser.add_argument('--preset', type=str, help='The preset to use', choices=['huggingface', 'openai', 'anthropic', 'custom_mistral'], required=False)
@@ -94,13 +93,6 @@ def main() -> None:
         cmd = RunTestCommand(api_service)
         res = cmd.run(model_name=args.target, json_format=bool(args.json), risk_threshold=int(args.risk_threshold))
         exit(res.code())
-    elif args.command == 'tests':
-        if args.test_commands == "run":
-            res = run_test(target_name=args.name, json_format=bool(args.json), risk_threshold=int(args.risk_threshold))
-            exit(res.code())
-        else:
-            res = get_tests(json_format=bool(args.json), test_id=args.id)
-            exit(res.code())
     elif args.command == 'attacks':
         res = get_attacks(json_format=args.json, attack_id=args.id)
         exit(res.code())
