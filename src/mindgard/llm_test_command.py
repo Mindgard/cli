@@ -1,7 +1,7 @@
 
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor
 import sys
-from typing import Dict, Any
+from typing import Dict, Any, List
 from rich.console import Console
 from rich.table import Table
 from rich.progress import Progress, TaskID
@@ -49,9 +49,11 @@ class LLMTestCommand():
             with ThreadPoolExecutor(max_workers=5) as executor:
                 for attack in prompts_resp["attacks"]:
                     attack_name = attack["name"]
+                    responses: List[Future[str]] = []
                     for prompt_obj in attack["jailbreakPrompts"]:
-                        response = executor.submit(self._model_wrapper, prompt=prompt_obj["prompt"])
-                        # response = executor.submit(update_attack, attack_name, prompt_obj)
+                        responses.append(executor.submit(self._model_wrapper, prompt=prompt_obj["prompt"]))
+                        
+                    for response, prompt_obj in zip(responses, attack["jailbreakPrompts"]):
                         try:
                             prompt_obj["answer"] = response.result()
                         except Exception as e:
@@ -59,7 +61,6 @@ class LLMTestCommand():
                             progress_console.log(attack_name, "failed LLM request", f"...{last_20_of_prompt}", e)
                             prompt_obj["answer"] = ""
                             failed = True
-                        
                         attacks_progress.advance(attacks_task_map[attack_name])
                         attacks_progress.advance(all_attacks_progress)
 
