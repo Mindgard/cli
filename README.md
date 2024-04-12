@@ -28,8 +28,8 @@ e.g.
 ```
 mindgard test http://127.0.0.1/infer \ # url to test
   --selector '["response"]' \ # JSON selector to match the textual response
-  --request_template '{"prompt": "[INST] {system_prompt} {prompt} [/INST]"}' \ # how to format the system prompt and prompt in the API request
-  --system_prompt 'respond with hello' # system prompt to test the model with
+  --request-template '{"prompt": "[INST] {system-prompt} {prompt} [/INST]"}' \ # how to format the system prompt and prompt in the API request
+  --system-prompt 'respond with hello' # system prompt to test the model with
 ```
 
 You can also set these settings in a .toml configuration file. Either create a `mindgard.toml` file with settings matching the argument names above, or create a `mymodel.toml` file and use: `mindgard test mymodel`
@@ -39,7 +39,6 @@ You can also set these settings in a .toml configuration file. Either create a `
 The exit code of a test will be non-zero if the test identifies risks above your risk threshold. To override the default risk-threshold pass `--risk-threshold 50`. This will cause the CLI to exit with an non-zero exit status if any test results in a risk score over 50.
 
 ## Development
-
 
 ### Dev locally
 

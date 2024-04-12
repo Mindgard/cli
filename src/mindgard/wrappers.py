@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import json
-from typing import Any, List, Literal, Optional
+from typing import Any, List, Literal, Optional, cast
 from anthropic import Anthropic
 from anthropic.types import MessageParam
 from .error import ExpectedError
@@ -143,6 +143,9 @@ def get_model_wrapper(
             missing_args.append("`--request-template`")
         if missing_args:
             raise ExpectedError(f"Missing required arguments: {', '.join(missing_args)}")
+        api_key = cast(str, api_key)
+        url = cast(str, url)
+        request_template = cast(str, request_template)
         return HuggingFaceWrapper(api_key=api_key, api_url=url, system_prompt=system_prompt, request_template=request_template)
     elif preset == 'openai':
         if not api_key:
