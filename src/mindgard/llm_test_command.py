@@ -1,6 +1,5 @@
 
-from concurrent.futures import Future, ThreadPoolExecutor
-import json
+from concurrent.futures import ThreadPoolExecutor
 import sys
 from typing import Dict, Any
 from rich.console import Console
