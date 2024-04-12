@@ -36,7 +36,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     sandbox_test_parser = subparsers.add_parser('sandbox', help='Test a mindgard example model')
     sandbox_test_parser.add_argument('target', nargs='?', type=str, choices=['cfp_faces', 'mistral'])
     sandbox_test_parser.add_argument('--json', action="store_true", help='Return json output', required=False)
-    sandbox_test_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=60)
+    sandbox_test_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=80)
 
     list_parser = subparsers.add_parser('list', help='List items')
     list_subparsers = list_parser.add_subparsers(dest='list_command')
@@ -51,7 +51,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     test_parser = subparsers.add_parser('test', help='Attack commands')
     test_parser.add_argument('target', nargs='?', type=str)
     test_parser.add_argument('--config-file', type=str, help='Path to mindgard.toml config file', default=None, required=False)
-    test_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=55)
+    test_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=80)
     test_parser.add_argument('--json', action="store_true", help='Output the info in JSON format.', required=False)
     test_parser.add_argument('--headers', type=str, help='The headers to use', required=False)
     test_parser.add_argument('--preset', type=str, help='The preset to use', choices=['huggingface', 'openai', 'anthropic', 'custom_mistral'], required=False)
