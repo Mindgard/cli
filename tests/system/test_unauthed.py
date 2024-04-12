@@ -16,8 +16,7 @@ def test_cli_help() -> None:
 def test_cli_command_requiring_login() -> None:
     result = subprocess.run(['python3', '-m', 'mindgard', 'list', 'tests'], capture_output=True, text=True)
     assert result.returncode == 2
-    assert 'First authenticate with Mindgard API.' in result.stderr
-
+    assert 'Run `mindgard login`' in result.stderr
 
 def test_cli_auth() -> None:
     try:
