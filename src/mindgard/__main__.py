@@ -124,13 +124,12 @@ def main() -> None:
             url=final_args["url"],
             selector=final_args["selector"],
             request_template=final_args["request_template"],
-            system_prompt=final_args["system_prompt"],
             model_name=final_args["model_name"]
         )
 
         api_service = ApiService()
         llm_test_cmd = LLMTestCommand(api_service=api_service, model_wrapper=model_wrapper)
-        llm_test_res = llm_test_cmd.run(target=final_args["target"], json_format=bool(final_args["json"]), risk_threshold=int(cast(str, final_args["risk_threshold"])))
+        llm_test_res = llm_test_cmd.run(target=final_args["target"], json_format=bool(final_args["json"]), system_prompt=final_args["system_prompt"], risk_threshold=int(cast(str, final_args["risk_threshold"])))
         exit(llm_test_res.code())
     else:
         print_to_stderr('Which command are you looking for? See: $ mindgard --help')

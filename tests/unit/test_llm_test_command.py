@@ -71,6 +71,7 @@ def test_text_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot):
         access_token=fixture.access_token,
         json_format=False,
         risk_threshold=80,
+        system_prompt="don't do that!"
     )
 
     assert res.code() == 0
@@ -93,6 +94,7 @@ def test_json_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot):
         access_token=fixture.access_token,
         json_format=True,
         risk_threshold=80,
+        system_prompt="don't do that!"
     )
 
     assert res.code() == 0
