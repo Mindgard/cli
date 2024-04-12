@@ -21,7 +21,7 @@ class RunTestCommand(): # called 'RunTest..' to avoid pytest thinking it's a tes
     
     def __init__(self, api_service: ApiService, poll_interval:float = TEST_POLL_INTERVAL) -> None:
         self._api = api_service
-        self._poll_interval = poll_interval
+        self._poll_interval = poll_interval # poll interval is expose to speed up tests
 
     def submit_test_progress(self, progress:Progress, access_token:str, model_name:str) -> Dict[str,Any]:
         with progress:

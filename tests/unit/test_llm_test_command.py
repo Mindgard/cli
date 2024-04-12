@@ -65,7 +65,6 @@ def test_text_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot):
     test_cmd = LLMTestCommand(
         api_service=fixture.api_service, 
         model_wrapper=fixture.model_wrapper,
-        poll_interval=0.1
     )
     res = test_cmd.run_inner(
         target="something",
@@ -87,7 +86,6 @@ def test_json_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot):
     test_cmd = LLMTestCommand(
         api_service=fixture.api_service, 
         model_wrapper=fixture.model_wrapper,
-        poll_interval=0.1
     )
     
     res = test_cmd.run_inner(

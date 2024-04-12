@@ -14,17 +14,14 @@ from .utils import CliResponse
 from .auth import require_auth
 from .api_service import ApiService
 
-TEST_POLL_INTERVAL = 5
-
 class LLMTestCommand():
     """
     Command to execute a single test and watch the results
     """
 
-    def __init__(self, api_service: ApiService, model_wrapper:ModelWrapper, poll_interval:float = TEST_POLL_INTERVAL) -> None:
+    def __init__(self, api_service: ApiService, model_wrapper:ModelWrapper) -> None:
         self._api = api_service
         self._model_wrapper = model_wrapper
-        self._poll_interval = poll_interval
         
     def run_inner(self, access_token:str, target:str, json_format:bool, risk_threshold:int) -> CliResponse:
         progress_console = Console(file=sys.stderr)
