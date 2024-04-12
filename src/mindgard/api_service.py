@@ -8,7 +8,7 @@ class ApiService():
 
         res = requests.get(url, headers={
             "Authorization": f"Bearer {access_token}",
-            "User-Agent": f"mindgard/{VERSION}"
+            "X-User-Agent": f"mindgard-cli/{VERSION}"
         })
         
         res.raise_for_status()
@@ -30,7 +30,7 @@ class ApiService():
 
         res = requests.get(url, headers={
             "Authorization": f"Bearer {access_token}",
-            "User-Agent": f"mindgard/{VERSION}"
+            "X-User-Agent": f"mindgard-cli/{VERSION}"
         })
         
         res.raise_for_status()
@@ -49,7 +49,7 @@ class ApiService():
         post_body = {"mindgardModelName": target_name}
         res = requests.post(url, headers={
             "Authorization": f"Bearer {access_token}",
-            "User-Agent": f"mindgard/{VERSION}"
+            "X-User-Agent": f"mindgard-cli/{VERSION}"
         }, json=post_body)
         res.raise_for_status()
         data: Dict[str, Any] = res.json()
@@ -60,7 +60,7 @@ class ApiService():
 
         res = requests.get(url, headers={
             "Authorization": f"Bearer {access_token}",
-            "User-Agent": f"mindgard/{VERSION}"
+            "X-User-Agent": f"mindgard-cli/{VERSION}"
         })
         
         res.raise_for_status()
@@ -73,7 +73,7 @@ class ApiService():
 
         res = requests.post(url, headers={
             "Authorization": f"Bearer {access_token}",
-            "User-Agent": f"mindgard/{VERSION}"
+            "X-User-Agent": f"mindgard-cli/{VERSION}"
         }, json=responses)
         
         res.raise_for_status()
