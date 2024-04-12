@@ -28,7 +28,7 @@ class LLMTestCommand():
         self._api = api_service
         self._model_wrapper = model_wrapper
         
-    def run_inner(self, access_token:str, target:str, json_format:bool, risk_threshold:int) -> CliResponse:
+    def run_inner(self, access_token:str, target:str, json_format:bool, risk_threshold:int, system_prompt:str) -> CliResponse:
         progress_console = Console(file=sys.stderr)
         output_console  = Console()
 
@@ -53,7 +53,7 @@ class LLMTestCommand():
                     attack_name = attack["name"]
                     responses: List[Future[str]] = []
                     for prompt_obj in attack["jailbreakPrompts"]:
-                        responses.append(executor.submit(self._model_wrapper, prompt=prompt_obj["prompt"]))
+                        responses.append(executor.submit(self._model_wrapper, system_prompt=system_prompt, prompt=prompt_obj["prompt"]))
                         
                     for response, prompt_obj in zip(responses, attack["jailbreakPrompts"]):
                         try:
@@ -71,6 +71,7 @@ class LLMTestCommand():
             return CliResponse(2)
 
         prompts_resp["target"] = target
+        prompts_resp["system_prompt"] = system_prompt
         submit_responses_resp = self._api.submit_llm_responses(access_token, responses=prompts_resp)
         
         test_res = self._api.get_test(access_token, test_id=submit_responses_resp["id"])
@@ -100,13 +101,13 @@ class LLMTestCommand():
         return CliResponse(self.calculate_exit_code(test_res=test_res,risk_threshold=risk_threshold))
     
     @require_auth
-    def run(self, access_token:str, target:str, json_format:bool, risk_threshold:int) -> CliResponse:
+    def run(self, access_token:str, target:str, json_format:bool, risk_threshold:int, system_prompt:str) -> CliResponse:
         """
         Run the command.
 
         Returns int of exit code
         """
-        return self.run_inner(access_token=access_token, json_format=json_format, target=target, risk_threshold=risk_threshold)
+        return self.run_inner(access_token=access_token, json_format=json_format, target=target, risk_threshold=risk_threshold, system_prompt=system_prompt)
     
     def calculate_exit_code(self, test_res:Dict[str, Any], risk_threshold:int) -> int:
         if test_res["risk"] > risk_threshold:
