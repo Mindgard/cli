@@ -116,6 +116,15 @@ def login() -> None:
             raise Exception(error)
         else:
             time.sleep(device_code_data['interval'])
+
+
+def logout() -> None:
+    """
+    Removes the user token
+    """
+    print(f'Clearing credentials stored at {get_token_file()}.')
+    clear_token()
+    print('Logged out!')
     
     
 T = TypeVar('T')

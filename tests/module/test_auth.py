@@ -6,7 +6,7 @@ import requests_mock
 from ...src.mindgard.constants import AUTH0_DOMAIN
 
 from ...src.mindgard.auth import (clear_token, get_config_directory,
-                                  get_token_file, load_access_token)
+                                  get_token_file, load_access_token, logout)
 
 
 def test_config_location() -> None:
@@ -25,6 +25,17 @@ def test_token_clearing() -> None:
                 f.write('test token')
             assert os.path.exists(token_file)
             clear_token()
+            assert not os.path.exists(token_file)
+
+
+def test_logout() -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with mock.patch.dict(os.environ, {"MINDGARD_CONFIG_DIR": tmpdir}):
+            token_file = get_token_file()
+            with open(token_file, 'w') as f:
+                f.write('test token')
+            assert os.path.exists(token_file)
+            logout()
             assert not os.path.exists(token_file)
 
 

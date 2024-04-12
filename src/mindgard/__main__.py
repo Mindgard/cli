@@ -16,7 +16,7 @@ from .llm_test_command import LLMTestCommand
 
 from .attacks import get_attacks
 
-from .auth import login
+from .auth import login, logout
 from .constants import VERSION
 from .utils import is_version_outdated, print_to_stderr
 
@@ -27,6 +27,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
 
     subparsers = parser.add_subparsers(dest='command', title='commands', description='Use these commands to interact with the Mindgard API')
     subparsers.add_parser('login', help='Login to the Mindgard platform')
+    subparsers.add_parser('logout', help='Logout of the Mindgard platform in the CLI')
 
     # TODO: better error message if someone provides an id that is for the wrong resource eg attacks or tests
     attack_parser = subparsers.add_parser('attacks', help='See the attacks you\'ve run.')  # TODO: alias single version of plural nouns
@@ -78,6 +79,8 @@ def main() -> None:
 
     if args.command == 'login':
         login()
+    elif args.command == 'logout':
+        logout()
     elif args.command == 'list':
         if args.list_command == 'tests':
             api_service = ApiService()
