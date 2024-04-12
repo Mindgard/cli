@@ -18,7 +18,6 @@ from .attacks import get_attacks
 
 from .auth import login
 from .constants import VERSION
-from .tests import get_tests, run_test
 from .utils import is_version_outdated, print_to_stderr
 
 
@@ -94,13 +93,6 @@ def main() -> None:
         cmd = RunTestCommand(api_service)
         res = cmd.run(model_name=args.target, json_format=bool(args.json), risk_threshold=int(args.risk_threshold))
         exit(res.code())
-    elif args.command == 'tests':
-        if args.test_commands == "run":
-            res = run_test(target_name=args.name, json_format=bool(args.json), risk_threshold=int(args.risk_threshold))
-            exit(res.code())
-        else:
-            res = get_tests(json_format=bool(args.json), test_id=args.id)
-            exit(res.code())
     elif args.command == 'attacks':
         res = get_attacks(json_format=args.json, attack_id=args.id)
         exit(res.code())

@@ -3,7 +3,7 @@
 
 import json
 from typing import Any, Dict, List, Optional
-from requests import Response, HTTPError
+from requests import HTTPError
 from tabulate import tabulate
 
 from .utils import api_get,CliResponse, print_to_stderr

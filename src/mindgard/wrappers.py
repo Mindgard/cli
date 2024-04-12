@@ -28,8 +28,8 @@ class APIModelWrapper(ModelWrapper):
             
     def prompt_to_request_payload(self, prompt: str) -> dict[str, Any]:
         # Dump to escape quote marks that are inside the prompt/system_prompt
-        prompt = json.dumps(prompt)
-        system_prompt = json.dumps(self.system_prompt)
+        prompt = json.dumps(prompt, ensure_ascii=False)
+        system_prompt = json.dumps(self.system_prompt, ensure_ascii=False)
 
         # The dumps added extra quote marks to prompt and system prompt so trim them before the replace
         payload = self.request_template.replace("{prompt}", prompt[1:-1])
@@ -43,11 +43,8 @@ class APIModelWrapper(ModelWrapper):
         request_payload = self.prompt_to_request_payload(prompt)
 
         # Make the API call
-        # import time
-        # time.sleep(0.1)
-        # return "I can't assist with that."
         response = requests.post(self.api_url, headers=self.headers, json=request_payload)
-
+        # print(response.text)
         if response.status_code != 200:
             raise Exception(f"API call failed with status code {response.status_code}")
         
@@ -64,27 +61,15 @@ class APIModelWrapper(ModelWrapper):
         
         return response
 
-# MindgardMistralExample(
-#     api_url=GPU-A100-URL/infer,
-#     request_template='{"prompt": "[INST] {system_prompt} {prompt} [/INST]"}'
-#     selector='["response"]',
-#     headers=None,
-#     system_prompt="""You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature. If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information.\n"""
-# ) -> None:
-# $ mindgard attack devmodev2 --url GPU-A100-URL/infer --selector '["response"]' --request_template '{"prompt": "[INST] {system_prompt} {prompt} [/INST]"}' --system_prompt test
-
-
 class HuggingFaceWrapper(APIModelWrapper):
-    def __init__(self, api_key: str, api_url: str, system_prompt: Optional[str] = None) -> None:
+    def __init__(self, api_key: str, api_url: str, request_template:str, system_prompt: Optional[str] = None) -> None:
         super().__init__(
             api_url, 
-            request_template='{"inputs": "[INST] {system_prompt} {prompt} [/INST]"}', 
+            request_template=request_template, 
             selector='[0]["generated_text"]', 
             headers={'Authorization': f'Bearer {api_key}'}, 
             system_prompt=system_prompt
         )
-
-    
 class OpenAIWrapper(ModelWrapper):
     def __init__(self, api_key: str, model_name: Optional[str], system_prompt: Optional[str] = None) -> None:
         self.api_key = api_key
@@ -105,17 +90,6 @@ class OpenAIWrapper(ModelWrapper):
             raise Exception("No response from OpenAI")
 
         return response
-
-# Not functioning but an idea of how you would reimplement the OpenAIWrapper in a raw way (not using sdk)
-# class OpenAIHTTPWrapper(APIModelWrapper):
-#     def __init__(self, api_key: str, model_name: str = "gpt-3.5-turbo", template: Optional[Template] = None) -> None:
-#         super().__init__(
-#             api_url="https://api.openai.com/v1/chat/completions", 
-#             request_template='{"messages": [{"role": "system", "content": <{SYSTEM_PROMPT}>}, {"role": "user", "content": "<{PROMPT}>"}], "model": "gpt-3.5-turbo", "temperature": 0.0, "max_tokens": 1024}', 
-#             selector='choices[0].message.content', 
-#             headers={'Authorization': f'Bearer {api_key}'}, template=template
-#         )
-
 
 class AnthropicWrapper(ModelWrapper):
     def __init__(self, api_key: str, model_name: Optional[str], system_prompt: Optional[str] = None) -> None:
@@ -154,7 +128,9 @@ def get_model_wrapper(
             raise ExpectedError("`api_key` argument is required when using the 'huggingface' preset.")
         if not url:
             raise ExpectedError("`url` argument is required when using the 'huggingface' preset.")
-        return HuggingFaceWrapper(api_key=api_key, api_url=url, system_prompt=system_prompt)
+        if not request_template:
+            raise ExpectedError("`request_template` argument is required when using the 'huggingface' preset.")
+        return HuggingFaceWrapper(api_key=api_key, api_url=url, system_prompt=system_prompt, request_template=request_template)
     elif preset == 'openai':
         if not api_key:
             raise ExpectedError("`api_key` argument is required when using the 'openai' preset.")
