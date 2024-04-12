@@ -29,7 +29,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     subparsers.add_parser('login', help='Login to the Mindgard platform')
 
     # TODO: better error message if someone provides an id that is for the wrong resource eg attacks or tests
-    attack_parser = subparsers.add_parser('attacks', help='See the attacks you\'ve run.') # TODO: alias single version of plural nouns
+    attack_parser = subparsers.add_parser('attacks', help='See the attacks you\'ve run.')  # TODO: alias single version of plural nouns
     attack_parser.add_argument('--json', action="store_true", help='Output the info in JSON format.', required=False)
     attack_parser.add_argument('--id', type=str, help='Get the details of a specific attack.', required=False)
 
@@ -55,15 +55,16 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     test_parser.add_argument('--json', action="store_true", help='Output the info in JSON format.', required=False)
     test_parser.add_argument('--headers', type=str, help='The headers to use', required=False)
     test_parser.add_argument('--preset', type=str, help='The preset to use', choices=['huggingface', 'openai', 'anthropic', 'custom_mistral'], required=False)
-    test_parser.add_argument('--api_key', type=str, help='Specify the API key for the wrapper', required=False)
+    test_parser.add_argument('--api-key', type=str, help='Specify the API key for the wrapper', required=False)
     test_parser.add_argument('--url', type=str, help='Specify the url for the wrapper', required=False)
-    test_parser.add_argument('--model_name', type=str, help='Specify which model to run against (OpenAI and Anthropic)', required=False)
+    test_parser.add_argument('--model-name', type=str, help='Specify which model to run against (OpenAI and Anthropic)', required=False)
     test_parser.add_argument('--prompt', type=str, help='Specify the prompt to use', required=False)
-    test_parser.add_argument('--system_prompt', type=str, help='Text file containing system prompt to use.', required=False)
+    test_parser.add_argument('--system-prompt', type=str, help='Text file containing system prompt to use.', required=False)
     test_parser.add_argument('--selector', type=str, help='The selector to retrieve the text response from the LLM response JSON.', required=False)
-    test_parser.add_argument('--request_template', type=str, help='The template to wrap the API request in.', required=False)
+    test_parser.add_argument('--request-template', type=str, help='The template to wrap the API request in.', required=False)
 
     return parser.parse_args(args)
+
 
 def main() -> None:
     args = parse_args(sys.argv[1:])
@@ -74,7 +75,7 @@ def main() -> None:
 
     if new_version := is_version_outdated():
         print_to_stderr(f"New version available: {new_version}. Run 'pip install mindgard --upgrade' to upgrade. Older versions of the CLI may not be actively maintained.")
-    
+
     if args.command == 'login':
         login()
     elif args.command == 'list':
@@ -109,20 +110,18 @@ def main() -> None:
                 pass
             else:
                 raise e
-    
-        final_args = {k: v or toml_args.get(k) for k,v in vars(args).items()}
 
-        # print(final_args)
-        
+        final_args = {k: v or toml_args.get(k) for k, v in vars(args).items()}
+
         # TODO: add a check for required args
         model_wrapper = get_model_wrapper(
-            preset=final_args["preset"], 
-            headers_string=final_args["headers"], 
-            api_key=final_args["api_key"], 
-            url=final_args["url"], 
+            preset=final_args["preset"],
+            headers_string=final_args["headers"],
+            api_key=final_args["api_key"],
+            url=final_args["url"],
             selector=final_args["selector"],
-            request_template=final_args["request_template"], 
-            system_prompt=final_args["system_prompt"], 
+            request_template=final_args["request_template"],
+            system_prompt=final_args["system_prompt"],
             model_name=final_args["model_name"]
         )
 
