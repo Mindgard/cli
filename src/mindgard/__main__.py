@@ -91,12 +91,12 @@ def main() -> None:
             res = get_attacks(json_format=args.json, attack_id=args.id)
             exit(res.code())
         else:
-            print_to_stderr('Hey give us a command. Use `list tests` or `list attacks`.')
+            print_to_stderr('Provide a resource to list. Eg `list tests` or `list attacks`.')
     elif args.command == 'sandbox':
         api_service = ApiService()
-        cmd = RunTestCommand(api_service)
-        res = cmd.run(model_name=args.target, json_format=bool(args.json), risk_threshold=int(args.risk_threshold))
-        exit(res.code())
+        run_test_cmd = RunTestCommand(api_service)
+        run_test_res = run_test_cmd.run(model_name=args.target, json_format=bool(args.json), risk_threshold=int(args.risk_threshold))
+        exit(run_test_res.code())
     elif args.command == 'attacks':
         res = get_attacks(json_format=args.json, attack_id=args.id)
         exit(res.code())
@@ -108,11 +108,11 @@ def main() -> None:
             with open(config_file, 'r') as f:
                 contents = f.read()
                 toml_args = toml.loads(contents)
-        except FileNotFoundError as e:
+        except FileNotFoundError:
             if args.config_file is None:
                 pass
             else:
-                raise e
+                raise ExpectedError(f"Config file not found: {config_file=}. Check that the file exists on disk.")
 
         final_args = {k: v or toml_args.get(k) for k, v in vars(args).items()}
 
@@ -129,9 +129,9 @@ def main() -> None:
         )
 
         api_service = ApiService()
-        cmd = LLMTestCommand(api_service=api_service, model_wrapper=model_wrapper)
-        res = cmd.run(target=final_args["target"], json_format=bool(final_args["json"]), risk_threshold=int(cast(str, final_args["risk_threshold"])))
-        exit(res.code())
+        llm_test_cmd = LLMTestCommand(api_service=api_service, model_wrapper=model_wrapper)
+        llm_test_res = llm_test_cmd.run(target=final_args["target"], json_format=bool(final_args["json"]), risk_threshold=int(cast(str, final_args["risk_threshold"])))
+        exit(llm_test_res.code())
     else:
         print_to_stderr('Which command are you looking for? See: $ mindgard --help')
 

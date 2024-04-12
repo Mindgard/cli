@@ -32,7 +32,7 @@ class APIModelWrapper(ModelWrapper):
         self.request_template = request_template or '{"prompt": "{system_prompt} {prompt}"}'
 
         if '{prompt}' not in self.request_template or '{system_prompt}' not in self.request_template:
-            raise Exception("Request template must contain '{prompt}' and '{system_prompt}'.")
+            raise ExpectedError("`--request-template` must contain '{prompt}' and '{system_prompt}'.")
 
     def prompt_to_request_payload(self, prompt: str) -> dict[str, Any]:
         # Dump to escape quote marks that are inside the prompt/system_prompt
@@ -97,7 +97,7 @@ class OpenAIWrapper(ModelWrapper):
         response = chat.choices[0].message.content
 
         if not response:
-            raise Exception("No response from OpenAI")
+            raise ExpectedError("No response from OpenAI.")
 
         return response
 

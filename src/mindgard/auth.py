@@ -5,6 +5,7 @@ import time
 from typing import Any, Callable, Optional, TypeVar, cast
 from functools import wraps
 
+from .error import ExpectedError
 import requests
 from auth0.authentication.token_verifier import (AsymmetricSignatureVerifier, # type: ignore
                                                  TokenVerifier)
@@ -82,7 +83,7 @@ def login() -> None:
 
     if device_code_response.status_code != 200:
         print_to_stderr('Error generating login url. Please try again. Contact Mindgard support if the issue persists.')
-        raise Exception(device_code_response.json())
+        raise ExpectedError(f"Login service API response: {device_code_response.json()}")
 
     device_code_data = device_code_response.json()
     print('1. On your computer or mobile device navigate to: ', device_code_data['verification_uri_complete'])
@@ -113,7 +114,7 @@ def login() -> None:
             authenticated = True
         elif token_data['error'] not in ('authorization_pending', 'slow_down'):
             error = token_data.get('error_description', 'Error authenticating the user. Please wait 30s and try again.')
-            raise Exception(error)
+            raise ExpectedError(error)
         else:
             time.sleep(device_code_data['interval'])
 
