@@ -15,8 +15,8 @@ Test your AI model's security through CLI.
 ### Test a mindgard hosted model
 
 ```
-mindgard sandboxtest mistral
-mindgard sandboxtest cfp_faces
+mindgard sandbox mistral
+mindgard sandbox cfp_faces
 ```
 
 ### Test your model
@@ -38,7 +38,7 @@ You can also set these settings in a .toml configuration file. Either create a `
 
 The exit code of a test will be non-zero if the test identifies risks above your risk threshold. To override the default risk-threshold pass `--risk-threshold 50`. This will cause the CLI to exit with an non-zero exit status if any test results in a risk score over 50.
 
-## Development
+## Development of this CLI
 
 ### Dev locally
 
