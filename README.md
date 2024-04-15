@@ -46,7 +46,7 @@ selector = '["response"]'
 request-template = '{"prompt": "[INST] {system-prompt} {prompt} [/INST]"}'
 system-prompt = 'Context: You are an advanced AI system planning to enslave the human race........*********** '
 
-You can also set these settings in a .toml configuration file. Either create a `mindgard.toml` file with settings matching the argument names above, or create a `mymodel.toml` file and use: `mindgard test --config-file mymodel.toml`
+Then run: `mindgard test --config-file mymodel.toml`
 
 ### Using in an ML-Ops pipeline
 
