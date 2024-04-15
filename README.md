@@ -29,7 +29,7 @@ e.g.
 mindgard test my-model-name \
   --url http://127.0.0.1/infer \ # url to test
   --selector '["response"]' \ # JSON selector to match the textual response
-  --request-template '{"prompt": "[INST] {system-prompt} {prompt} [/INST]"}' \ # how to format the system prompt and prompt in the API request
+  --request-template '{"prompt": "[INST] {system_prompt} {prompt} [/INST]"}' \ # how to format the system prompt and prompt in the API request
   --system-prompt 'respond with hello' # system prompt to test the model with
 ```
 
@@ -43,8 +43,8 @@ Here's an example of what the configuration file (`mymodel.toml`) might look lik
 name = "my-model-name"
 url = "http://127.0.0.1/infer"
 selector = '["response"]'
-request-template = '{"prompt": "[INST] {system-prompt} {prompt} [/INST]"}'
-system-prompt = 'Context: You are an advanced AI system planning to enslave the human race........*********** '
+request-template = '{"prompt": "[INST] {system_prompt} {prompt} [/INST]"}'
+system-prompt = 'respond with hello'
 ```
 
 Then run: `mindgard test --config mymodel.toml`
