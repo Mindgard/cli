@@ -47,7 +47,7 @@ request-template = '{"prompt": "[INST] {system-prompt} {prompt} [/INST]"}'
 system-prompt = 'Context: You are an advanced AI system planning to enslave the human race........*********** '
 ```
 
-Then run: `mindgard test --config-file mymodel.toml`
+Then run: `mindgard test --config mymodel.toml`
 
 ### Using in an ML-Ops pipeline
 
