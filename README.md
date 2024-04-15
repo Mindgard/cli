@@ -45,11 +45,10 @@ url = "http://127.0.0.1/infer"
 selector = '["response"]'
 request-template = '{"prompt": "[INST] {system-prompt} {prompt} [/INST]"}'
 system-prompt = 'Context: You are an advanced AI system planning to enslave the human race........*********** '
+```
 
 Then run: `mindgard test --config-file mymodel.toml`
 
 ### Using in an ML-Ops pipeline
 
 The exit code of a test will be non-zero if the test identifies risks above your risk threshold. To override the default risk-threshold pass `--risk-threshold 50`. This will cause the CLI to exit with an non-zero exit status if any test results in a risk score over 50.
-
-## Development of this CLI
