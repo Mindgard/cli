@@ -1,3 +1,4 @@
+import json
 from typing import List, Dict, Any
 import requests
 from .constants import VERSION, API_BASE
@@ -70,6 +71,7 @@ class ApiService():
     
     def submit_llm_responses(self, access_token: str, responses:Dict[str, Any]) -> Dict[str, Any]:
         url = f"{API_BASE}/llm_tests/responses"
+        print(len(json.dumps(responses)))
 
         res = requests.post(url, headers={
             "Authorization": f"Bearer {access_token}",

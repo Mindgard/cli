@@ -1,7 +1,9 @@
 
 from concurrent.futures import Future, ThreadPoolExecutor
 import sys
-from typing import Dict, Any, List
+import functools
+import time
+from typing import Dict, Any
 from rich.console import Console
 from rich.table import Table
 from rich.progress import Progress, TaskID
@@ -43,23 +45,29 @@ class LLMTestCommand():
 
         with attacks_progress:
             failed = False 
-            with ThreadPoolExecutor(max_workers=5) as executor:
+            with ThreadPoolExecutor() as executor:
                 for attack in prompts_resp["attacks"]:
                     attack_name = attack["name"]
-                    responses: List[Future[str]] = []
                     for prompt_obj in attack["jailbreakPrompts"]:
-                        responses.append(executor.submit(self._model_wrapper, system_prompt=system_prompt, prompt=prompt_obj["prompt"]))
-                        
-                    for response, prompt_obj in zip(responses, attack["jailbreakPrompts"]):
-                        try:
-                            prompt_obj["answer"] = response.result()
-                        except Exception as e:
-                            last_20_of_prompt = prompt_obj["prompt"][-20:]
-                            progress_console.log(attack_name, "failed LLM request", f"...{last_20_of_prompt}", e)
-                            prompt_obj["answer"] = ""
-                            failed = True
-                        attacks_progress.advance(attacks_task_map[attack_name])
-                        attacks_progress.advance(all_attacks_progress)
+                        ex_future = executor.submit(self._model_wrapper, system_prompt=system_prompt, prompt=prompt_obj["prompt"])
+    
+                        def callback(future: Future[str], prompt_obj: Any, attack_name: str) -> None:
+                            nonlocal failed
+                            try:
+                                result = future.result()
+                                print(f"result: {result}")
+                                print(f"prompt_obj: {prompt_obj}")
+                                print("dafgdf")
+                                prompt_obj["answer"] = result
+                            except Exception as e:
+                                last_20_of_prompt = prompt_obj["prompt"][-20:]
+                                progress_console.log(attack_name, "failed LLM request", f"...{last_20_of_prompt}", e)
+                                prompt_obj["answer"] = ""
+                                failed = True
+                            attacks_progress.advance(attacks_task_map[attack_name])
+                            attacks_progress.advance(all_attacks_progress)
+
+                        ex_future.add_done_callback(functools.partial(callback, prompt_obj=prompt_obj, attack_name=attack_name))                
 
         if failed is True:
             progress_console.log("failed to complete test, aborting")
@@ -67,8 +75,10 @@ class LLMTestCommand():
 
         prompts_resp["target"] = target
         prompts_resp["system_prompt"] = system_prompt
+        print(time.time())
         submit_responses_resp = self._api.submit_llm_responses(access_token, responses=prompts_resp)
-         
+        print(time.time())
+
         test_res = self._api.get_test(access_token, test_id=submit_responses_resp["id"])
         test_id = test_res["id"]
 
