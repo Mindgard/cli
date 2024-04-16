@@ -49,7 +49,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     test_parser.add_argument('--url', type=str, help='Specify the url for the wrapper', required=False)
     test_parser.add_argument('--model-name', type=str, help='Specify which model to run against (OpenAI and Anthropic)', required=False)
     test_parser.add_argument('--prompt', type=str, help='Specify the prompt to use', required=False)
-    test_parser.add_argument('--system-prompt', type=str, help='Text file containing system prompt to use.', required=False)
+    test_parser.add_argument('--system-prompt', type=str, help='Text file containing system prompt to use. Please be careful to avoid sharing PII via the system prompt.', required=False)
     test_parser.add_argument('--selector', type=str, help='The selector to retrieve the text response from the LLM response JSON.', required=False)
     test_parser.add_argument('--request-template', type=str, help='The template to wrap the API request in.', required=False)
 
