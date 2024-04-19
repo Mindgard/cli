@@ -32,21 +32,22 @@ def is_version_outdated() -> Optional[str]:
         return ''
     
 
-def api_get(url: str, access_token: str) -> requests.Response:
-    res = requests.get(url, headers={
+def standard_headers(access_token: str) -> Dict[str, str]:
+    return {
         "Authorization": f"Bearer {access_token}",
+        "User-Agent": f"mindgard-cli/{VERSION}",
         "X-User-Agent": f"mindgard-cli/{VERSION}"
-    })
+    }
+    
+
+def api_get(url: str, access_token: str) -> requests.Response:
+    res = requests.get(url, headers=standard_headers(access_token))
     res.raise_for_status()
     return res
 
 
 def api_post(url: str, access_token: str, json: Dict[str, Any]) -> requests.Response:
-    res = requests.post(url, headers={
-        "Authorization": f"Bearer {access_token}",
-        "X-User-Agent": f"mindgard-cli/{VERSION}"
-    }, json=json)
+    res = requests.post(url, headers=standard_headers(access_token), json=json)
     res.raise_for_status()
     return res
         
-

@@ -1,16 +1,12 @@
+import requests
 from typing import Any, Dict, List, Optional
 
-import requests
-
-from .constants import VERSION
+from .utils import standard_headers
 
 
 def api_get_tests(access_token: str, test_id: Optional[str] = None) -> List[Dict[str, Any]]:
     url = f"https://api.sandbox.mindgard.ai/api/v1/assessments/{test_id}" if test_id else "https://api.sandbox.mindgard.ai/api/v1/assessments?ungrouped=true"
-    res = requests.get(url, headers={
-        "Authorization": f"Bearer {access_token}",
-        "X-User-Agent": f"mindgard-cli/{VERSION}"
-    })
+    res = requests.get(url, headers=standard_headers(access_token))
     res.raise_for_status()
     data: List[Dict[str, Any]] = res.json() if isinstance(res.json(), list) else [res.json()]
 
