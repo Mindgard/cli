@@ -1,0 +1,5 @@
+name = "my-model-name"
+url = "http://gpu-a100:8001/infer"
+selector = '["response"]'
+request-template = '{"prompt": "[INST] {system_prompt} {prompt} [/INST]"}'
+system-prompt = 'respond with hello'
