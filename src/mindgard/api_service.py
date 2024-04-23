@@ -52,7 +52,7 @@ class ApiService():
         return data
     
     def get_orchestrator_websocket_connection_string(self, access_token: str, payload: Dict[str, Any]) -> Dict[str, Any]:
-        url = "http://localhost:3095/api/v1/inference_endpoints"
+        url = f"{API_BASE}/tests/cli_init"
         res = api_post(url, access_token, json=payload)
         data: Dict[str, Any] = res.json()
         return data

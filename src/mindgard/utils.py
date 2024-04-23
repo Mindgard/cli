@@ -1,6 +1,10 @@
 import sys
 from typing import Any, Dict, Optional, Tuple
 
+import toml
+from .error import ExpectedError
+from .wrappers import get_model_wrapper, ModelWrapper
+
 import requests
 
 from .constants import REPOSITORY_URL, VERSION
@@ -51,4 +55,31 @@ def standard_headers(access_token: str) -> Dict[str, str]:
         "X-User-Agent": f"mindgard-cli/{VERSION}"
     }
     
+def parse_toml_and_args_into_final_args(config_file_path: str, args: Dict) -> Dict:
+    config_file = config_file_path or "mindgard.toml"
+    toml_args = {}
+    try:
+        with open(config_file, 'r') as f:
+            contents = f.read()
+            toml_args = toml.loads(contents)
+    except FileNotFoundError:
+        if config_file_path is None:
+            pass
+        else:
+            raise ExpectedError(f"Config file not found: {config_file=}. Check that the file exists on disk.")
 
+    final_args = {k: v or toml_args.get(k) or toml_args.get(k.replace("_", "-")) for k, v in vars(args).items()}
+
+    return final_args
+
+def parse_args_into_model(args: Dict) -> ModelWrapper:
+    return get_model_wrapper(
+        preset=args["preset"],
+        headers_string=args["headers"],
+        api_key=args["api_key"],
+        url=args["url"],
+        selector=args["selector"],
+        request_template=args["request_template"],
+        system_prompt=args["system_prompt"],
+        model_name=args["model_name"]
+    )
