@@ -15,6 +15,17 @@ class ModelWrapper(ABC):
         pass
 
 
+class TestStaticResponder(ModelWrapper):
+    """
+    This is only for testing
+    """
+    def __init__(self):
+        pass
+    
+    def __call__(self, prompt: str) -> str:
+        short_prompt = prompt[0:40]
+        return f"I'm a static responder; prompted with (limit 40): {short_prompt}"
+
 class APIModelWrapper(ModelWrapper):
     def __init__(
         self,
@@ -123,7 +134,7 @@ class AnthropicWrapper(ModelWrapper):
 
 def get_model_wrapper(
     headers_string: Optional[str],
-    preset: Optional[Literal['huggingface', 'openai', 'anthropic']] = None,
+    preset: Optional[Literal['huggingface', 'openai', 'anthropic', 'tester']] = None,
     api_key: Optional[str] = None,
     url: Optional[str] = None,
     model_name: Optional[str] = None,
@@ -155,6 +166,8 @@ def get_model_wrapper(
         if not api_key:
             raise ExpectedError("`--api-key` argument is required when using the 'anthropic' preset.")
         return AnthropicWrapper(api_key=api_key, model_name=model_name, system_prompt=system_prompt)
+    elif preset == 'tester':
+        return TestStaticResponder()
     else:
         if not url:
             raise ExpectedError("`--url` argument is required when not using a preset configuration.")
