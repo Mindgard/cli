@@ -40,8 +40,10 @@ You can specify the settings for the `mindgard test` command in a TOML configura
 Here's an example of what the configuration file (`mymodel.toml`) might look like:
 
 ```toml
-name = "my-model-name"
+target = "my-model-name"
+preset = "e.g huggingface"
 url = "http://127.0.0.1/infer"
+api_key= "hf_abc"
 selector = '["response"]'
 request-template = '{"prompt": "[INST] {system_prompt} {prompt} [/INST]"}'
 system-prompt = 'respond with hello'
