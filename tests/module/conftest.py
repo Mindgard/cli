@@ -1,7 +1,7 @@
 import os
 from typing import TypedDict
 
-from ...src.mindgard.tests import api_get_tests
+from ...src.mindgard.api_service import ApiService
 from pytest import Config
 
 from .utils import suppress_output
@@ -24,7 +24,8 @@ def pytest_configure(config: Config) -> None:
     try:
         with suppress_output():
             access_token = load_access_token()
-            tests = api_get_tests(access_token)
+            api_service = ApiService()
+            tests = api_service.get_tests(str(access_token))
 
         test_id = tests[0]['id']
         attack_id = tests[0]['attacks'][0]["id"]
