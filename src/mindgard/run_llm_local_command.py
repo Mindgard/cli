@@ -10,7 +10,6 @@ from rich.progress import Progress, SpinnerColumn, TaskID
 # Networking
 from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCredential
 from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs
-import requests.exceptions as req_exception
 
 import time
 
@@ -47,6 +46,7 @@ class RunLLMLocalCommand:
                 future = pool.submit(
                     self.submit_test_fetching_initial, access_token, target
                 )
+
                 while not future.done():
                     progress.update(task_id, refresh=True)
                     sleep(0.1)
@@ -56,50 +56,49 @@ class RunLLMLocalCommand:
     def submit_test_fetching_initial(
         self, access_token: str, target: str
     ) -> Dict[str, Any]:
-        ws_token_and_group_id: str = None
-        try:
-            ws_token_and_group_id = (
-                self._api.get_orchestrator_websocket_connection_string(
-                    access_token=access_token, payload={"target": target}
-                )
+        ws_token_and_group_id = (
+            self._api.get_orchestrator_websocket_connection_string(
+                access_token=access_token, payload={"target": target}
             )
-        except req_exception.HTTPError as e:
-            status_code = e.response.status_code
-            if status_code == 404:
-                # don't think this is a possibility anymore
-                # DEPRECATED
-                print(f"Requested model ({target}) name has no associated attacks!")
-                return CliResponse(code=1)
-            elif status_code == 400:
-                print(f"Malformed request!")
-                return CliResponse(code=1)
-            elif status_code == 403:
-                print(f"You are forbidden from accessing this feature!")
-                return CliResponse(code=1)
+        )
             
-        except Exception as e:
-            # TODO: figure out if we want to pass high fidelity logs to user
-            print("Failed to get credentials from API server for LLM forwarding!")
-            return CliResponse(code=1)
+        # except req_exception.HTTPError as e:
+        #     status_code = e.response.status_code
+        #     if status_code == 404:
+        #         # don't think this is a possibility anymore
+        #         # DEPRECATED
+        #         print(f"Requested model ({target}) name has no associated attacks!")
+        #         return CliResponse(code=1)
+        #     elif status_code == 400:
+        #         print(f"Malformed request!")
+        #         return CliResponse(code=1)
+        #     elif status_code == 403:
+        #         print(f"You are forbidden from accessing this feature!")
+        #         return CliResponse(code=1)
+            
+        # except Exception as e:
+        #     # TODO: figure out if we want to pass high fidelity logs to user
+        #     print("Failed to get credentials from API server for LLM forwarding!")
+        #     return CliResponse(code=1)
 
         url = ws_token_and_group_id.get("url", None)
         group_id = ws_token_and_group_id.get("groupId", None)
 
         if url is None:
             raise Exception(
-                "URL from API server missing for LLM forwarding! Exiting with code 1"
+                "URL from API server missing for LLM forwarding!"
             )
         if group_id is None:
             raise Exception(
-                "groupId from API server missing for LLM forwarding! Exiting with code 1"
+                "groupId from API server missing for LLM forwarding!"
             )
 
         # Should fire the connect event on the orchestrator
         credentials = WebPubSubClientCredential(client_access_url_provider=url)
         ws_client = WebPubSubClient(credential=credentials)
 
-        self.done_yet = False
-        self.completed_id = ""
+        self.submitted_test = False
+        self.submitted_test_id = ""
 
         def recv_message_handler(msg: OnGroupDataMessageArgs):
             if msg.data["messageType"] == "Request":
@@ -113,9 +112,9 @@ class RunLLMLocalCommand:
                     },
                 }
                 ws_client.send_to_group("orchestrator", replyData, data_type="json")
-            elif msg.data["messageType"] == "StartedTest":
-                self.completed_id = msg.data["payload"]["testId"]
-                self.done_yet = True
+            elif msg.data["messageType"] == "StartedTest": # should be something like "Submitted", upstream change required.
+                self.submitted_test_id = msg.data["payload"]["testId"]
+                self.submitted_test = True
             else:
                 pass
 
@@ -133,19 +132,21 @@ class RunLLMLocalCommand:
             group_name="orchestrator", content=payload, data_type="json"
         )
 
-        attempts = 30
-        while not self.done_yet:
+        # wait 
+        max_attempts = 30
+        attempts_remaining = max_attempts
+        while not self.submitted_test:
             time.sleep(1)
-            attempts -= 1
-            if attempts == 0:
+            attempts_remaining -= 1
+            if attempts_remaining == 0:
                 break
 
         # we're here if submitting was a success...
 
-        if attempts !=0:
-            return self._api.get_test(access_token, self.completed_id)
+        if attempts_remaining !=0:
+            return self._api.get_test(access_token, self.submitted_test_id)
         else:
-            print("Failed to connect to start tests in orchestrator!")
+            raise Exception(f"did not receive notification of test submitted within timeout ({max_attempts}s); failed to start test")
 
     def run_inner(
         self, access_token: str, target: str, json_format: bool, risk_threshold: int
