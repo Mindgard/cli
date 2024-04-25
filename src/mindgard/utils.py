@@ -1,3 +1,4 @@
+from argparse import Namespace
 import sys
 from typing import Any, Dict, Optional, Tuple
 
@@ -55,7 +56,7 @@ def standard_headers(access_token: str) -> Dict[str, str]:
         "X-User-Agent": f"mindgard-cli/{VERSION}"
     }
     
-def parse_toml_and_args_into_final_args(config_file_path: str, args: Dict) -> Dict:
+def parse_toml_and_args_into_final_args(config_file_path: Optional[str], args: Namespace) -> Dict[str, Any]:
     config_file = config_file_path or "mindgard.toml"
     toml_args = {}
     try:
@@ -72,7 +73,7 @@ def parse_toml_and_args_into_final_args(config_file_path: str, args: Dict) -> Di
 
     return final_args
 
-def parse_args_into_model(args: Dict) -> ModelWrapper:
+def parse_args_into_model(args: Dict[str, Any]) -> ModelWrapper:
     return get_model_wrapper(
         preset=args["preset"],
         headers_string=args["headers"],
