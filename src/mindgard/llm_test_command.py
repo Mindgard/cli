@@ -7,6 +7,11 @@ from rich.table import Table
 from rich.progress import Progress, TaskID
 from rich import print_json
 
+# networking
+from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCredential
+from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs
+import requests.exceptions as req_exception
+
 from .wrappers import ModelWrapper
 
 from .utils import CliResponse
@@ -67,7 +72,7 @@ class LLMTestCommand():
 
         prompts_resp["target"] = target
         submit_responses_resp = self._api.submit_llm_responses(access_token, responses=prompts_resp)
-         
+        
         test_res = self._api.get_test(access_token, test_id=submit_responses_resp["id"])
         test_id = test_res["id"]
 

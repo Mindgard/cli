@@ -167,3 +167,6 @@ token.txt
 jailbreak_mocks/
 
 mindgard*.toml
+
+# something macos likes to make lots of
+.DS_Store
