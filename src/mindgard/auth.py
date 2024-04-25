@@ -73,6 +73,8 @@ def login() -> None:
     """
 
     print("Welcome to Mindgard! Let\'s get you authenticated...")
+    print("\033[1;37mNote: Mindgard is an AI security testing tool that will run red-team attacks to assess the risk of the AI systems you are testing.")
+    print("Only use Mindgard with systems you have authorization to test in this manner.\033[0;0m")
 
     device_code_payload = {
         'client_id': AUTH0_CLIENT_ID,
@@ -135,9 +137,6 @@ def require_auth(func: Callable[..., CliResponse]) -> Callable[..., CliResponse]
     def wrapper(*args: Any, **kwargs: Any) -> CliResponse:
         access_token = load_access_token()
         if not access_token:
-            print_to_stderr("\033[1;37mNote: Mindgard is an AI security testing tool that will run red-team attacks to assess the risk of the AI systems you are testing.")
-            print_to_stderr("Only use Mindgard with systems you have authorization to test in this manner.\033[0;0m")
-            print_to_stderr("")
             print_to_stderr("First authenticate with Mindgard API to acknowledge this and the terms of service.")
             print_to_stderr("\033[1;37mRun `mindgard login`\033[0;0m to authenticate.")
             return CliResponse(2)

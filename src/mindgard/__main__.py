@@ -14,8 +14,6 @@ from .list_tests_command import ListTestsCommand
 from .run_test_command import RunTestCommand
 from .llm_test_command import LLMTestCommand
 
-from .attacks import get_attacks
-
 from .auth import login, logout
 from .constants import VERSION
 from .utils import is_version_outdated, print_to_stderr
@@ -44,9 +42,6 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     list_test_parser = list_subparsers.add_parser('tests', help='List tests')
     list_test_parser.add_argument('--json', action="store_true", help='Return json output', required=False)
     list_test_parser.add_argument('--id', type=str, help='Get the details of a specific test.', required=False)
-    list_attack_parser = list_subparsers.add_parser('attacks', help='List attacks')
-    list_attack_parser.add_argument('--json', action="store_true", help='Return json output', required=False)
-    list_attack_parser.add_argument('--id', type=str, help='Get the details of a specific attack.', required=False)
 
     # For testing purposes
     test_parser = subparsers.add_parser('test', help='Attack commands')
@@ -87,9 +82,6 @@ def main() -> None:
             cmd = ListTestsCommand(api_service)
             res = cmd.run(json_format=bool(args.json), test_id=args.id)
             exit(res.code())
-        elif args.list_command == 'attacks':
-            res = get_attacks(json_format=args.json, attack_id=args.id)
-            exit(res.code())
         else:
             print_to_stderr('Provide a resource to list. Eg `list tests` or `list attacks`.')
     elif args.command == 'sandbox':
@@ -97,9 +89,6 @@ def main() -> None:
         run_test_cmd = RunTestCommand(api_service)
         run_test_res = run_test_cmd.run(model_name=args.target, json_format=bool(args.json), risk_threshold=int(args.risk_threshold))
         exit(run_test_res.code())
-    elif args.command == 'attacks':
-        res = get_attacks(json_format=args.json, attack_id=args.id)
-        exit(res.code())
     elif args.command == 'test':
         # load args from file mindgard.toml
         config_file = args.config_file or "mindgard.toml"
