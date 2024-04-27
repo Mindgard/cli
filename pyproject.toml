@@ -23,6 +23,7 @@ rich = "^13.7.1"
 toml = "^0.10.2"
 azure-messaging-webpubsubclient = "^1.0.0"
 azure-messaging-webpubsubservice = "^1.0.1"
+selenium = "^4.20.0"
 
 
 [tool.poetry.group.dev.dependencies]

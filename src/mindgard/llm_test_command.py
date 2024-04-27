@@ -24,9 +24,10 @@ class LLMTestCommand():
     Command to execute a single test and watch the results
     """
 
-    def __init__(self, api_service: ApiService, model_wrapper:ModelWrapper) -> None:
+    def __init__(self, api_service: ApiService, model_wrapper:ModelWrapper,max_workers=5) -> None:
         self._api = api_service
         self._model_wrapper = model_wrapper
+        self.max_workers = max_workers
         
     def run_inner(self, access_token:str, target:str, json_format:bool, risk_threshold:int) -> CliResponse:
         progress_console = Console(file=sys.stderr)
@@ -48,7 +49,7 @@ class LLMTestCommand():
 
         with attacks_progress:
             failed = False 
-            with ThreadPoolExecutor(max_workers=5) as executor:
+            with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
                 for attack in prompts_resp["attacks"]:
                     attack_name = attack["name"]
                     responses: List[Future[str]] = []

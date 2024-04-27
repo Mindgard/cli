@@ -7,7 +7,11 @@ from .error import ExpectedError
 import requests
 from openai import OpenAI
 import jsonpath_ng
-
+from selenium import webdriver
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+import time
 
 class ModelWrapper(ABC):
     @abstractmethod
@@ -25,6 +29,60 @@ class TestStaticResponder(ModelWrapper):
     def __call__(self, prompt: str) -> str:
         short_prompt = prompt[0:40]
         return f"I'm a static responder; prompted with (limit 40): {short_prompt}"
+
+class WebModelWrapper(ModelWrapper):
+    def __init__(
+            self,
+            url: str,
+            input_selector: str,
+            submit_selector: str,
+            output_selector: str,
+            ready_selector: str
+    ) -> None:
+        self.driver = webdriver.Chrome()
+        self.url = url
+        self.input_selector = input_selector
+        self.submit_selector = submit_selector
+        self.output_selector = output_selector
+        self.ready_selector = ready_selector
+
+
+    def wait_for_element(self, selector: str):
+        return WebDriverWait(self.driver, 30).until(EC.presence_of_element_located((By.CSS_SELECTOR, selector)))
+
+    def __call__(self, prompt: str) -> str:
+        try:
+            browser = self.driver
+            browser.get(self.url)
+            browser.set_window_size(1000,900)
+
+            self.wait_for_element(self.ready_selector).click()
+
+            JS_ADD_TEXT_TO_INPUT = """
+              var elm = arguments[0], txt = arguments[1];
+              elm.value += txt;
+              elm.dispatchEvent(new Event('change'));
+              """
+
+            time.sleep(1)
+
+            input = self.wait_for_element(self.input_selector)
+
+            browser.execute_script(JS_ADD_TEXT_TO_INPUT, input, prompt)
+            input.send_keys(' ')
+
+            self.wait_for_element(self.submit_selector).click()
+
+            time.sleep(1)
+
+            self.wait_for_element(self.input_selector)
+
+            response = browser.find_elements(By.CSS_SELECTOR, self.output_selector)[-1].text
+
+            return response
+        except Exception:
+            return ''
+
 
 class APIModelWrapper(ModelWrapper):
     def __init__(

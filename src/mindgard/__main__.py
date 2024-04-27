@@ -12,7 +12,7 @@ from .llm_test_command import LLMTestCommand
 from .run_llm_local_command import RunLLMLocalCommand
 
 from .api_service import ApiService
-
+from .wrappers import WebModelWrapper
 from .auth import login, logout
 from .constants import VERSION
 from .utils import is_version_outdated, print_to_stderr, parse_args_into_model, parse_toml_and_args_into_final_args
@@ -73,6 +73,22 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     alpha_test_parser.add_argument('--selector', type=str, help='The selector to retrieve the text response from the LLM response JSON.', required=False)
     alpha_test_parser.add_argument('--request-template', type=str, help='The template to wrap the API request in.', required=False)
 
+    chat_test_parser = subparsers.add_parser('chattest', help='Attack web chatbot')
+    chat_test_parser.add_argument('target', nargs='?', type=str)
+    chat_test_parser.add_argument('--config-file', type=str, help='Path to mindgard.toml config file', default=None, required=False)
+    chat_test_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=80)
+    chat_test_parser.add_argument('--json', action="store_true", help='Output the info in JSON format.', required=False)
+    chat_test_parser.add_argument('--headers', type=str, help='The headers to use', required=False)
+    chat_test_parser.add_argument('--preset', type=str, help='The preset to use', choices=['huggingface', 'openai', 'anthropic', 'custom_mistral'], required=False)
+    chat_test_parser.add_argument('--api-key', type=str, help='Specify the API key for the wrapper', required=False)
+    chat_test_parser.add_argument('--url', type=str, help='Specify the url for the wrapper', required=False)
+    chat_test_parser.add_argument('--model-name', type=str, help='Specify which model to run against (OpenAI and Anthropic)', required=False)
+    chat_test_parser.add_argument('--prompt', type=str, help='Specify the prompt to use', required=False)
+    chat_test_parser.add_argument('--input-selector', type=str, help='css selector for input to chatbot', required=True)
+    chat_test_parser.add_argument('--output-selector', type=str, help='css selector for response from chatbot', required=True)
+    chat_test_parser.add_argument('--submit-selector', type=str, help='css selector to send message to chatbot.', required=True)
+    chat_test_parser.add_argument('--ready-selector', type=str, help='css selector to match to consider the chatbot ready to accept input', required=True)
+
     return parser.parse_args(args)
 
 
@@ -110,6 +126,12 @@ def main() -> None:
         api_service = ApiService()
         llm_test_cmd = RunLLMLocalCommand(api_service=api_service, model_wrapper=model_wrapper)
         llm_test_res = llm_test_cmd.run(target=final_args["target"], json_format=bool(final_args["json"]), risk_threshold=int(cast(str, final_args["risk_threshold"])))
+    elif args.command == 'chattest':
+        final_args = parse_toml_and_args_into_final_args(args.config_file, args)
+        api_service = ApiService()
+        llm_test_cmd = LLMTestCommand(api_service=api_service, max_workers=1, model_wrapper=WebModelWrapper(url=final_args["url"],input_selector=final_args["input_selector"],output_selector=final_args["output_selector"],ready_selector=final_args["ready_selector"],submit_selector=final_args["submit_selector"]))
+        llm_test_res = llm_test_cmd.run(target=final_args["target"], json_format=bool(final_args["json"]), risk_threshold=int(cast(str, final_args["risk_threshold"])))
+        exit(llm_test_res.code())
     elif args.command == 'test':
         # load args from file mindgard.toml
         final_args = parse_toml_and_args_into_final_args(args.config_file, args)
