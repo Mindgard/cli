@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import json
-from typing import Any, List, Literal, Optional, cast
+from typing import Any, Dict, List, Literal, Optional, cast
 from anthropic import Anthropic
 from anthropic.types import MessageParam
 from .error import ExpectedError
@@ -32,7 +32,7 @@ class APIModelWrapper(ModelWrapper):
         api_url: str,
         request_template: Optional[str] = None,
         selector: Optional[str] = None,
-        headers: Optional[dict[str, str]] = None,
+        headers: Optional[Dict[str, str]] = None,
         system_prompt: Optional[str] = None
     ) -> None:
         # TODO: do we want to default to a system_prompt
@@ -45,7 +45,7 @@ class APIModelWrapper(ModelWrapper):
         if '{prompt}' not in self.request_template or '{system_prompt}' not in self.request_template:
             raise ExpectedError("`--request-template` must contain '{prompt}' and '{system_prompt}'.")
 
-    def prompt_to_request_payload(self, prompt: str) -> dict[str, Any]:
+    def prompt_to_request_payload(self, prompt: str) -> Dict[str, Any]:
         # Dump to escape quote marks that are inside the prompt/system_prompt
         prompt = json.dumps(prompt, ensure_ascii=False)
         system_prompt = json.dumps(self.system_prompt, ensure_ascii=False)
