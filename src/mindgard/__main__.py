@@ -26,11 +26,6 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     subparsers.add_parser('login', help='Login to the Mindgard platform')
     subparsers.add_parser('logout', help='Logout of the Mindgard platform in the CLI')
 
-    # TODO: better error message if someone provides an id that is for the wrong resource eg attacks or tests
-    attack_parser = subparsers.add_parser('attacks', help='See the attacks you\'ve run.')  # TODO: alias single version of plural nouns
-    attack_parser.add_argument('--json', action="store_true", help='Output the info in JSON format.', required=False)
-    attack_parser.add_argument('--id', type=str, help='Get the details of a specific attack.', required=False)
-
     sandbox_test_parser = subparsers.add_parser('sandbox', help='Test a mindgard example model')
     sandbox_test_parser.add_argument('target', nargs='?', type=str, choices=['cfp_faces', 'mistral'])
     sandbox_test_parser.add_argument('--json', action="store_true", help='Return json output', required=False)
@@ -97,7 +92,7 @@ def main() -> None:
             res = cmd.run(json_format=bool(args.json), test_id=args.id)
             exit(res.code())
         else:
-            print_to_stderr('Provide a resource to list. Eg `list tests` or `list attacks`.')
+            print_to_stderr('Provide a resource to list. Eg `list tests`.')
     elif args.command == 'sandbox':
         api_service = ApiService()
         run_test_cmd = RunTestCommand(api_service)
