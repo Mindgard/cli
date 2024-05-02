@@ -19,6 +19,7 @@ from .utils import is_version_outdated, print_to_stderr, parse_args_into_model, 
 
 import logging
 from rich.logging import RichHandler
+from rich.console import Console
 
 def parse_args(args: List[str]) -> argparse.Namespace:
     log_levels = [n.lower() for n in logging.getLevelNamesMapping().keys()]
@@ -82,7 +83,7 @@ def main() -> None:
 
     FORMAT = "%(message)s"
     logging.basicConfig(
-        level=args.log_level.upper(), format=FORMAT, datefmt="[%X]", handlers=[RichHandler()]
+        level=args.log_level.upper(), format=FORMAT, datefmt="[%X]", handlers=[RichHandler(console=Console(stderr=True))]
     )
 
     if not (sys.version_info.major == 3 and sys.version_info.minor >= 8):
