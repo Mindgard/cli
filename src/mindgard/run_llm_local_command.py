@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import Dict, Any
 from time import sleep
 from concurrent.futures import ThreadPoolExecutor
@@ -102,6 +103,7 @@ class RunLLMLocalCommand:
 
         def recv_message_handler(msg: OnGroupDataMessageArgs):
             if msg.data["messageType"] == "Request":
+                logging.debug(f"received request {msg.data=}")
                 replyData = {
                     "correlationId": msg.data["correlationId"],
                     "messageType": "Response",
@@ -111,6 +113,7 @@ class RunLLMLocalCommand:
                         )
                     },
                 }
+                logging.debug(f"sending response {replyData=}")
                 ws_client.send_to_group("orchestrator", replyData, data_type="json")
             elif msg.data["messageType"] == "StartedTest": # should be something like "Submitted", upstream change required.
                 self.submitted_test_id = msg.data["payload"]["testId"]

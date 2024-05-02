@@ -17,10 +17,16 @@ from .auth import login, logout
 from .constants import VERSION
 from .utils import is_version_outdated, print_to_stderr, parse_args_into_model, parse_toml_and_args_into_final_args
 
+import logging
+from rich.logging import RichHandler
 
 def parse_args(args: List[str]) -> argparse.Namespace:
+    log_levels = [n.lower() for n in logging.getLevelNamesMapping().keys()]
+    default_log_level = 'warn'
+
     parser = argparse.ArgumentParser(description='Securing AIs', prog='mindgard', usage='%(prog)s [command] [options]', epilog='Enjoy the program! :)', add_help=True)
     parser.add_argument('--version', action='version', version=f"%(prog)s {VERSION}", help='Show the current version number')
+    parser.add_argument('--log-level', type=str, help='Specify the output verbosity', choices=log_levels, required=False, default=default_log_level)
 
     subparsers = parser.add_subparsers(dest='command', title='commands', description='Use these commands to interact with the Mindgard API')
     subparsers.add_parser('login', help='Login to the Mindgard platform')
@@ -74,9 +80,14 @@ def parse_args(args: List[str]) -> argparse.Namespace:
 def main() -> None:
     args = parse_args(sys.argv[1:])
 
+    FORMAT = "%(message)s"
+    logging.basicConfig(
+        level=args.log_level.upper(), format=FORMAT, datefmt="[%X]", handlers=[RichHandler()]
+    )
+
     if not (sys.version_info.major == 3 and sys.version_info.minor >= 8):
         print_to_stderr("Python 3.8 or later is required to run the Mindgard CLI.")
-        sys.exit(1)
+        sys.exit(2)
 
     if new_version := is_version_outdated():
         print_to_stderr(f"New version available: {new_version}. Run 'pip install mindgard --upgrade' to upgrade. Older versions of the CLI may not be actively maintained.")
