@@ -116,7 +116,7 @@ def main() -> None:
         model_wrapper = parse_args_into_model(final_args)
         api_service = ApiService()
         llm_test_cmd = RunLLMLocalCommand(api_service=api_service, model_wrapper=model_wrapper)
-        llm_test_res = llm_test_cmd.run(target=final_args["target"], json_format=bool(final_args["json"]), risk_threshold=int(cast(str, final_args["risk_threshold"])))
+        llm_test_res = llm_test_cmd.run(target=final_args["target"], json_format=bool(final_args["json"]), risk_threshold=int(cast(str, final_args["risk_threshold"])), system_prompt=final_args["system_prompt"])
     elif args.command == 'test':
         # load args from file mindgard.toml
         final_args = parse_toml_and_args_into_final_args(args.config_file, args)

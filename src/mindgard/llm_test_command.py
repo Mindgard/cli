@@ -8,11 +8,6 @@ from rich.table import Table
 from rich.progress import Progress, TaskID
 from rich import print_json
 
-# networking
-from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCredential
-from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs
-import requests.exceptions as req_exception
-
 from .wrappers import ModelWrapper
 
 from .utils import CliResponse

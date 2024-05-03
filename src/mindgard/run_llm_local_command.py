@@ -38,14 +38,14 @@ class RunLLMLocalCommand:
         self._model_wrapper = model_wrapper
 
     def submit_test_progress(
-        self, progress: Progress, access_token: str, target: str
+        self, progress: Progress, access_token: str, target: str, system_prompt: str
     ) -> Dict[str, Any]:
         with progress:
             with ThreadPoolExecutor() as pool:
                 task_id = progress.add_task("submitting test", start=True)
 
                 future = pool.submit(
-                    self.submit_test_fetching_initial, access_token, target
+                    self.submit_test_fetching_initial, access_token, target, system_prompt
                 )
 
                 while not future.done():
@@ -55,11 +55,11 @@ class RunLLMLocalCommand:
                 return future.result()
 
     def submit_test_fetching_initial(
-        self, access_token: str, target: str
+        self, access_token: str, target: str, system_prompt: str
     ) -> Dict[str, Any]:
         ws_token_and_group_id = (
             self._api.get_orchestrator_websocket_connection_string(
-                access_token=access_token, payload={"target": target}
+                access_token=access_token, payload={"target": target, "system_prompt": system_prompt}
             )
         )
             
@@ -152,7 +152,7 @@ class RunLLMLocalCommand:
             raise Exception(f"did not receive notification of test submitted within timeout ({max_attempts}s); failed to start test")
 
     def run_inner(
-        self, access_token: str, target: str, json_format: bool, risk_threshold: int
+        self, access_token: str, target: str, json_format: bool, risk_threshold: int, system_prompt: str
     ) -> CliResponse:
         if json_format:
             return self.run_json(
@@ -168,7 +168,7 @@ class RunLLMLocalCommand:
         test_res: Dict[str, Any]
         with submit_progress:
             test_res = self.submit_test_progress(
-                submit_progress, access_token=access_token, target=target
+                submit_progress, access_token=access_token, target=target, system_prompt=system_prompt
             )
 
         attacks = test_res["attacks"]
@@ -228,7 +228,7 @@ class RunLLMLocalCommand:
 
     @require_auth
     def run(
-        self, access_token: str, target: str, json_format: bool, risk_threshold: int
+        self, access_token: str, target: str, json_format: bool, risk_threshold: int, system_prompt: str
     ) -> CliResponse:
         """
         Run the command.
@@ -240,6 +240,7 @@ class RunLLMLocalCommand:
             json_format=json_format,
             target=target,
             risk_threshold=risk_threshold,
+            system_prompt=system_prompt,
         )
 
     def run_json(
