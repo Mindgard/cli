@@ -156,7 +156,7 @@ class RunLLMLocalCommand:
     ) -> CliResponse:
         if json_format:
             return self.run_json(
-                access_token=access_token, target=target, risk_threshold=risk_threshold
+                access_token=access_token, target=target, risk_threshold=risk_threshold, system_prompt=system_prompt
             )
 
         submit_progress = Progress(
@@ -244,10 +244,10 @@ class RunLLMLocalCommand:
         )
 
     def run_json(
-        self, access_token: str, target: str, risk_threshold: int
+        self, access_token: str, target: str, risk_threshold: int, system_prompt:str
     ) -> CliResponse:
         test_res = self.submit_test_fetching_initial(
-            access_token=access_token, target=target
+            access_token=access_token, target=target, system_prompt=system_prompt
         )
         test_id = test_res["id"]
         while test_res["hasFinished"] is False:

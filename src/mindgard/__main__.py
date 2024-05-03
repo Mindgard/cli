@@ -66,7 +66,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     alpha_test_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=80)
     alpha_test_parser.add_argument('--json', action="store_true", help='Output the info in JSON format.', required=False)
     alpha_test_parser.add_argument('--headers', type=str, help='The headers to use', required=False)
-    alpha_test_parser.add_argument('--preset', type=str, help='The preset to use', choices=['huggingface', 'openai', 'anthropic', 'custom_mistral'], required=False)
+    alpha_test_parser.add_argument('--preset', type=str, help='The preset to use', choices=['huggingface', 'openai', 'anthropic', 'custom_mistral', 'tester'], required=False)
     alpha_test_parser.add_argument('--api-key', type=str, help='Specify the API key for the wrapper', required=False)
     alpha_test_parser.add_argument('--url', type=str, help='Specify the url for the wrapper', required=False)
     alpha_test_parser.add_argument('--model-name', type=str, help='Specify which model to run against (OpenAI and Anthropic)', required=False)
