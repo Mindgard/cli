@@ -8,7 +8,6 @@ from .error import ExpectedError
 
 from .list_tests_command import ListTestsCommand
 from .run_test_command import RunTestCommand
-from .llm_test_command import LLMTestCommand
 from .run_llm_local_command import RunLLMLocalCommand
 
 from .api_service import ApiService
