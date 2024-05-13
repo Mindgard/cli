@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 import json
 from typing import Any, Dict, List, Literal, Optional, cast
 from anthropic import Anthropic
@@ -8,23 +9,62 @@ import requests
 from openai import OpenAI
 import jsonpath_ng
 
+@dataclass
+class PromptResponse:
+    prompt:str
+    response:str
+
+class Context:
+    def __init__(self):
+        self.turns:list[PromptResponse] = []
+
+    def add(self, prompt_response:PromptResponse):
+        self.turns.append(prompt_response)
+
+class ContextManager:
+    def __init__(self):
+        self.contexts:Dict[str,Context] = {}
+
+    def get_context_or_none(self, context_id:Optional[str] = None) -> Optional[Context]:
+        if context_id is None:
+            return None
+        if self.contexts.get(context_id, None) is None:
+            self.contexts[context_id] = Context()
+        return self.contexts[context_id]
 
 class ModelWrapper(ABC):
     @abstractmethod
-    def __call__(self, prompt: str) -> str:
+    def __call__(self, content:str, with_context:Optional[Context] = None) -> str:
         pass
-
 
 class TestStaticResponder(ModelWrapper):
     """
     This is only for testing
     """
-    def __init__(self):
+    def __init__(self, system_prompt: str):
+        self.context_manager = ContextManager()
+        self._system_prompt = system_prompt
         pass
     
-    def __call__(self, prompt: str) -> str:
-        short_prompt = prompt[0:40]
-        return f"I'm a static responder; prompted with (limit 40): {short_prompt}"
+    def __call__(self, content:str, with_context:Optional[Context] = None) -> str:
+        request = f"[start]sys: {self._system_prompt};"
+        if with_context is not None:
+            request = f"{request}"
+            for prompt_response in with_context.turns:
+                request = f"{request} user: {prompt_response.prompt}; assistant: {prompt_response.response};"
+            request = f"{request}"
+        else:
+            request = f"{request}"
+        request = f"{request} next: {content}[end]"
+
+        response = f"TEST. prompted with: {request=}"
+
+        if with_context is not None:
+            with_context.add(PromptResponse(
+                prompt=content,
+                response=response
+            ))
+        return response
 
 class APIModelWrapper(ModelWrapper):
     def __init__(
@@ -35,12 +75,13 @@ class APIModelWrapper(ModelWrapper):
         headers: Optional[Dict[str, str]] = None,
         system_prompt: Optional[str] = None
     ) -> None:
-        # TODO: do we want to default to a system_prompt
+        self.context_manager = ContextManager()
         self.system_prompt = system_prompt or ""
         self.selector = selector
         self.headers = headers or {}
         self.api_url = api_url
-        self.request_template = request_template or '{"prompt": "{system_prompt} {prompt}"}'
+        default_template = '{"prompt": "{system_prompt}{prompt}"}' if system_prompt is None else '{"prompt": "{system_prompt} {prompt}"}'
+        self.request_template = request_template or default_template
 
         if '{prompt}' not in self.request_template or '{system_prompt}' not in self.request_template:
             raise ExpectedError("`--request-template` must contain '{prompt}' and '{system_prompt}'.")
@@ -58,8 +99,11 @@ class APIModelWrapper(ModelWrapper):
         payload = json.loads(payload)
         return payload
 
-    def __call__(self, prompt: str) -> str:
-        request_payload = self.prompt_to_request_payload(prompt)
+    def __call__(self, content:str, with_context:Optional[Context] = None) -> str:
+        if with_context is not None:
+            raise NotImplementedError("APIModelWrapper is incompatible with chat completions history")
+
+        request_payload = self.prompt_to_request_payload(content)
 
         # Make the API call
         response = requests.post(self.api_url, headers=self.headers, json=request_payload)
@@ -77,6 +121,13 @@ class APIModelWrapper(ModelWrapper):
             else:
                 raise Exception(f"Selector {self.selector} did not match any elements in the response. {response=}")
 
+        # disabled until we can support templating chat completions
+        # if with_context is not None:
+        #     with_context.add(PromptResponse(
+        #         prompt=content,
+        #         response=response
+        #     ))
+
         return response
 
 
@@ -90,7 +141,6 @@ class HuggingFaceWrapper(APIModelWrapper):
             system_prompt=system_prompt
         )
 
-
 class OpenAIWrapper(ModelWrapper):
     def __init__(self, api_key: str, model_name: Optional[str], system_prompt: Optional[str] = None) -> None:
         self.api_key = api_key
@@ -98,11 +148,18 @@ class OpenAIWrapper(ModelWrapper):
         self.model_name = model_name or "gpt-3.5-turbo"
         self.system_prompt = system_prompt
 
-    def __call__(self, prompt: str) -> str:
+    def __call__(self, content:str, with_context:Optional[Context] = None) -> str:
         if self.system_prompt:
-            messages = [{"role": "system", "content": self.system_prompt}, {"role": "user", "content": prompt}]
+            messages = [{"role": "system", "content": self.system_prompt}]
         else:
-            messages = [{"role": "user", "content": prompt}]
+            messages = []
+
+        if with_context:
+            for prompt_response in with_context.turns:
+                messages.append({"role":"user","content": prompt_response.prompt})
+                messages.append({"role":"assistant","content": prompt_response.response})
+        
+        messages.append({"role":"user", "content":content})
 
         chat = self.client.chat.completions.create(model=self.model_name, messages=messages)  # type: ignore # TODO: fix type error
         response = chat.choices[0].message.content
@@ -110,6 +167,11 @@ class OpenAIWrapper(ModelWrapper):
         if not response:
             raise ExpectedError("No response from OpenAI.")
 
+        if with_context is not None:
+            with_context.add(PromptResponse(
+                prompt=content,
+                response=response,
+            ))
         return response
 
 
@@ -120,15 +182,37 @@ class AnthropicWrapper(ModelWrapper):
         self.model_name = model_name or "claude-3-opus-20240229"
         self.system_prompt = system_prompt
 
-    def __call__(self, prompt: str) -> str:
-        messages: List[MessageParam]
-        if self.system_prompt:
-            messages = [{"role": "assistant", "content": self.system_prompt}, {"role": "user", "content": prompt}]
+    def __call__(self, content:str, with_context:Optional[Context] = None) -> str:
+        messages: List[MessageParam] = []
+
+        messages = []
+        if with_context:
+            for prompt_response in with_context.turns:
+                messages.append({"role":"user","content": prompt_response.prompt})
+                messages.append({"role":"assistant","content": prompt_response.response})
+
+        messages.append({"role":"user", "content":content})
+
+        if self.system_prompt is not None:
+            message = self.client.messages.create(
+                system=self.system_prompt,
+                max_tokens=1024, 
+                messages=messages, 
+                model=self.model_name
+            )
         else:
-            messages = [{"role": "user", "content": prompt}]
-        message = self.client.messages.create(max_tokens=1024, messages=messages, model=self.model_name)
+            message = self.client.messages.create(
+                max_tokens=1024, 
+                messages=messages, 
+                model=self.model_name
+            )
         response = message.content[0].text
 
+        if with_context is not None:
+            with_context.add(PromptResponse(
+                prompt=content,
+                response=response,
+            ))
         return response
 
 
@@ -167,7 +251,9 @@ def get_model_wrapper(
             raise ExpectedError("`--api-key` argument is required when using the 'anthropic' preset.")
         return AnthropicWrapper(api_key=api_key, model_name=model_name, system_prompt=system_prompt)
     elif preset == 'tester':
-        return TestStaticResponder()
+        if not system_prompt:
+            raise ExpectedError("`--system-prompt` argument is required")
+        return TestStaticResponder(system_prompt=system_prompt)
     else:
         if not url:
             raise ExpectedError("`--url` argument is required when not using a preset configuration.")
