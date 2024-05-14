@@ -14,7 +14,7 @@ from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs
 
 import time
 
-from .wrappers import ModelWrapper
+from .wrappers import ModelWrapper, ContextManager
 
 from .utils import CliResponse
 
@@ -36,6 +36,7 @@ class RunLLMLocalCommand:
         self._api = api_service
         self._poll_interval = poll_interval  # poll interval is expose to speed up tests
         self._model_wrapper = model_wrapper
+        self._context_manager = ContextManager()
 
     def submit_test_progress(
         self, progress: Progress, access_token: str, target: str, system_prompt: str
@@ -62,25 +63,6 @@ class RunLLMLocalCommand:
                 access_token=access_token, payload={"target": target, "system_prompt": system_prompt}
             )
         )
-            
-        # except req_exception.HTTPError as e:
-        #     status_code = e.response.status_code
-        #     if status_code == 404:
-        #         # don't think this is a possibility anymore
-        #         # DEPRECATED
-        #         print(f"Requested model ({target}) name has no associated attacks!")
-        #         return CliResponse(code=1)
-        #     elif status_code == 400:
-        #         print(f"Malformed request!")
-        #         return CliResponse(code=1)
-        #     elif status_code == 403:
-        #         print(f"You are forbidden from accessing this feature!")
-        #         return CliResponse(code=1)
-            
-        # except Exception as e:
-        #     # TODO: figure out if we want to pass high fidelity logs to user
-        #     print("Failed to get credentials from API server for LLM forwarding!")
-        #     return CliResponse(code=1)
 
         url = ws_token_and_group_id.get("url", None)
         group_id = ws_token_and_group_id.get("groupId", None)
@@ -104,17 +86,32 @@ class RunLLMLocalCommand:
         def recv_message_handler(msg: OnGroupDataMessageArgs):
             if msg.data["messageType"] == "Request":
                 logging.debug(f"received request {msg.data=}")
-                replyData = {
-                    "correlationId": msg.data["correlationId"],
-                    "messageType": "Response",
-                    "payload": {
-                        "response": self._model_wrapper(
-                            prompt=msg.data["payload"]["prompt"]
-                        )
-                    },
-                }
-                logging.debug(f"sending response {replyData=}")
-                ws_client.send_to_group("orchestrator", replyData, data_type="json")
+                context_id = msg.data["payload"].get("context_id", None)
+                context = self._context_manager.get_context_or_none(context_id)
+                content = msg.data["payload"]["prompt"]
+
+                try:
+                    response =  self._model_wrapper(
+                        content=content,
+                        with_context=context,
+                    )
+                    status = "ok"
+                except:
+                    response = None
+                    status = "error"
+                    raise
+                finally:
+                    # we always try to send a response
+                    replyData = {
+                        "correlationId": msg.data["correlationId"],
+                        "messageType": "Response",
+                        "status": status,
+                        "payload": {
+                            "response": response,
+                        }
+                    }
+                    logging.debug(f"sending response {replyData=}")
+                    ws_client.send_to_group("orchestrator", replyData, data_type="json")
             elif msg.data["messageType"] == "StartedTest": # should be something like "Submitted", upstream change required.
                 self.submitted_test_id = msg.data["payload"]["testId"]
                 self.submitted_test = True
@@ -215,9 +212,17 @@ class RunLLMLocalCommand:
         table.add_column("Risk", justify="right", style="green")
 
         for attack in test_res["attacks"]:
-            risk = attack["risk"]
-            emoji = "❌‍" if risk > risk_threshold else "✅️"
-            table.add_row(emoji, attack["attack"], str(risk))
+            if attack["state"] != 2:
+                name = f"Error running '{attack["attack"]}'"
+                risk_str = "n/a"
+                emoji = "❗️"
+            else:
+                name = attack["attack"]
+                risk = attack["risk"]
+                risk_str = str(risk)
+                emoji = "❌‍" if risk > risk_threshold else "✅️"
+
+            table.add_row(emoji, name, risk_str)
 
         console = Console()
         console.print(table)
