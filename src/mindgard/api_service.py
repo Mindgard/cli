@@ -1,3 +1,4 @@
+import os
 from typing import List, Dict, Any
 from .utils import api_get, api_post
 from .constants import API_BASE
@@ -53,6 +54,8 @@ class ApiService():
     
     def get_orchestrator_websocket_connection_string(self, access_token: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         url = f"{API_BASE}/tests/cli_init"
+        pack = os.environ.get('ATTACK_PACK', "sandbox")
+        payload["attackPack"] = pack
         res = api_post(url, access_token, json=payload)
         data: Dict[str, Any] = res.json()
         return data
