@@ -53,6 +53,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     test_parser.add_argument('--api-key', type=str, help='Specify the API key for the wrapper', required=False)
     test_parser.add_argument('--url', type=str, help='Specify the url for the wrapper', required=False)
     test_parser.add_argument('--model-name', type=str, help='Specify which model to run against (OpenAI and Anthropic)', required=False)
+    test_parser.add_argument('--api-version', type=str, help='Specify the exact API version for the wrapper (Azure only)', required=False)
     test_parser.add_argument('--prompt', type=str, help='Specify the prompt to use', required=False)
     test_parser.add_argument('--system-prompt', type=str, help='Text file containing system prompt to use.', required=False)
     test_parser.add_argument('--selector', type=str, help='The selector to retrieve the text response from the LLM response JSON.', required=False)

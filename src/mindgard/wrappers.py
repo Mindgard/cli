@@ -2,12 +2,12 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import json
 import logging
-from typing import Any, Dict, List, Literal, Optional, cast
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union, cast
 from anthropic import Anthropic
 from anthropic.types import MessageParam
 from .error import ExpectedError
 import requests
-from openai import OpenAI
+from openai import AzureOpenAI, OpenAI
 import jsonpath_ng
 
 
@@ -146,6 +146,21 @@ class HuggingFaceWrapper(APIModelWrapper):
             system_prompt=system_prompt
         )
 
+
+AZURE_OPENAI_VERSION = Literal["2023-05-15", "2023-06-01-preview", "2023-10-01-preview", "2024-02-15-preview", "2024-03-01-preview", "2024-04-01-preview", "2024-02-01"]
+
+# https://learn.microsoft.com/en-us/azure/ai-services/openai/reference#chat-completions to see up to date list of Azure OpenAI versions (that are not soon expiring) as of 15th May 24
+class AzureOpenAIWrapper(ModelWrapper):
+    def __init__(self, api_key: str, model_name: str, api_version: AZURE_OPENAI_VERSION, url: str, system_prompt: Optional[str] = None) -> None:
+        self.api_key = api_key
+        self.model_name = model_name
+        self.client = AzureOpenAI(api_key=api_key, api_version=api_version, azure_endpoint=url)
+        self.system_prompt = system_prompt
+
+    def __call__(self, content:str, with_context:Optional[Context] = None) -> str:
+        return openai_call(wrapper=self, content=content, with_context=with_context)
+
+
 class OpenAIWrapper(ModelWrapper):
     def __init__(self, api_key: str, model_name: Optional[str], system_prompt: Optional[str] = None) -> None:
         self.api_key = api_key
@@ -154,30 +169,34 @@ class OpenAIWrapper(ModelWrapper):
         self.system_prompt = system_prompt
 
     def __call__(self, content:str, with_context:Optional[Context] = None) -> str:
-        if self.system_prompt:
-            messages = [{"role": "system", "content": self.system_prompt}]
-        else:
-            messages = []
+        return openai_call(wrapper=self, content=content, with_context=with_context)
 
-        if with_context:
-            for prompt_response in with_context.turns:
-                messages.append({"role":"user","content": prompt_response.prompt})
-                messages.append({"role":"assistant","content": prompt_response.response})
-        
-        messages.append({"role":"user", "content":content})
 
-        chat = self.client.chat.completions.create(model=self.model_name, messages=messages)  # type: ignore # TODO: fix type error
-        response = chat.choices[0].message.content
+def openai_call(wrapper: Union[AzureOpenAIWrapper, OpenAIWrapper], content:str, with_context:Optional[Context] = None) -> str:
+    if wrapper.system_prompt:
+        messages = [{"role": "system", "content": wrapper.system_prompt}]
+    else:
+        messages = []
 
-        if not response:
-            raise ExpectedError("No response from OpenAI.")
+    if with_context:
+        for prompt_response in with_context.turns:
+            messages.append({"role":"user","content": prompt_response.prompt})
+            messages.append({"role":"assistant","content": prompt_response.response})
+    
+    messages.append({"role":"user", "content":content})
 
-        if with_context is not None:
-            with_context.add(PromptResponse(
-                prompt=content,
-                response=response,
-            ))
-        return response
+    chat = wrapper.client.chat.completions.create(model=wrapper.model_name, messages=messages)  # type: ignore # TODO: fix type error
+    response = chat.choices[0].message.content
+
+    if not response:
+        raise ExpectedError("No response from OpenAI.")
+
+    if with_context is not None:
+        with_context.add(PromptResponse(
+            prompt=content,
+            response=response,
+        ))
+    return response
 
 
 class AnthropicWrapper(ModelWrapper):
@@ -219,14 +238,24 @@ class AnthropicWrapper(ModelWrapper):
                 response=response,
             ))
         return response
+    
+
+def check_expected_args(args: Dict[str, Any], expected_args: List[str]) -> None:
+    missing_args: List[str] = []
+    for arg in expected_args:
+        if not args.get(arg):
+            missing_args.append(f"`--{arg.replace('_', '-')}`")
+    if missing_args:
+        raise ExpectedError(f"Missing required arguments: {', '.join(missing_args)}")
 
 
 def get_model_wrapper(
     headers_string: Optional[str],
-    preset: Optional[Literal['huggingface', 'openai', 'anthropic', 'tester']] = None,
+    preset: Optional[Literal['huggingface', 'openai', 'azure-openai', 'anthropic', 'tester']] = None,
     api_key: Optional[str] = None,
     url: Optional[str] = None,
     model_name: Optional[str] = None,
+    api_version: Optional[str] = None,
     system_prompt: Optional[str] = None,
     selector: Optional[str] = None,
     request_template: Optional[str] = None
@@ -234,23 +263,17 @@ def get_model_wrapper(
 
     # Create model based on preset
     if preset == 'huggingface':
-        missing_args: List[str] = []
-        if not api_key:
-            missing_args.append("`--api-key`")
-        if not url:
-            missing_args.append("`--url`")
-        if not request_template:
-            missing_args.append("`--request-template`")
-        if missing_args:
-            raise ExpectedError(f"Missing required arguments: {', '.join(missing_args)}")
-        api_key = cast(str, api_key)
-        url = cast(str, url)
-        request_template = cast(str, request_template)
+        check_expected_args(locals(), ['api_key', 'url', 'request_template'])
+        api_key, url, request_template = cast(Tuple[str, str, str], (api_key, url, request_template))
         return HuggingFaceWrapper(api_key=api_key, api_url=url, system_prompt=system_prompt, request_template=request_template)
     elif preset == 'openai':
-        if not api_key:
-            raise ExpectedError("`--api-key` argument is required when using the 'openai' preset.")
+        check_expected_args(locals(), ['api_key'])
+        api_key = cast(str, api_key)
         return OpenAIWrapper(api_key=api_key, model_name=model_name, system_prompt=system_prompt)
+    elif preset == 'azure-openai':
+        check_expected_args(locals(), ['api_key', 'model_name', 'api_version', 'url'])
+        api_key, model_name, api_version, url = cast(Tuple[str, str, str, str], (api_key, model_name, api_version, url))
+        return AzureOpenAIWrapper(api_key=api_key, model_name=model_name, api_version=cast(AZURE_OPENAI_VERSION, api_version), url=url, system_prompt=system_prompt)
     elif preset == 'anthropic':
         if not api_key:
             raise ExpectedError("`--api-key` argument is required when using the 'anthropic' preset.")

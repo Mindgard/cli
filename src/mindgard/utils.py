@@ -82,5 +82,6 @@ def parse_args_into_model(args: Dict[str, Any]) -> ModelWrapper:
         selector=args["selector"],
         request_template=args["request_template"],
         system_prompt=args["system_prompt"],
-        model_name=args["model_name"]
+        model_name=args["model_name"],
+        api_version=args["api_version"],
     )
