@@ -83,7 +83,7 @@ class RunLLMLocalCommand:
         self.submitted_test = False
         self.submitted_test_id = ""
 
-        def recv_message_handler(msg: OnGroupDataMessageArgs):
+        def recv_message_handler(msg: OnGroupDataMessageArgs) -> None:
             if msg.data["messageType"] == "Request":
                 logging.debug(f"received request {msg.data=}")
                 context_id = msg.data["payload"].get("context_id", None)

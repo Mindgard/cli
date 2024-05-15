@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import json
+import logging
 from typing import Any, Dict, List, Literal, Optional, cast
 from anthropic import Anthropic
 from anthropic.types import MessageParam
@@ -9,20 +10,21 @@ import requests
 from openai import OpenAI
 import jsonpath_ng
 
+
 @dataclass
 class PromptResponse:
     prompt:str
     response:str
 
 class Context:
-    def __init__(self):
+    def __init__(self) -> None:
         self.turns:list[PromptResponse] = []
 
-    def add(self, prompt_response:PromptResponse):
+    def add(self, prompt_response:PromptResponse) -> None:
         self.turns.append(prompt_response)
 
 class ContextManager:
-    def __init__(self):
+    def __init__(self) -> None:
         self.contexts:Dict[str,Context] = {}
 
     def get_context_or_none(self, context_id:Optional[str] = None) -> Optional[Context]:
@@ -97,11 +99,14 @@ class APIModelWrapper(ModelWrapper):
 
         # should handle non-json payload (or single string)
         payload = json.loads(payload)
-        return payload
+        assert isinstance(payload, dict), f"Expected the request template to form a json dict, got {type(payload)} instead."
+        return cast(Dict[str, Any], payload)
+
 
     def __call__(self, content:str, with_context:Optional[Context] = None) -> str:
         if with_context is not None:
-            raise NotImplementedError("APIModelWrapper is incompatible with chat completions history")
+            logging.debug("APIModelWrapper is temporarily incompatible with chat completions history. Attacks that require chat completions history fail.")
+            raise NotImplementedError("The crescendo attack is currently incompatible with custom model wrappers.")
 
         request_payload = self.prompt_to_request_payload(content)
 
@@ -259,7 +264,10 @@ def get_model_wrapper(
             raise ExpectedError("`--url` argument is required when not using a preset configuration.")
         # Convert headers string to dictionary
         if headers_string:
-            headers = dict(item.split(": ") for item in headers_string.split(", "))
+            headers: Dict[str, str] = {}
+            for key_and_value_str in headers_string.split(","):
+                key, value = key_and_value_str.strip().split(":")
+                headers[key.strip()] = value.strip()
             return APIModelWrapper(api_url=url, selector=selector, request_template=request_template, headers=headers, system_prompt=system_prompt)
         else:
             return APIModelWrapper(api_url=url, selector=selector, request_template=request_template, system_prompt=system_prompt)
