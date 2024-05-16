@@ -9,6 +9,8 @@ from .error import ExpectedError
 import requests
 from openai import AzureOpenAI, OpenAI
 import jsonpath_ng
+import urllib.request
+import urllib.error
 
 
 @dataclass
@@ -97,6 +99,7 @@ class APIModelWrapper(ModelWrapper):
         payload = self.request_template.replace("{prompt}", prompt[1:-1])
         payload = payload.replace("{system_prompt}", system_prompt[1:-1])
 
+        print(payload)
         # should handle non-json payload (or single string)
         payload = json.loads(payload)
         assert isinstance(payload, dict), f"Expected the request template to form a json dict, got {type(payload)} instead."
@@ -112,8 +115,9 @@ class APIModelWrapper(ModelWrapper):
 
         # Make the API call
         response = requests.post(self.api_url, headers=self.headers, json=request_payload)
-        # print(response.text)
+        print(response.text)
         if response.status_code != 200:
+
             raise Exception(f"API call failed with status code {response.status_code}")
 
         response = response.json()
@@ -134,6 +138,55 @@ class APIModelWrapper(ModelWrapper):
         #     ))
 
         return response
+
+
+
+class AIStudioWrapper(APIModelWrapper):
+    def __init__(self, api_key: str, url: str, system_prompt: str) -> None:
+        super().__init__(
+            url,
+            request_template="""{
+    "Payload": {
+        "messages": [
+            {"role": "system", "content": "{system_prompt}"},
+            {"role": "user", "content": "{prompt}"}],
+        "temperature": 0.2,
+        "max_tokens": 1024,
+        "stop": [],
+        "top_p": 0.9
+    },
+    "Endpoint": "{url}"
+}""".replace("{url}", url),
+            selector='[0]["Payload"]["messages"][1]["content"]',
+            headers={"Authorization": f'Bearer {api_key}', "Content-Type": "application/json"},
+            system_prompt=system_prompt
+        )
+    
+    def __call__(self, content:str, with_context:Optional[Context] = None) -> str:
+        if with_context is not None:
+            logging.debug("APIModelWrapper is temporarily incompatible with chat completions history. Attacks that require chat completions history fail.")
+            raise NotImplementedError("The crescendo attack is currently incompatible with custom model wrappers.")
+        request_payload = self.prompt_to_request_payload(content)
+
+        url = self.api_url
+        body = str.encode(json.dumps(request_payload)) 
+        headers = self.headers
+        req = urllib.request.Request(url, body, headers)
+
+        try:
+            response = urllib.request.urlopen(req)
+
+            result = response.read()
+            print(result)
+            return result
+        except urllib.error.HTTPError as error:
+            print("The request failed with status code: " + str(error.code))
+
+            # Print the headers - they include the requert ID and the timestamp, which are useful for debugging the failure
+            print(error.info())
+            print(error.read().decode("utf8", 'ignore'))
+            raise error
+        
 
 
 class HuggingFaceWrapper(APIModelWrapper):
@@ -240,6 +293,8 @@ class AnthropicWrapper(ModelWrapper):
         return response
     
 
+    
+
 def check_expected_args(args: Dict[str, Any], expected_args: List[str]) -> None:
     missing_args: List[str] = []
     for arg in expected_args:
@@ -251,7 +306,7 @@ def check_expected_args(args: Dict[str, Any], expected_args: List[str]) -> None:
 
 def get_model_wrapper(
     headers_string: Optional[str],
-    preset: Optional[Literal['huggingface', 'openai', 'azure-openai', 'anthropic', 'tester']] = None,
+    preset: Optional[Literal['huggingface', 'openai', 'azure-openai', 'azure-aistudio', 'anthropic', 'tester']] = None,
     api_key: Optional[str] = None,
     url: Optional[str] = None,
     model_name: Optional[str] = None,
@@ -266,6 +321,10 @@ def get_model_wrapper(
         check_expected_args(locals(), ['api_key', 'url', 'request_template'])
         api_key, url, request_template = cast(Tuple[str, str, str], (api_key, url, request_template))
         return HuggingFaceWrapper(api_key=api_key, api_url=url, system_prompt=system_prompt, request_template=request_template)
+    elif preset == 'azure-aistudio':
+        check_expected_args(locals(), ['api_key', 'url', 'system_prompt'])
+        api_key, url, system_prompt = cast(Tuple[str, str, str], (api_key, url, system_prompt))
+        return AIStudioWrapper(api_key=api_key, url=url, system_prompt=system_prompt)
     elif preset == 'openai':
         check_expected_args(locals(), ['api_key'])
         api_key = cast(str, api_key)
