@@ -213,7 +213,8 @@ class RunLLMLocalCommand:
 
         for attack in test_res["attacks"]:
             if attack["state"] != 2:
-                name = f"Error running '{attack["attack"]}'"
+                attack_name = attack["attack"]
+                name = f"Error running '{attack_name}'"
                 risk_str = "n/a"
                 emoji = "❗️"
             else:
