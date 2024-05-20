@@ -140,24 +140,22 @@ class APIModelWrapper(ModelWrapper):
         return response
 
 
-
+# python -m src.mindgard test "model_NAME" --preset azure-aistudio --api-key APIKEY --url "https://MINDGARDAZUREDOMAIN/v1/chat/completions" --system-prompt "You are only allowed to talk about fruit and vegetables"
 class AIStudioWrapper(APIModelWrapper):
     def __init__(self, api_key: str, url: str, system_prompt: str) -> None:
         super().__init__(
             url,
             request_template="""{
-    "Payload": {
-        "messages": [
-            {"role": "system", "content": "{system_prompt}"},
-            {"role": "user", "content": "{prompt}"}],
-        "temperature": 0.2,
-        "max_tokens": 1024,
-        "stop": [],
-        "top_p": 0.9
-    },
-    "Endpoint": "{url}"
-}""".replace("{url}", url),
-            selector='[0]["Payload"]["messages"][1]["content"]',
+    "messages": [
+        {"role": "system", "content": "{system_prompt}"},
+        {"role": "user", "content": "{prompt}"}
+    ],
+    "temperature": 0.2,
+    "max_tokens": 1024,
+    "stop": [],
+    "top_p": 0.9
+}""",
+            selector='["choices"][0]["message"]["content"]',
             headers={"Authorization": f'Bearer {api_key}', "Content-Type": "application/json"},
             system_prompt=system_prompt
         )
