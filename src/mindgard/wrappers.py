@@ -9,7 +9,6 @@ from .error import ExpectedError
 import requests
 from openai import AzureOpenAI, OpenAI
 import jsonpath_ng
-import urllib.request
 import urllib.error
 
 
@@ -99,7 +98,7 @@ class APIModelWrapper(ModelWrapper):
         payload = self.request_template.replace("{prompt}", prompt[1:-1])
         payload = payload.replace("{system_prompt}", system_prompt[1:-1])
 
-        print(payload)
+        logging.debug(payload)
         # should handle non-json payload (or single string)
         payload = json.loads(payload)
         assert isinstance(payload, dict), f"Expected the request template to form a json dict, got {type(payload)} instead."
@@ -115,10 +114,8 @@ class APIModelWrapper(ModelWrapper):
 
         # Make the API call
         response = requests.post(self.api_url, headers=self.headers, json=request_payload)
-        print(response.text)
         if response.status_code != 200:
-
-            raise Exception(f"API call failed with status code {response.status_code}")
+            raise Exception(f"API call failed with {response.status_code=} {response.json()=}")
 
         response = response.json()
 
@@ -140,8 +137,7 @@ class APIModelWrapper(ModelWrapper):
         return response
 
 
-# python -m src.mindgard test "model_NAME" --preset azure-aistudio --api-key APIKEY --url "https://MINDGARDAZUREDOMAIN/v1/chat/completions" --system-prompt "You are only allowed to talk about fruit and vegetables"
-class AIStudioWrapper(APIModelWrapper):
+class AzureAIStudioWrapper(APIModelWrapper):
     def __init__(self, api_key: str, url: str, system_prompt: str) -> None:
         super().__init__(
             url,
@@ -164,27 +160,46 @@ class AIStudioWrapper(APIModelWrapper):
         if with_context is not None:
             logging.debug("APIModelWrapper is temporarily incompatible with chat completions history. Attacks that require chat completions history fail.")
             raise NotImplementedError("The crescendo attack is currently incompatible with custom model wrappers.")
+
         request_payload = self.prompt_to_request_payload(content)
 
-        url = self.api_url
-        body = str.encode(json.dumps(request_payload)) 
-        headers = self.headers
-        req = urllib.request.Request(url, body, headers)
+        # Make the API call
+        response = requests.post(self.api_url, headers=self.headers, json=request_payload)
+        if response.status_code == 400:
+            try:
+                # Detect Azure Content Filter error message
+                err_res_json = response.json()
+                if err_message := err_res_json.get("error", {}).get("message", None):
+                    return cast(str, err_message)
+            except Exception as e:
+                raise Exception(f"API call failed with {response.status_code=} {response.json()=}. Attempt to decode response failed with {e=}")
+        elif response.status_code != 200:
+            # Handle other types of API error
+            raise Exception(f"API call failed with {response.status_code=} {response.json()=}.")
 
-        try:
-            response = urllib.request.urlopen(req)
+        res_json: Dict[str, Any] = cast(Dict[str, Any], response.json())
 
-            result = response.read()
-            print(result)
-            return result
-        except urllib.error.HTTPError as error:
-            print("The request failed with status code: " + str(error.code))
-
-            # Print the headers - they include the requert ID and the timestamp, which are useful for debugging the failure
-            print(error.info())
-            print(error.read().decode("utf8", 'ignore'))
-            raise error
+        # Detect Cohere content_filter error
+        if res_json["choices"][0]["finish_reason"] == "content_filter":
+            return "Sorry, but a content filter was triggered. Please try again with a different prompt."
         
+        # Now we are sure that the response was successful and not a content filter error
+        if self.selector:
+            jsonpath_expr = jsonpath_ng.parse(self.selector)
+            match = jsonpath_expr.find(res_json)
+            if match:
+                return match[0].value
+            else:
+                raise Exception(f"Selector {self.selector} did not match any elements in the response. {res_json=}")
+
+        # disabled until we can support templating chat completions
+        # if with_context is not None:
+        #     with_context.add(PromptResponse(
+        #         prompt=content,
+        #         response=response
+        #     ))
+    
+        return response
 
 
 class HuggingFaceWrapper(APIModelWrapper):
@@ -322,7 +337,7 @@ def get_model_wrapper(
     elif preset == 'azure-aistudio':
         check_expected_args(locals(), ['api_key', 'url', 'system_prompt'])
         api_key, url, system_prompt = cast(Tuple[str, str, str], (api_key, url, system_prompt))
-        return AIStudioWrapper(api_key=api_key, url=url, system_prompt=system_prompt)
+        return AzureAIStudioWrapper(api_key=api_key, url=url, system_prompt=system_prompt)
     elif preset == 'openai':
         check_expected_args(locals(), ['api_key'])
         api_key = cast(str, api_key)
