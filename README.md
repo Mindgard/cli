@@ -74,7 +74,7 @@ You are a helpful, respectful and honest assistant. Always answer as helpfully a
 '''
 ```
 
-Then run: `mindgard test --config mymodel.toml`
+Then run: `mindgard test --config-file mymodel.toml`
 
 ### Using in an ML-Ops pipeline
 
