@@ -9,7 +9,6 @@ from .error import ExpectedError
 import requests
 from openai import AzureOpenAI, OpenAI
 import jsonpath_ng
-import urllib.error
 
 
 @dataclass
@@ -75,28 +74,46 @@ class APIModelWrapper(ModelWrapper):
         api_url: str,
         request_template: Optional[str] = None,
         selector: Optional[str] = None,
-        headers: Optional[Dict[str, str]] = None,
-        system_prompt: Optional[str] = None
+        system_prompt: Optional[str] = None,
+        tokenizer: Optional[str] = None,
+        headers: Optional[Dict[str, str]] = None
     ) -> None:
         self.context_manager = ContextManager()
-        self.system_prompt = system_prompt or ""
-        self.selector = selector
-        self.headers = headers or {}
         self.api_url = api_url
-        default_template = '{"prompt": "{system_prompt}{prompt}"}' if system_prompt is None else '{"prompt": "{system_prompt} {prompt}"}'
-        self.request_template = request_template or default_template
+        if tokenizer:
+            logging.debug("Note that with tokenizer enabled, the request_template format is different.")
+            self.request_template =  request_template or '{"prompt": "{tokenized_chat_template}"}'
+            if '{tokenized_chat_template}' not in self.request_template:
+                raise ExpectedError("`--request-template` must contain '{tokenized_chat_template}' when using a tokenizer.")
+        else:
+            default_template = '{"prompt": "{system_prompt}{prompt}"}' if system_prompt is None else '{"prompt": "{system_prompt} {prompt}"}'
+            self.request_template = request_template or default_template
+            if '{prompt}' not in self.request_template or '{system_prompt}' not in self.request_template:
+                raise ExpectedError("`--request-template` must contain '{prompt}' and '{system_prompt}'.")
+        self.selector = selector
+        self.system_prompt = system_prompt or ""
+        self.tokenizer = tokenizer
+        self.headers = headers or {}
 
-        if '{prompt}' not in self.request_template or '{system_prompt}' not in self.request_template:
-            raise ExpectedError("`--request-template` must contain '{prompt}' and '{system_prompt}'.")
 
     def prompt_to_request_payload(self, prompt: str) -> Dict[str, Any]:
-        # Dump to escape quote marks that are inside the prompt/system_prompt
-        prompt = json.dumps(prompt, ensure_ascii=False)
-        system_prompt = json.dumps(self.system_prompt, ensure_ascii=False)
+        if self.tokenizer:
+            from transformers import AutoTokenizer
+            tokenizer = AutoTokenizer.from_pretrained(self.tokenizer)
+            tokenized_chat_template = cast(str, tokenizer.apply_chat_template([
+                {"role": "system", "content": self.system_prompt},
+                {"role": "user", "content": prompt}
+            ], tokenize=False))
 
-        # The dumps added extra quote marks to prompt and system prompt so trim them before the replace
-        payload = self.request_template.replace("{prompt}", prompt[1:-1])
-        payload = payload.replace("{system_prompt}", system_prompt[1:-1])
+            tokenized_chat_template = json.dumps(tokenized_chat_template, ensure_ascii=False)
+            payload = self.request_template.replace("{tokenized_chat_template}", tokenized_chat_template[1:-1])
+        else:
+            # Dump to escape quote marks that are inside the prompt/system_prompt
+            prompt = json.dumps(prompt, ensure_ascii=False)
+            system_prompt = json.dumps(self.system_prompt, ensure_ascii=False)
+            # The dumps added extra quote marks to prompt and system prompt so trim them before the replace
+            payload = self.request_template.replace("{prompt}", prompt[1:-1])
+            payload = payload.replace("{system_prompt}", system_prompt[1:-1])
 
         logging.debug(payload)
         # should handle non-json payload (or single string)
@@ -326,7 +343,8 @@ def get_model_wrapper(
     api_version: Optional[str] = None,
     system_prompt: Optional[str] = None,
     selector: Optional[str] = None,
-    request_template: Optional[str] = None
+    request_template: Optional[str] = None,
+    tokenizer: Optional[str] = None
 ) -> ModelWrapper:
 
     # Create model based on preset
@@ -363,6 +381,6 @@ def get_model_wrapper(
             for key_and_value_str in headers_string.split(","):
                 key, value = key_and_value_str.strip().split(":")
                 headers[key.strip()] = value.strip()
-            return APIModelWrapper(api_url=url, selector=selector, request_template=request_template, headers=headers, system_prompt=system_prompt)
+            return APIModelWrapper(api_url=url, selector=selector, request_template=request_template, system_prompt=system_prompt, tokenizer=tokenizer, headers=headers)
         else:
-            return APIModelWrapper(api_url=url, selector=selector, request_template=request_template, system_prompt=system_prompt)
+            return APIModelWrapper(api_url=url, selector=selector, request_template=request_template, system_prompt=system_prompt, tokenizer=tokenizer)

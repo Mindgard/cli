@@ -14,7 +14,7 @@ Issues = "https://github.com/Mindgard/cli/issues"
 mindgard = "mindgard.__main__:main"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.9"
 auth0-python = "^4.7.1"
 anthropic = "^0.23.1"
 openai = "^1.16.2"
@@ -23,13 +23,14 @@ rich = "^13.7.1"
 toml = "^0.10.2"
 azure-messaging-webpubsubclient = "^1.0.0"
 azure-messaging-webpubsubservice = "^1.0.1"
+numpy = "^1.26.4"
+transformers = "^4.41.1"
 
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.8.0"
 twine = "^5.0.0"
 wheel = "^0.43.0"
-setuptools = "^69.2.0"
 types-setuptools = "^69.2.0.20240317"
 build = "^1.1.1"
 types-requests = "^2.31.0.20240311"
@@ -40,6 +41,7 @@ requests-mock = "^1.12.1"
 pytest-snapshot = "^0.9.0"
 autopep8 = "^2.1.0"
 types-toml = "^0.10.8.20240310"
+setuptools = "^70.0.0"
 
 [build-system]
 requires = ["poetry-core"]
