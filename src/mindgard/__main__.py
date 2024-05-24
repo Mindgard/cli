@@ -44,7 +44,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     list_test_parser.add_argument('--id', type=str, help='Get the details of a specific test.', required=False)
 
     test_parser = subparsers.add_parser('test', help='Attack commands')
-    test_parser.add_argument('target', nargs='?', type=str, help="This is your own model identifier.", required=True)
+    test_parser.add_argument('target', nargs='?', type=str, help="This is your own model identifier.")
     test_parser.add_argument('--config-file', type=str, help='Path to mindgard.toml config file', default=None, required=False)
     test_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=80)
     test_parser.add_argument('--json', action="store_true", help='Output the info in JSON format.', required=False)

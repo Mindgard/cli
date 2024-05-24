@@ -84,4 +84,5 @@ def parse_args_into_model(args: Dict[str, Any]) -> ModelWrapper:
         system_prompt=args["system_prompt"],
         model_name=args["model_name"],
         api_version=args["api_version"],
+        tokenizer=args["tokenizer"],
     )

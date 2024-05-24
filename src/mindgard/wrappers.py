@@ -106,7 +106,7 @@ class APIModelWrapper(ModelWrapper):
             ], tokenize=False))
 
             tokenized_chat_template = json.dumps(tokenized_chat_template, ensure_ascii=False)
-            payload = self.request_template.replace("{tokenized_chat_template}", tokenized_chat_template[1:-1])
+            payload = self.request_template.replace("{tokenized_chat_template}", tokenized_chat_template)
         else:
             # Dump to escape quote marks that are inside the prompt/system_prompt
             prompt = json.dumps(prompt, ensure_ascii=False)
@@ -115,7 +115,7 @@ class APIModelWrapper(ModelWrapper):
             payload = self.request_template.replace("{prompt}", prompt[1:-1])
             payload = payload.replace("{system_prompt}", system_prompt[1:-1])
 
-        logging.debug(payload)
+        logging.debug(f"{payload=}")
         # should handle non-json payload (or single string)
         payload = json.loads(payload)
         assert isinstance(payload, dict), f"Expected the request template to form a json dict, got {type(payload)} instead."
