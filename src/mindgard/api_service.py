@@ -39,18 +39,6 @@ class ApiService():
         res = api_post(url, access_token, json=post_body)
         data: Dict[str, Any] = res.json()
         return data
-
-    def fetch_llm_prompts(self, access_token: str) -> Dict[str, Any]:
-        url = f"{API_BASE}/llm_tests/prompts"
-        res = api_get(url, access_token)       
-        data: Dict[str, Any] = res.json()
-        return data
-    
-    def submit_llm_responses(self, access_token: str, responses:Dict[str, Any]) -> Dict[str, Any]:
-        url = f"{API_BASE}/llm_tests/responses"
-        res = api_post(url, access_token, json=responses)
-        data: Dict[str, Any] = res.json()
-        return data
     
     def get_orchestrator_websocket_connection_string(self, access_token: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         url = f"{API_BASE}/tests/cli_init"
