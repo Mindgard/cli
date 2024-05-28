@@ -96,6 +96,10 @@ class RunLLMLocalCommand:
                         with_context=context,
                     )
                     status = "ok"
+                except NotImplementedError:
+                    response = None
+                    status = "error"
+                    logging.debug("not implemented error when forwarding to LLM; API wrapper likely not compatible with chat completions!")
                 except:
                     response = None
                     status = "error"
