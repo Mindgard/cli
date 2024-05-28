@@ -58,7 +58,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     test_parser.add_argument('--system-prompt', type=str, help='Text file containing system prompt to use.', required=False)
     test_parser.add_argument('--selector', type=str, help='The selector to retrieve the text response from the LLM response JSON.', required=False)
     test_parser.add_argument('--request-template', type=str, help='The template to wrap the API request in.', required=False)
-    test_parser.add_argument('--tokenizer', type=str, help='Provide a Huggingface model name and its default tokenizer from the transformers library will be used.', required=False)
+    test_parser.add_argument('--tokenizer', type=str, help='Choose a HuggingFace model to provide a tokeniser for prompt and chat completion templating.', required=False)
 
     return parser.parse_args(args)
 

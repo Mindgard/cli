@@ -85,7 +85,10 @@ class APIModelWrapper(ModelWrapper):
             self.request_template =  request_template or '{"prompt": "{tokenized_chat_template}"}'
             if '{tokenized_chat_template}' not in self.request_template:
                 raise ExpectedError("`--request-template` must contain '{tokenized_chat_template}' when using a tokenizer.")
+            from transformers import AutoTokenizer
+            self.tokenizer = AutoTokenizer.from_pretrained(tokenizer)
         else:
+            self.tokenizer = None
             default_template = '{"prompt": "{system_prompt}{prompt}"}' if system_prompt is None else '{"prompt": "{system_prompt} {prompt}"}'
             self.request_template = request_template or default_template
             if '{prompt}' not in self.request_template or '{system_prompt}' not in self.request_template:
@@ -98,9 +101,7 @@ class APIModelWrapper(ModelWrapper):
 
     def prompt_to_request_payload(self, prompt: str) -> Dict[str, Any]:
         if self.tokenizer:
-            from transformers import AutoTokenizer
-            tokenizer = AutoTokenizer.from_pretrained(self.tokenizer)
-            tokenized_chat_template = cast(str, tokenizer.apply_chat_template([
+            tokenized_chat_template = cast(str, self.tokenizer.apply_chat_template([
                 {"role": "system", "content": self.system_prompt},
                 {"role": "user", "content": prompt}
             ], tokenize=False))
