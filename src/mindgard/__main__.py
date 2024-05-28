@@ -57,7 +57,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     test_parser.add_argument('--model-name', type=str, help='Specify which model to run against (OpenAI and Anthropic)', required=False)
     test_parser.add_argument('--az-api-version', type=str, help='Specify the Azure OpenAI API version (Azure only)', required=False)
     test_parser.add_argument('--prompt', type=str, help='Specify the prompt to use', required=False)
-    test_parser.add_argument('--system-prompt', type=str, help='Text file containing system prompt to use.', required=False)
+    test_parser.add_argument('--system-prompt', type=str, help='Text file containing system prompt to use.', required=True)
     test_parser.add_argument('--selector', type=str, help='The selector to retrieve the text response from the LLM response JSON.', required=False)
     test_parser.add_argument('--request-template', type=str, help='The template to wrap the API request in.', required=False)
     test_parser.add_argument('--tokenizer', type=str, help='Choose a HuggingFace model to provide a tokeniser for prompt and chat completion templating.', required=False)
