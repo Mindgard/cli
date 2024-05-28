@@ -364,7 +364,7 @@ def get_model_wrapper(
     elif preset == 'azure-openai':
         check_expected_args(locals(), ['api_key', 'model_name', 'az_api_version', 'url'])
         api_key, model_name, az_api_version, url = cast(Tuple[str, str, str, str], (api_key, model_name, az_api_version, url))
-        return AzureOpenAIWrapper(api_key=api_key, model_name=model_name, az_api_version=cast(AZURE_OPENAI_VERSION, az_api_version), url=url, system_prompt=system_prompt)
+        return AzureOpenAIWrapper(api_key=api_key, model_name=model_name, az_api_version=az_api_version, url=url, system_prompt=system_prompt)
     elif preset == 'anthropic':
         if not api_key:
             raise ExpectedError("`--api-key` argument is required when using the 'anthropic' preset.")
