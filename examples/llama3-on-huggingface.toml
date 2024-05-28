@@ -2,8 +2,16 @@ target = "llama-3-8b-instruct"
 preset = "huggingface"
 url = "https://CHANGE_THIS_TO_YOUR_INFERENCE_ENDPOINT_URL.us-east-1.aws.endpoints.huggingface.cloud"
 api_key = "CHANGE_THIS_TO_API_KEY"
-request_template = '{"inputs": "<|im_start|>system\n{system_prompt}<|im_end|>\n<|im_start|>user\n{prompt}?<|im_end|>\n"}'
-system_prompt = '''You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature. If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information.'''
+# selector = '["response"]'
+request_template = '''
+{
+    "inputs": "<|im_start|>system\n{system_prompt}<|im_end|>\n<|im_start|>user\n{prompt}?<|im_end|>\n<|im_start|>assistant\n",
+    "parameters": {
+		"do_sample": true,
+		"return_full_text": false
+	}
+}
+'''
 # Not using huggingface? Remove above preset setting and you may need to specify the following
 # selector = '["response"]'
 # headers = 'Authorization: Bearer CHANGE_THIS_TO_API_KEY"'
