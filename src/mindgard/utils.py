@@ -83,6 +83,6 @@ def parse_args_into_model(args: Dict[str, Any]) -> ModelWrapper:
         request_template=args["request_template"],
         system_prompt=args["system_prompt"],
         model_name=args["model_name"],
-        api_version=args["api_version"],
+        az_api_version=args["az_api_version"],
         tokenizer=args["tokenizer"],
     )

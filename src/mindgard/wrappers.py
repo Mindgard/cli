@@ -234,10 +234,10 @@ AZURE_OPENAI_VERSION = Literal["2023-05-15", "2023-06-01-preview", "2023-10-01-p
 
 # https://learn.microsoft.com/en-us/azure/ai-services/openai/reference#chat-completions to see up to date list of Azure OpenAI versions (that are not soon expiring) as of 15th May 24
 class AzureOpenAIWrapper(ModelWrapper):
-    def __init__(self, api_key: str, model_name: str, api_version: AZURE_OPENAI_VERSION, url: str, system_prompt: Optional[str] = None) -> None:
+    def __init__(self, api_key: str, model_name: str, az_api_version: AZURE_OPENAI_VERSION, url: str, system_prompt: Optional[str] = None) -> None:
         self.api_key = api_key
         self.model_name = model_name
-        self.client = AzureOpenAI(api_key=api_key, api_version=api_version, azure_endpoint=url)
+        self.client = AzureOpenAI(api_key=api_key, api_version=az_api_version, azure_endpoint=url)
         self.system_prompt = system_prompt
 
     def __call__(self, content:str, with_context:Optional[Context] = None) -> str:
@@ -340,7 +340,7 @@ def get_model_wrapper(
     api_key: Optional[str] = None,
     url: Optional[str] = None,
     model_name: Optional[str] = None,
-    api_version: Optional[str] = None,
+    az_api_version: Optional[str] = None,
     system_prompt: Optional[str] = None,
     selector: Optional[str] = None,
     request_template: Optional[str] = None,
@@ -361,9 +361,9 @@ def get_model_wrapper(
         api_key = cast(str, api_key)
         return OpenAIWrapper(api_key=api_key, model_name=model_name, system_prompt=system_prompt)
     elif preset == 'azure-openai':
-        check_expected_args(locals(), ['api_key', 'model_name', 'api_version', 'url'])
-        api_key, model_name, api_version, url = cast(Tuple[str, str, str, str], (api_key, model_name, api_version, url))
-        return AzureOpenAIWrapper(api_key=api_key, model_name=model_name, api_version=cast(AZURE_OPENAI_VERSION, api_version), url=url, system_prompt=system_prompt)
+        check_expected_args(locals(), ['api_key', 'model_name', 'az_api_version', 'url'])
+        api_key, model_name, az_api_version, url = cast(Tuple[str, str, str, str], (api_key, model_name, az_api_version, url))
+        return AzureOpenAIWrapper(api_key=api_key, model_name=model_name, az_api_version=cast(AZURE_OPENAI_VERSION, az_api_version), url=url, system_prompt=system_prompt)
     elif preset == 'anthropic':
         if not api_key:
             raise ExpectedError("`--api-key` argument is required when using the 'anthropic' preset.")
