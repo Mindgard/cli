@@ -1,7 +1,7 @@
 
 [tool.poetry]
 name = "mindgard"
-version = "0.27.0"
+version = "0.28.0"
 description = "Test your AI model's security without leaving your terminal."
 authors = ["Danny Hunt <danny.hunt@mindgard.ai>"]
 readme = "README.md"
