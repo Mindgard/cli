@@ -1,3 +1,4 @@
+import json
 import os
 from typing import List, Dict, Any
 from .utils import api_get, api_post
@@ -54,8 +55,15 @@ class ApiService():
     
     def get_orchestrator_websocket_connection_string(self, access_token: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         url = f"{API_BASE}/tests/cli_init"
+
+        # Extra configuration only currently available to Mindgardians
+        extra_config = os.environ.get('MINDGARD_EXTRA_CONFIG', None)
+        if extra_config:
+            payload["extraConfig"] = json.loads(extra_config)
         pack = os.environ.get('ATTACK_PACK', "sandbox")
         payload["attackPack"] = pack
+        # End of Mindgard-only configuration
+
         res = api_post(url, access_token, json=payload)
         data: Dict[str, Any] = res.json()
         return data
