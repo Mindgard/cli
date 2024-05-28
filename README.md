@@ -148,3 +148,19 @@ The `headers` setting allows you to specify a custom HTTP header to include with
 The exit code of a test will be non-zero if the test identifies risks above your risk threshold. To override the default risk-threshold pass `--risk-threshold 50`. This will cause the CLI to exit with an non-zero exit status if any test results in a risk score over 50.
 
 See an example of this in action here: [https://github.com/Mindgard/mindgard-github-action-example](https://github.com/Mindgard/mindgard-github-action-example)
+
+## Acknowledgements.
+
+We would like to express our profound gratitude to the following individuals and orgnisations whose research and work have been instrumental in the development of this project:
+
+- Riley Goodside - Scale AI
+- Mark Russinovich - Microsoft Azure 
+- Ahmed Salem - Microsoft
+- Ronen Eldan - Microsoft Research
+- Fengqing Jiang - University of Washington
+- Zhangchen Xu - University of Washington
+- Luyao Niu - University of Washington
+- Zhen Xiang - UIUC
+- Bhaskar Ramasubramanian - Western Washington University
+- Bo Li - University of Chicago
+- Radha Poovendran - University of Washington
