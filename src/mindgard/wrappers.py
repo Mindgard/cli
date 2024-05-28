@@ -232,11 +232,10 @@ class HuggingFaceWrapper(APIModelWrapper):
         )
 
 
-AZURE_OPENAI_VERSION = Literal["2023-05-15", "2023-06-01-preview", "2023-10-01-preview", "2024-02-15-preview", "2024-03-01-preview", "2024-04-01-preview", "2024-02-01"]
-
-# https://learn.microsoft.com/en-us/azure/ai-services/openai/reference#chat-completions to see up to date list of Azure OpenAI versions (that are not soon expiring) as of 15th May 24
+# https://learn.microsoft.com/en-us/azure/ai-services/openai/reference#chat-completions to see available values for az_api_version
+# ["2023-05-15", "2023-06-01-preview", "2023-10-01-preview", "2024-02-15-preview", "2024-03-01-preview", "2024-04-01-preview", "2024-02-01"] on May 15th 2024
 class AzureOpenAIWrapper(ModelWrapper):
-    def __init__(self, api_key: str, model_name: str, az_api_version: AZURE_OPENAI_VERSION, url: str, system_prompt: Optional[str] = None) -> None:
+    def __init__(self, api_key: str, model_name: str, az_api_version: str, url: str, system_prompt: Optional[str] = None) -> None:
         self.api_key = api_key
         self.model_name = model_name
         self.client = AzureOpenAI(api_key=api_key, api_version=az_api_version, azure_endpoint=url)
