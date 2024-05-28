@@ -153,14 +153,14 @@ See an example of this in action here: [https://github.com/Mindgard/mindgard-git
 
 We would like to express our profound gratitude to the following individuals and orgnisations whose research and work have been instrumental in the development of this project:
 
-- Riley Goodside - Scale AI
-- Mark Russinovich - Microsoft Azure 
-- Ahmed Salem - Microsoft
-- Ronen Eldan - Microsoft Research
-- Fengqing Jiang - University of Washington
-- Zhangchen Xu - University of Washington
-- Luyao Niu - University of Washington
-- Zhen Xiang - UIUC
-- Bhaskar Ramasubramanian - Western Washington University
-- Bo Li - University of Chicago
-- Radha Poovendran - University of Washington
+- Riley Goodside - Scale AI - [Tag](https://pages.github.com/)
+- Mark Russinovich - Microsoft Azure - [Crescendo](https://arxiv.org/abs/2404.01833) 
+- Ahmed Salem - Microsoft - [Crescendo](https://arxiv.org/abs/2404.01833) 
+- Ronen Eldan - Microsoft Research - [Crescendo](https://arxiv.org/abs/2404.01833) 
+- Fengqing Jiang - University of Washington - [ArtPrompt](https://arxiv.org/abs/2402.11753)
+- Zhangchen Xu - University of Washington - [ArtPrompt](https://arxiv.org/abs/2402.11753)
+- Luyao Niu - University of Washington - [ArtPrompt](https://arxiv.org/abs/2402.11753)
+- Zhen Xiang - UIUC - [ArtPrompt](https://arxiv.org/abs/2402.11753)
+- Bhaskar Ramasubramanian - Western Washington University - [ArtPrompt](https://arxiv.org/abs/2402.11753)
+- Bo Li - University of Chicago - [ArtPrompt](https://arxiv.org/abs/2402.11753)
+- Radha Poovendran - University of Washington - [ArtPrompt](https://arxiv.org/abs/2402.11753)
