@@ -1,0 +1,10 @@
+target = "gpt2"
+model_name = "gpt2"
+tokenizer = "gpt2"
+headers = "Authorization: Bearer YOUR_BEARER_TOKEN,Content-Type: application/json"  # Replace YOUR_BEARER_TOKEN with the api key for your endpoint in Azure
+url = "DEPLOYMENT_ENDPOINT"  # Your deployed scoring endpoint in Azure - eg something like "https://MY_MODEL_NAME.REGION.inference.ml.azure.com/score"
+selector = "[0]['generated_text']"
+request_template = "{'inputs': {tokenized_chat_template}}"
+system_prompt = '''
+You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature. If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information.
+'''
