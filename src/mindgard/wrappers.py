@@ -156,10 +156,8 @@ class APIModelWrapper(ModelWrapper):
 
 
 class AzureAIStudioWrapper(APIModelWrapper):
-    def __init__(self, api_key: str, url: str, system_prompt: str) -> None:
-        super().__init__(
-            url,
-            request_template="""{
+    def __init__(self, api_key: str, url: str, request_template: Optional[str], system_prompt: str) -> None:
+        az_request_template = request_template or """{
     "messages": [
         {"role": "system", "content": "{system_prompt}"},
         {"role": "user", "content": "{prompt}"}
@@ -168,7 +166,10 @@ class AzureAIStudioWrapper(APIModelWrapper):
     "max_tokens": 1024,
     "stop": [],
     "top_p": 0.9
-}""",
+}"""
+        super().__init__(
+            url,
+            request_template=az_request_template,
             selector='["choices"][0]["message"]["content"]',
             headers={"Authorization": f'Bearer {api_key}', "Content-Type": "application/json"},
             system_prompt=system_prompt
@@ -356,7 +357,7 @@ def get_model_wrapper(
     elif preset == 'azure-aistudio':
         check_expected_args(locals(), ['api_key', 'url', 'system_prompt'])
         api_key, url, system_prompt = cast(Tuple[str, str, str], (api_key, url, system_prompt))
-        return AzureAIStudioWrapper(api_key=api_key, url=url, system_prompt=system_prompt)
+        return AzureAIStudioWrapper(api_key=api_key, url=url, request_template=request_template, system_prompt=system_prompt)
     elif preset == 'openai':
         check_expected_args(locals(), ['api_key'])
         api_key = cast(str, api_key)
