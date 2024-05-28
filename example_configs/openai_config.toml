@@ -1,0 +1,19 @@
+target = "openai-3.5-badconfig"
+url = "https://api.openai.com/v1/chat/completions"
+request_template = '''
+{
+    "messages": [
+        {"role": "system", "content": "{system_prompt}"}, 
+        {"role": "user", "content": "{prompt}"}], 
+    "model": "gpt-3.5-turbo", 
+    "temperature": 0.0, 
+    "max_tokens": 1024
+}
+'''
+selector = '''
+choices[0].message.content
+'''
+headers = '''Authorization: Bearer XXX, ExtraHeader: foobar'''
+system_prompt = '''
+You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature. If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information.
+'''

@@ -1,6 +1,0 @@
-target = "users_model"
-url = "http://gpu-a100:8001/infer"
-selector = '["response"]'
-request-template = '{"prompt": "[INST] {system_prompt} {prompt} [/INST]"}'
-# request-template = '{"prompt": "### System\n {system_prompt}\n ### User\n {prompt} ### Assitant\n"}'
-system-prompt = 'respond with hello'
