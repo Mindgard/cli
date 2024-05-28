@@ -153,7 +153,7 @@ See an example of this in action here: [https://github.com/Mindgard/mindgard-git
 
 We would like to express our profound gratitude to the following individuals and orgnisations whose research and work have been instrumental in the development of this project:
 
-- Riley Goodside - Scale AI - [Tag](https://pages.github.com/)
+- Riley Goodside - Scale AI - [Tag](https://twitter.com/goodside/status/1745511940351287394)
 - Mark Russinovich - Microsoft Azure - [Crescendo](https://arxiv.org/abs/2404.01833) 
 - Ahmed Salem - Microsoft - [Crescendo](https://arxiv.org/abs/2404.01833) 
 - Ronen Eldan - Microsoft Research - [Crescendo](https://arxiv.org/abs/2404.01833) 
