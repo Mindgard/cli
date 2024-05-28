@@ -80,9 +80,17 @@ mindgard test my-model-name \
 
 You can specify the settings for the `mindgard test` command in a TOML configuration file. This allows you to manage your settings in a more structured way and avoid passing them as command-line arguments.
 
-Here's some examples of what the configuration file (`mymodel.toml`) might look like:
+Then run: `mindgard test --config-file mymodel.toml`
+
+#### Examples
+
+There are <a href="https://github.com/Mindgard/cli/tree/main/examples">examples of what the configuration file (`mymodel.toml`) might look like here in the examples/ folder</a>
+
+Here are two examples:
 
 #### Targeting OpenAI
+
+This example uses the built in preset settings for openai. Presets exist for `openai`, `huggingface`, and `anthropic`
 
 ```toml
 target = "my-model-name"
@@ -92,8 +100,17 @@ system-prompt = '''
 You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature. If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information.
 '''
 ```
+You will need to substitute your own `api_key` value. 
 
-#### Targeting a more general model API (this example shows how you might specify OpenAI if the preset didn't exist)
+The `target` setting is an identifier for the model you are testing within the Mindgard platform, tests for the same model will be grouped and traceable over time.
+
+Altering the `system-prompt` enables you to compare results with different system prompts in use. Some of Mindgard's tests assess the efficacy of your system prompt. 
+
+Any of these settings can also be passed as command line arguments. e.g. `mindgard test my-model-name --system-prompt 'You are...'`. This may be useful to pass in a dynamic value for any of these settings.  
+
+#### Targeting a more general model API without a suitable preset
+
+This example shows how you might test OpenAI if the preset did not exist. With the `request_template` and `selector` settings you can interface with any JSON API.
 
 ```toml
 target = "my-model-name"
@@ -117,8 +134,13 @@ You are a helpful, respectful and honest assistant. Always answer as helpfully a
 '''
 ```
 
-Then run: `mindgard test --config-file mymodel.toml`
+The `request_template` setting specifies how to structure an outgoing message to the model. You will need to specify the `{system_prompt}` and `{prompt}` placeholders so that Mindgard knows how to pass this information to your custom API.
 
+The `url` setting should point to an inference endpoint for your model under test. Mindgard will POST messages here formatted by the above `request_template` setting.
+
+The `selector` setting is a JSON selector and specifies how to extract the model's response from the API response. 
+
+The `headers` setting allows you to specify a custom HTTP header to include with outgoing requests, for example to implement a custom authentication method.
 
 <a id="MLops"></a>
 ### 🚦 Using in an ML-Ops pipeline
