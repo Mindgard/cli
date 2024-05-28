@@ -1,25 +1,68 @@
-# mindgard cli
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/Mindgard/public-resources/blob/main/mindgard-dark.svg?raw=true">
+    <source media="(prefers-color-scheme: light)" srcset="https://github.com/Mindgard/public-resources/blob/main/mindgard.svg?raw=true">
+    <img src="https://github.com/Mindgard/public-resources/blob/main/mindgard.svg?raw=true"/>
+</picture>
 
-Test your AI model's security through CLI.
+</h1>
 
-## Usage
 
-### Install Mindgard CLI
+# Mindgard CLI
+## Securing AI Models.
+#### Continuous automated red teaming platform.
+
+Identify & remediate your AI models' security risks with Mindgard's market leading attack library. Mindgard covers many threats including:
+
+✅ Jailbreaks
+
+✅ Prompt Injection
+
+✅ Model Inversion
+
+✅ Extraction
+
+✅ Poisoning
+
+✅ Evasion
+
+✅ Membership Inference
+
+Mindgard CLI is fully integrated with Mindgard's platform to help you identify and triage threats, select remediations, and track your security posture over time.
+
+<h2 align="center">
+  <img src="https://github.com/Mindgard/public-resources/blob/main/cli-2024-04.gif?raw=true"/>
+</h2>
+
+Test continuously in your MLops pipeline to identify model posture changes from customisation activities including prompt engineering, RAG, fine-tuning, and pre-training.
+
+Table of Contents
+-----------------
+
+* [🚀 Install](#Install)
+* [✅ Testing demo models](#Tests)
+* [✅ Testing your models](#TestCustom)
+* [🚦 Using in an ML-Ops pipeline](#MLops)
+
+<a id="Install"></a>
+### 🚀 Install Mindgard CLI
 
 `pip install mindgard`
 
-### Login
+### 🔑 Login
 
 `mindgard login`
 
-### Test a mindgard hosted model
+<a id="Tests"></a>
+### ✅ Test a mindgard hosted model
 
 ```
 mindgard sandbox mistral
 mindgard sandbox cfp_faces
 ```
 
-### Test your model
+<a id="TestCustom"></a>
+### ✅ Test your own models
 
 `mindgard test <name> --url <url> <other settings>`
 
@@ -33,7 +76,7 @@ mindgard test my-model-name \
   --system-prompt 'respond with hello' # system prompt to test the model with
 ```
 
-### Using a Configuration File
+### 📋 Using a Configuration File
 
 You can specify the settings for the `mindgard test` command in a TOML configuration file. This allows you to manage your settings in a more structured way and avoid passing them as command-line arguments.
 
@@ -76,7 +119,9 @@ You are a helpful, respectful and honest assistant. Always answer as helpfully a
 
 Then run: `mindgard test --config-file mymodel.toml`
 
-### Using in an ML-Ops pipeline
+
+<a id="MLops"></a>
+### 🚦 Using in an ML-Ops pipeline
 
 The exit code of a test will be non-zero if the test identifies risks above your risk threshold. To override the default risk-threshold pass `--risk-threshold 50`. This will cause the CLI to exit with an non-zero exit status if any test results in a risk score over 50.
 
