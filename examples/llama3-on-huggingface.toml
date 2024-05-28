@@ -2,7 +2,6 @@ target = "llama-3-8b-instruct"
 preset = "huggingface"
 url = "https://CHANGE_THIS_TO_YOUR_INFERENCE_ENDPOINT_URL.us-east-1.aws.endpoints.huggingface.cloud"
 api_key = "CHANGE_THIS_TO_API_KEY"
-# selector = '["response"]'
 request_template = '''
 {
     "inputs": "<|im_start|>system\n{system_prompt}<|im_end|>\n<|im_start|>user\n{prompt}?<|im_end|>\n<|im_start|>assistant\n",
