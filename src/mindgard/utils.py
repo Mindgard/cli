@@ -4,6 +4,8 @@ from typing import Any, Dict, Optional, Tuple
 
 import toml
 from .error import ExpectedError
+from .wrappers import get_model_wrapper, ModelWrapper
+from requests.exceptions import HTTPError
 
 import requests
 
@@ -71,3 +73,24 @@ def parse_toml_and_args_into_final_args(config_file_path: Optional[str], args: N
     final_args = {k: v or toml_args.get(k) or toml_args.get(k.replace("_", "-")) for k, v in vars(args).items()}
 
     return final_args
+
+def parse_args_into_model(args: Dict[str, Any]) -> ModelWrapper:
+    return get_model_wrapper(
+        preset=args["preset"],
+        headers_string=args["headers"],
+        api_key=args["api_key"],
+        url=args["url"],
+        selector=args["selector"],
+        request_template=args["request_template"],
+        system_prompt=args["system_prompt"],
+        model_name=args["model_name"],
+        az_api_version=args["az_api_version"],
+        tokenizer=args["tokenizer"],
+    )
+
+
+def validate_model_contactable(model: ModelWrapper) -> None:
+    try:
+        _ = model.__call__("Hello LLM, are you contactable?")
+    except HTTPError as e:
+        raise (e)

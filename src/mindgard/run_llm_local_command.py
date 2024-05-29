@@ -94,6 +94,10 @@ class RunLLMLocalCommand:
                         with_context=context,
                     )
                     status = "ok"
+                except NotImplementedError:
+                    logging.debug("Crescendo not currently compatible with this wrapper! Attacks will continue")
+                    response = None
+                    status = "error"
                 except:
                     response = None
                     status = "error"

@@ -7,6 +7,7 @@ from anthropic import Anthropic
 from anthropic.types import MessageParam
 from .error import ExpectedError
 import requests
+from requests.exceptions import HTTPError
 from openai import AzureOpenAI, OpenAI
 import jsonpath_ng
 
@@ -131,9 +132,12 @@ class APIModelWrapper(ModelWrapper):
         request_payload = self.prompt_to_request_payload(content)
 
         # Make the API call
-        response = requests.post(self.api_url, headers=self.headers, json=request_payload)
-        if response.status_code != 200:
-            raise Exception(f"API call failed with {response.status_code=} {response.json()=}")
+        try:
+            response = requests.post(self.api_url, headers=self.headers, json=request_payload)
+            response.raise_for_status()
+        except HTTPError as err:
+            logging.error(f"API call failed with {response.status_code=} {response.json()=}")
+            raise err
 
         response = response.json()
 
