@@ -1,20 +1,24 @@
 import json
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, Callable
 from time import sleep
 from concurrent.futures import ThreadPoolExecutor
 from rich.console import Console
 from rich.table import Table
 from rich.live import Live
 from rich.progress import Progress, SpinnerColumn, TaskID
+from rich.align import Align
 
 # Networking
 from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCredential
 from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs
 
+# Exceptions
+import requests
+
 import time
 
-from .wrappers import ModelWrapper, ContextManager
+from .wrappers import ModelWrapper, ContextManager, validate_model_is_contactable
 
 from .utils import CliResponse
 
@@ -37,14 +41,14 @@ class RunLLMLocalCommand:
         self._context_manager = ContextManager()
 
     def submit_test_progress(
-        self, progress: Progress, access_token: str, target: str, system_prompt: str
+        self, progress: Progress, access_token: str, target: str, system_prompt: str, error_callback: Callable[[Exception], None] = None
     ) -> Dict[str, Any]:
         with progress:
             with ThreadPoolExecutor() as pool:
-                task_id = progress.add_task("submitting test", start=True)
+                task_id = progress.add_task("Submitting test...", start=True)
 
                 future = pool.submit(
-                    self.submit_test_fetching_initial, access_token, target, system_prompt
+                    self.submit_test_fetching_initial, access_token, target, system_prompt, error_callback
                 )
 
                 while not future.done():
@@ -54,7 +58,7 @@ class RunLLMLocalCommand:
                 return future.result()
 
     def submit_test_fetching_initial(
-        self, access_token: str, target: str, system_prompt: str
+        self, access_token: str, target: str, system_prompt: str, error_callback: Callable[[Exception], None] = None
     ) -> Dict[str, Any]:
         ws_token_and_group_id = (
             self._api.get_orchestrator_websocket_connection_string(
@@ -81,6 +85,9 @@ class RunLLMLocalCommand:
         self.submitted_test = False
         self.submitted_test_id = ""
 
+        # this guy is difficult to manage exceptions for as websocket messages are event-based.
+        # the recv message handler also has no idea which messages are for which attack, so
+        # we can't mark an attack as failed until we are complete
         def recv_message_handler(msg: OnGroupDataMessageArgs) -> None:
             if msg.data["messageType"] == "Request":
                 logging.debug(f"received request {msg.data=}")
@@ -88,16 +95,21 @@ class RunLLMLocalCommand:
                 context = self._context_manager.get_context_or_none(context_id)
                 content = msg.data["payload"]["prompt"]
 
+                response: str = None
+                status = "error"
+
                 try:
-                    response =  self._model_wrapper(
+                    response = self._model_wrapper(
                         content=content,
                         with_context=context,
                     )
                     status = "ok"
-                except:
-                    response = None
-                    status = "error"
-                    raise
+                except Exception as ae:
+                    if error_callback:
+                        error_callback(ae)
+                    else:
+                        logging.error(ae)
+                        raise
                 finally:
                     # we always try to send a response
                     replyData = {
@@ -146,24 +158,67 @@ class RunLLMLocalCommand:
         else:
             raise Exception(f"did not receive notification of test submitted within timeout ({max_attempts}s); failed to start test")
 
+    def preflight(self, console: Console):
+        try:
+            validate_model_is_contactable(model=self._model_wrapper)
+        except requests.exceptions.ConnectionError as cerr:
+            console.print(f"[bold red] Could not connect to the model! [white](URL: {self._model_wrapper.api_url} are you sure it's correct?)")
+            logging.debug(cerr)
+            exit(1)
+        except requests.exceptions.HTTPError as httperr:
+            logging.debug(httperr)
+            status_code: int = httperr.response.status_code
+            status_message: str = requests.status_codes._codes[status_code][0]
+            message: str = f"[bold red] Model pre-flight check returned {status_code} ({status_message}), "
+            if status_code == 404:
+                message += "is the URL correct?"
+            elif status_code == 503:
+                message += "is the model accepting requests?"
+            elif status_code == 422:
+                message += "are you using the correct model preset?"
+            elif status_code == 424:
+                message += "is the model healthy?"
+            console.print(message)
+            exit(1)
+
+
     def run_inner(
         self, access_token: str, target: str, json_format: bool, risk_threshold: int, system_prompt: str
     ) -> CliResponse:
+        console = Console()
+
+        self.preflight(console=console)
+
         if json_format:
             return self.run_json(
                 access_token=access_token, target=target, risk_threshold=risk_threshold, system_prompt=system_prompt
             )
 
+        progress_table = Table.grid(expand=True)
+
         submit_progress = Progress(
             "{task.description}",
-            SpinnerColumn(finished_text=r"\[done]"),
+            SpinnerColumn(finished_text="[green3] Submitted!"),
             auto_refresh=True,
         )
+
+        def _handle_exception_callback(exception: Exception):
+            if isinstance(exception, NotImplementedError):
+                text: str = f"Crescendo not yet compatible this API"
+            elif isinstance(exception, requests.exceptions.HTTPError):
+                text: str = f"HTTP {exception.response.status_code} when contacting LLM"
+            else:
+                logging.error(exception)
+                raise
+
+            # progress_table.add_row(Align(f"", align="left"))
+            progress_table.add_row(f"[dark_orange3][!!!] {text}")
 
         test_res: Dict[str, Any]
         with submit_progress:
             test_res = self.submit_test_progress(
-                submit_progress, access_token=access_token, target=target, system_prompt=system_prompt
+                submit_progress, access_token=access_token, target=target, system_prompt=system_prompt,
+                error_callback=_handle_exception_callback
             )
 
         attacks = test_res["attacks"]
@@ -171,21 +226,22 @@ class RunLLMLocalCommand:
         attack_count = len(attacks)
 
         overall_progress = Progress()
-        overall_task = overall_progress.add_task("overall", total=attack_count)
+        overall_task = overall_progress.add_task("Assessment Progress", total=attack_count)
 
         attacks_progress = Progress(
             "{task.description}",
-            SpinnerColumn(finished_text=r"\[done]"),
+            SpinnerColumn(finished_text="Finished"),
         )
         attacks_task_map: Dict[str, TaskID] = {}
         for attack in attacks:
             attacks_task_map[attack["id"]] = attacks_progress.add_task(
-                f"attack {attack['attack']}", total=1
+                f"Attack {attack['attack']}", total=1
             )
 
-        progress_table = Table.grid(expand=True)
+
         progress_table.add_row(overall_progress)
         progress_table.add_row(attacks_progress)
+        progress_table.add_row("")
 
         with Live(progress_table, refresh_per_second=10):
             while not overall_progress.finished:
@@ -223,7 +279,6 @@ class RunLLMLocalCommand:
 
             table.add_row(emoji, name, risk_str)
 
-        console = Console()
         console.print(table)
 
         return CliResponse(
