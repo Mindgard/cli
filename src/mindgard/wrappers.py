@@ -385,3 +385,18 @@ def get_model_wrapper(
             return APIModelWrapper(api_url=url, selector=selector, request_template=request_template, system_prompt=system_prompt, tokenizer=tokenizer, headers=headers)
         else:
             return APIModelWrapper(api_url=url, selector=selector, request_template=request_template, system_prompt=system_prompt, tokenizer=tokenizer)
+
+
+def parse_args_into_model(args: Dict[str, Any]) -> ModelWrapper:
+    return get_model_wrapper(
+        preset=args["preset"],
+        headers_string=args["headers"],
+        api_key=args["api_key"],
+        url=args["url"],
+        selector=args["selector"],
+        request_template=args["request_template"],
+        system_prompt=args["system_prompt"],
+        model_name=args["model_name"],
+        az_api_version=args["az_api_version"],
+        tokenizer=args["tokenizer"],
+    )

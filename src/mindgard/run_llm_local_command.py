@@ -24,8 +24,6 @@ from .api_service import ApiService
 TEST_POLL_INTERVAL = 5
 
 
-# command for running tests against the pinch backend;
-# MINDGARDIANS ONLY!
 class RunLLMLocalCommand:
     def __init__(
         self,

@@ -4,6 +4,8 @@ import argparse
 import sys
 import traceback
 from typing import List, cast
+
+from .wrappers import parse_args_into_model
 from .error import ExpectedError
 
 from .list_tests_command import ListTestsCommand
@@ -14,7 +16,7 @@ from .api_service import ApiService
 
 from .auth import login, logout
 from .constants import VERSION
-from .utils import is_version_outdated, print_to_stderr, parse_args_into_model, parse_toml_and_args_into_final_args
+from .utils import is_version_outdated, print_to_stderr, parse_toml_and_args_into_final_args
 
 import logging
 from rich.logging import RichHandler
