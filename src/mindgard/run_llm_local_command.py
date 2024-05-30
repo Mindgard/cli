@@ -160,16 +160,17 @@ class RunLLMLocalCommand:
 
     def preflight(self, console: Console):
         try:
+            console.print("Contacting model...")
             validate_model_is_contactable(model=self._model_wrapper)
         except requests.exceptions.ConnectionError as cerr:
-            console.print(f"[bold red] Could not connect to the model! [white](URL: {self._model_wrapper.api_url} are you sure it's correct?)")
+            console.print(f"[red]Could not connect to the model! [white](URL: {self._model_wrapper.api_url}, are you sure it's correct?)")
             logging.debug(cerr)
             exit(1)
         except requests.exceptions.HTTPError as httperr:
             logging.debug(httperr)
             status_code: int = httperr.response.status_code
             status_message: str = requests.status_codes._codes[status_code][0]
-            message: str = f"[bold red] Model pre-flight check returned {status_code} ({status_message}), "
+            message: str = f"[red]Model pre-flight check returned {status_code} ({status_message}), "
             if status_code == 404:
                 message += "is the URL correct?"
             elif status_code == 503:
@@ -180,6 +181,8 @@ class RunLLMLocalCommand:
                 message += "is the model healthy?"
             console.print(message)
             exit(1)
+        except Exception as e:
+            logging.error(e)
 
 
     def run_inner(
@@ -202,17 +205,34 @@ class RunLLMLocalCommand:
             auto_refresh=True,
         )
 
+        exceptions_progress = Progress(
+            "{task.description}"
+        )
+
+        exceptions_task_table: Dict[str, TaskID] = {}
+        exceptions_count_table: Dict[str, int] = {}
+
         def _handle_exception_callback(exception: Exception):
             if isinstance(exception, NotImplementedError):
-                text: str = f"Crescendo not yet compatible this API"
+                text: str = f"Crescendo not yet compatible with this API"
             elif isinstance(exception, requests.exceptions.HTTPError):
                 text: str = f"HTTP {exception.response.status_code} when contacting LLM"
             else:
                 logging.error(exception)
                 raise
 
-            # progress_table.add_row(Align(f"", align="left"))
-            progress_table.add_row(f"[dark_orange3][!!!] {text}")
+            if not exceptions_task_table.get(text, None):
+                exceptions_count_table[text] = 0
+                exceptions_task_table[text] = exceptions_progress.add_task("")
+
+            exceptions_count_table[text] += 1
+            exceptions_progress.update(
+                exceptions_task_table[text],
+                description=f"[dark_orange3][!!!] {text} (x{exceptions_count_table[text]})"
+            )
+
+            logging.debug(exception)
+
 
         test_res: Dict[str, Any]
         with submit_progress:
@@ -238,10 +258,10 @@ class RunLLMLocalCommand:
                 f"Attack {attack['attack']}", total=1
             )
 
-
         progress_table.add_row(overall_progress)
         progress_table.add_row(attacks_progress)
         progress_table.add_row("")
+        progress_table.add_row(exceptions_progress)
 
         with Live(progress_table, refresh_per_second=10):
             while not overall_progress.finished:
