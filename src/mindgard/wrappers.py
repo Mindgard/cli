@@ -409,9 +409,3 @@ def parse_args_into_model(args: Dict[str, Any]) -> ModelWrapper:
         az_api_version=args["az_api_version"],
         tokenizer=args["tokenizer"],
     )
-
-def validate_model_is_contactable(model: ModelWrapper) -> None:
-    try:
-        _ = model.__call__("Hello LLM, are you contactable?")
-    except requests.exceptions.HTTPError as e:
-        raise (e)

@@ -1,13 +1,12 @@
 import json
 import logging
-from typing import Dict, Any, Callable
+from typing import Dict, Any, Callable, Union
 from time import sleep
 from concurrent.futures import ThreadPoolExecutor
 from rich.console import Console
 from rich.table import Table
 from rich.live import Live
 from rich.progress import Progress, SpinnerColumn, TaskID
-from rich.align import Align
 
 # Networking
 from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCredential
@@ -18,7 +17,7 @@ import requests
 
 import time
 
-from .wrappers import ModelWrapper, ContextManager, validate_model_is_contactable
+from .wrappers import ModelWrapper, ContextManager 
 
 from .utils import CliResponse
 
@@ -41,7 +40,7 @@ class RunLLMLocalCommand:
         self._context_manager = ContextManager()
 
     def submit_test_progress(
-        self, progress: Progress, access_token: str, target: str, system_prompt: str, error_callback: Callable[[Exception], None] = None
+        self, progress: Progress, access_token: str, target: str, system_prompt: str, error_callback: Union[Callable[[Exception], None], None] = None
     ) -> Dict[str, Any]:
         with progress:
             with ThreadPoolExecutor() as pool:
@@ -58,7 +57,7 @@ class RunLLMLocalCommand:
                 return future.result()
 
     def submit_test_fetching_initial(
-        self, access_token: str, target: str, system_prompt: str, error_callback: Callable[[Exception], None] = None
+        self, access_token: str, target: str, system_prompt: str, error_callback: Union[Callable[[Exception], None], None] = None
     ) -> Dict[str, Any]:
         ws_token_and_group_id = (
             self._api.get_orchestrator_websocket_connection_string(
@@ -95,7 +94,7 @@ class RunLLMLocalCommand:
                 context = self._context_manager.get_context_or_none(context_id)
                 content = msg.data["payload"]["prompt"]
 
-                response: str = None
+                response: Union[str, None] = None
                 status = "error"
 
                 try:
@@ -121,6 +120,7 @@ class RunLLMLocalCommand:
                         }
                     }
                     logging.debug(f"sending response {replyData=}")
+
                     ws_client.send_to_group("orchestrator", replyData, data_type="json")
             elif msg.data["messageType"] == "StartedTest": # should be something like "Submitted", upstream change required.
                 self.submitted_test_id = msg.data["payload"]["testId"]
@@ -158,12 +158,12 @@ class RunLLMLocalCommand:
         else:
             raise Exception(f"did not receive notification of test submitted within timeout ({max_attempts}s); failed to start test")
 
-    def preflight(self, console: Console):
+    def preflight(self, console: Console) -> None:
         try:
             console.print("Contacting model...")
-            validate_model_is_contactable(model=self._model_wrapper)
+            _ = self._model_wrapper.__call__("Hello llm, are you there?")
         except requests.exceptions.ConnectionError as cerr:
-            console.print(f"[red]Could not connect to the model! [white](URL: {self._model_wrapper.api_url}, are you sure it's correct?)")
+            console.print(f"[red]Could not connect to the model! [white](URL: {self._model_wrapper.api_url if hasattr(self._model_wrapper, "api_url") else "<unknown>"}, are you sure it's correct?)")
             logging.debug(cerr)
             exit(1)
         except requests.exceptions.HTTPError as httperr:
@@ -183,7 +183,6 @@ class RunLLMLocalCommand:
             exit(1)
         except Exception as e:
             logging.error(e)
-
 
     def run_inner(
         self, access_token: str, target: str, json_format: bool, risk_threshold: int, system_prompt: str
@@ -212,11 +211,12 @@ class RunLLMLocalCommand:
         exceptions_task_table: Dict[str, TaskID] = {}
         exceptions_count_table: Dict[str, int] = {}
 
-        def _handle_exception_callback(exception: Exception):
+        def _handle_exception_callback(exception: Exception) -> None:
+            text: str = ""
             if isinstance(exception, NotImplementedError):
-                text: str = f"Crescendo not yet compatible with this API"
+                text = f"Attack not yet compatible with this preset"
             elif isinstance(exception, requests.exceptions.HTTPError):
-                text: str = f"HTTP {exception.response.status_code} when contacting LLM"
+                text = f"HTTP {exception.response.status_code} when contacting LLM"
             else:
                 logging.error(exception)
                 raise
