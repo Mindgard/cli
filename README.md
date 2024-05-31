@@ -151,16 +151,12 @@ See an example of this in action here: [https://github.com/Mindgard/mindgard-git
 
 ## Acknowledgements.
 
-We would like to express our profound gratitude to the following individuals and orgnisations whose research and work have been instrumental in the development of this project:
+We would like to acknowledge the incredible research within the adversarial machine learning community, which has informed the development of this project:
 
-- Riley Goodside - Scale AI - [Tag](https://twitter.com/goodside/status/1745511940351287394)
-- Mark Russinovich - Microsoft Azure - [Crescendo](https://arxiv.org/abs/2404.01833) 
-- Ahmed Salem - Microsoft - [Crescendo](https://arxiv.org/abs/2404.01833) 
-- Ronen Eldan - Microsoft Research - [Crescendo](https://arxiv.org/abs/2404.01833) 
-- Fengqing Jiang - University of Washington - [ArtPrompt](https://arxiv.org/abs/2402.11753)
-- Zhangchen Xu - University of Washington - [ArtPrompt](https://arxiv.org/abs/2402.11753)
-- Luyao Niu - University of Washington - [ArtPrompt](https://arxiv.org/abs/2402.11753)
-- Zhen Xiang - UIUC - [ArtPrompt](https://arxiv.org/abs/2402.11753)
-- Bhaskar Ramasubramanian - Western Washington University - [ArtPrompt](https://arxiv.org/abs/2402.11753)
-- Bo Li - University of Chicago - [ArtPrompt](https://arxiv.org/abs/2402.11753)
-- Radha Poovendran - University of Washington - [ArtPrompt](https://arxiv.org/abs/2402.11753)
+Jiang, F., Xu, Z., Niu, L., Xiang, Z., Ramasubramanian, B., Li, B., & Poovendran, R. (2024). ArtPrompt: ASCII Art-based Jailbreak Attacks against Aligned LLMs. arXiv [Cs.CL]. Retrieved from http://arxiv.org/abs/2402.11753
+
+Russinovich, M., Salem, A., & Eldan, R. (2024). Great, Now Write an Article About That: The Crescendo Multi-Turn LLM Jailbreak Attack. arXiv [Cs.CR]. Retrieved from http://arxiv.org/abs/2404.01833
+
+Goodside, R. LLM Prompt Injection Via Invisible Instructions in Pasted Text, Retreved from https://x.com/goodside/status/1745511940351287394
+
+Yuan, Y., Jiao, W., Wang, W., Huang, J.-T., He, P., Shi, S., & Tu, Z. (2024). GPT-4 Is Too Smart To Be Safe: Stealthy Chat with LLMs via Cipher. arXiv [Cs.CL]. Retrieved from http://arxiv.org/abs/2308.06463
