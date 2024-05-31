@@ -184,7 +184,8 @@ class RunLLMLocalCommand:
             _ = self._model_wrapper.__call__("Hello llm, are you there?")
             return True
         except requests.exceptions.ConnectionError as cerr:
-            console.print(f"[red]Could not connect to the model! [white](URL: {self._model_wrapper.api_url if hasattr(self._model_wrapper, "api_url") else "<unknown>"}, are you sure it's correct?)")
+            detail = self._model_wrapper.api_url if hasattr(self._model_wrapper, "api_url") else "<unknown>"
+            console.print(f"[red]Could not connect to the model! [white](URL: {detail}, are you sure it's correct?)")
             logging.debug(cerr)
         except requests.exceptions.HTTPError as httperr:
             logging.debug(httperr)

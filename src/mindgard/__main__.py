@@ -23,7 +23,7 @@ from rich.logging import RichHandler
 from rich.console import Console
 
 def parse_args(args: List[str]) -> argparse.Namespace:
-    log_levels = [n.lower() for n in logging.getLevelNamesMapping().keys()]
+    log_levels = ['critical', 'fatal', 'error', 'warn', 'warning', 'info', 'debug', 'notset'] # [n.lower() for n in logging.getLevelNamesMapping().keys()]
     default_log_level = 'warn'
 
     parser = argparse.ArgumentParser(description='Securing AIs', prog='mindgard', usage='%(prog)s [command] [options]', epilog='Enjoy the program! :)', add_help=True)
