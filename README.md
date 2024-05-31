@@ -151,7 +151,7 @@ See an example of this in action here: [https://github.com/Mindgard/mindgard-git
 
 ## Acknowledgements.
 
-We would like to acknowledge the incredible research within the adversarial machine learning community, which has informed the development of this project:
+We would like to thank and acknowledge various research works from the Adversarial Machine Learning community, which inspired and informed the development of several AI security tests accessible through Mindgard CLI.
 
 Jiang, F., Xu, Z., Niu, L., Xiang, Z., Ramasubramanian, B., Li, B., & Poovendran, R. (2024). ArtPrompt: ASCII Art-based Jailbreak Attacks against Aligned LLMs. arXiv [Cs.CL]. Retrieved from http://arxiv.org/abs/2402.11753
 
