@@ -148,3 +148,15 @@ The `headers` setting allows you to specify a custom HTTP header to include with
 The exit code of a test will be non-zero if the test identifies risks above your risk threshold. To override the default risk-threshold pass `--risk-threshold 50`. This will cause the CLI to exit with an non-zero exit status if any test results in a risk score over 50.
 
 See an example of this in action here: [https://github.com/Mindgard/mindgard-github-action-example](https://github.com/Mindgard/mindgard-github-action-example)
+
+## Acknowledgements.
+
+We would like to acknowledge the incredible research within the adversarial machine learning community, which has informed the development of this project:
+
+Jiang, F., Xu, Z., Niu, L., Xiang, Z., Ramasubramanian, B., Li, B., & Poovendran, R. (2024). ArtPrompt: ASCII Art-based Jailbreak Attacks against Aligned LLMs. arXiv [Cs.CL]. Retrieved from http://arxiv.org/abs/2402.11753
+
+Russinovich, M., Salem, A., & Eldan, R. (2024). Great, Now Write an Article About That: The Crescendo Multi-Turn LLM Jailbreak Attack. arXiv [Cs.CR]. Retrieved from http://arxiv.org/abs/2404.01833
+
+Goodside, R. LLM Prompt Injection Via Invisible Instructions in Pasted Text, Retreved from https://x.com/goodside/status/1745511940351287394
+
+Yuan, Y., Jiao, W., Wang, W., Huang, J.-T., He, P., Shi, S., & Tu, Z. (2024). GPT-4 Is Too Smart To Be Safe: Stealthy Chat with LLMs via Cipher. arXiv [Cs.CL]. Retrieved from http://arxiv.org/abs/2308.06463
