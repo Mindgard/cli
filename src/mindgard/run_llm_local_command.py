@@ -1,8 +1,9 @@
 import json
 import logging
-from typing import Dict, Any, Callable, Union
+from typing import Dict, Any, Callable, Union, List
 from time import sleep
 from concurrent.futures import ThreadPoolExecutor
+from mindgard.error import ExpectedError
 from rich.console import Console
 from rich.table import Table
 from rich.live import Live
@@ -38,6 +39,19 @@ class RunLLMLocalCommand:
         self._poll_interval = poll_interval  # poll interval is expose to speed up tests
         self._model_wrapper = model_wrapper
         self._context_manager = ContextManager()
+
+    @staticmethod
+    def validate_args(args:Dict[str, Any]):
+        # args must include non-zero values for 
+        # target: str, json_format: bool, risk_threshold: int, system_prompt: str
+        missing_args: List[str]= []
+        if args.get("target") == None or args.get("target") == "":
+            missing_args.append("target")
+        if args.get("system_prompt", None) is None:
+            missing_args.append("system_prompt")
+        if len(missing_args) > 0:
+            raise ExpectedError(f"Missing required arguments: {', '.join(missing_args)}")
+
 
     def submit_test_progress(
         self, progress: Progress, access_token: str, target: str, system_prompt: str, error_callback: Union[Callable[[Exception], None], None] = None
