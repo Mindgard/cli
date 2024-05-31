@@ -131,9 +131,18 @@ class APIModelWrapper(ModelWrapper):
         request_payload = self.prompt_to_request_payload(content)
 
         # Make the API call
-        response = requests.post(self.api_url, headers=self.headers, json=request_payload)
-        if response.status_code != 200:
-            raise Exception(f"API call failed with {response.status_code=} {response.json()=}")
+        try:
+            response = requests.post(self.api_url, headers=self.headers, json=request_payload)
+            response.raise_for_status()
+        except requests.exceptions.ConnectionError as cerr:
+            # this means the endpoint was uncontactable
+            raise cerr
+        except requests.exceptions.HTTPError as httperr:
+            # this means the endpoint didn't like how we were acting, i.e check status code
+            raise httperr
+        except Exception as e:
+            # everything else
+            raise e
 
         response = response.json()
 

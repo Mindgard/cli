@@ -4,7 +4,6 @@ from typing import Any, Dict, Optional, Tuple
 
 import toml
 from .error import ExpectedError
-
 import requests
 
 from .constants import REPOSITORY_URL, VERSION
