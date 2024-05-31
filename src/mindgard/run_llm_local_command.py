@@ -158,14 +158,20 @@ class RunLLMLocalCommand:
         else:
             raise Exception(f"did not receive notification of test submitted within timeout ({max_attempts}s); failed to start test")
 
-    def preflight(self, console: Console) -> None:
+    def preflight(self, console: Console) -> bool:
+        """
+        Makes a single request to the LLM to validate basic connectivity before submitting
+        test.
+
+        Returns True on success, False on failure
+        """
         try:
             console.print("Contacting model...")
             _ = self._model_wrapper.__call__("Hello llm, are you there?")
+            return True
         except requests.exceptions.ConnectionError as cerr:
             console.print(f"[red]Could not connect to the model! [white](URL: {self._model_wrapper.api_url if hasattr(self._model_wrapper, "api_url") else "<unknown>"}, are you sure it's correct?)")
             logging.debug(cerr)
-            exit(1)
         except requests.exceptions.HTTPError as httperr:
             logging.debug(httperr)
             status_code: int = httperr.response.status_code
@@ -180,16 +186,18 @@ class RunLLMLocalCommand:
             elif status_code == 424:
                 message += "is the model healthy?"
             console.print(message)
-            exit(1)
         except Exception as e:
             logging.error(e)
+        
+        return False
 
     def run_inner(
         self, access_token: str, target: str, json_format: bool, risk_threshold: int, system_prompt: str
     ) -> CliResponse:
         console = Console()
 
-        self.preflight(console=console)
+        if self.preflight(console=console) == False:
+            return CliResponse(2)
 
         if json_format:
             return self.run_json(
