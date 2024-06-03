@@ -95,7 +95,6 @@ class APIModelWrapper(ModelWrapper):
                 raise ExpectedError("`--request-template` must contain '{prompt}' and '{system_prompt}'.")
         self.selector = selector
         self.system_prompt = system_prompt or ""
-        self.tokenizer = tokenizer
         self.headers = headers or {}
 
 

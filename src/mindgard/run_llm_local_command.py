@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Dict, Any, Callable, Union, List
+from typing import Dict, Any, Callable, Literal, Optional, Union, List, cast
 from time import sleep
 from concurrent.futures import ThreadPoolExecutor
 from mindgard.error import ExpectedError
@@ -26,6 +26,9 @@ from .auth import require_auth
 from .api_service import ApiService
 
 TEST_POLL_INTERVAL = 5
+
+
+ErrorCode = Literal["CouldNotContact", "ContentPolicy", "CLIError", "NotImplemented", "NoResponse", "RateLimited", "NetworkIssue"]
 
 
 class RunLLMLocalCommand:
@@ -110,6 +113,7 @@ class RunLLMLocalCommand:
 
                 response: Union[str, None] = None
                 status = "error"
+                error: Optional[ErrorCode] = None
 
                 try:
                     response = self._model_wrapper(
@@ -119,9 +123,10 @@ class RunLLMLocalCommand:
                     status = "ok"
                 except Exception as ae:
                     if error_callback:
-                        error_callback(ae)
+                        error = error_callback(ae)
                     else:
                         logging.error(ae)
+                        error = "CLIError"
                         raise
                 finally:
                     # we always try to send a response
@@ -131,6 +136,7 @@ class RunLLMLocalCommand:
                         "status": status,
                         "payload": {
                             "response": response,
+                            "error": cast(ErrorCode, error) if status == "error" else None,
                         }
                     }
                     logging.debug(f"sending response {replyData=}")
@@ -203,6 +209,7 @@ class RunLLMLocalCommand:
             console.print(message)
         except Exception as e:
             logging.error(e)
+            raise e
         
         return False
 
@@ -234,14 +241,18 @@ class RunLLMLocalCommand:
         exceptions_task_table: Dict[str, TaskID] = {}
         exceptions_count_table: Dict[str, int] = {}
 
-        def _handle_exception_callback(exception: Exception) -> None:
+        def _handle_exception_callback(exception: Exception) -> ErrorCode:
             text: str = ""
+            error_code: ErrorCode
             if isinstance(exception, NotImplementedError):
                 text = f"Attack not yet compatible with this preset"
+                error_code = "NotImplemented"
             elif isinstance(exception, requests.exceptions.HTTPError):
                 text = f"HTTP {exception.response.status_code} when contacting LLM"
+                error_code = "CouldNotContact"
             else:
                 logging.error(exception)
+                error_code = "CLIError"
                 raise
 
             if not exceptions_task_table.get(text, None):
@@ -255,6 +266,7 @@ class RunLLMLocalCommand:
             )
 
             logging.debug(exception)
+            return error_code
 
 
         test_res: Dict[str, Any]
