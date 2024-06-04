@@ -108,7 +108,8 @@ def main() -> None:
         llm_test_res = llm_test_cmd.run(target=final_args["target"], json_format=bool(final_args["json"]), risk_threshold=int(cast(str, final_args["risk_threshold"])), system_prompt=final_args["system_prompt"])
         exit(llm_test_res.code())
     else:
-        print_to_stderr(BANNER)
+        if Console.is_terminal:
+            print_to_stderr(BANNER)
         print_to_stderr('Which command are you looking for? See: $ mindgard --help')
 
 
