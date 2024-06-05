@@ -82,6 +82,8 @@ def main() -> None:
         print_to_stderr(f"New version available: {new_version}. Run 'pip install mindgard --upgrade' to upgrade. Older versions of the CLI may not be actively maintained.")
 
     if args.command == 'login':
+        if Console.is_terminal:
+            print_to_stderr(BANNER)
         login()
     elif args.command == 'logout':
         logout()
