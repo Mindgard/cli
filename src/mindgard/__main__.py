@@ -17,6 +17,7 @@ from .api_service import ApiService
 from .auth import login, logout
 from .constants import VERSION
 from .utils import is_version_outdated, print_to_stderr, parse_toml_and_args_into_final_args
+from .splash import banner
 
 import logging
 from rich.logging import RichHandler
@@ -107,6 +108,7 @@ def main() -> None:
         llm_test_res = llm_test_cmd.run(target=final_args["target"], json_format=bool(final_args["json"]), risk_threshold=int(cast(str, final_args["risk_threshold"])), system_prompt=final_args["system_prompt"])
         exit(llm_test_res.code())
     else:
+        banner()
         print_to_stderr('Which command are you looking for? See: $ mindgard --help')
 
 
