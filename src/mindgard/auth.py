@@ -5,6 +5,8 @@ import time
 from typing import Any, Callable, Optional, TypeVar, cast
 from functools import wraps
 
+from rich.progress import Console
+
 from .error import ExpectedError
 import requests
 from auth0.authentication.token_verifier import (AsymmetricSignatureVerifier, # type: ignore
@@ -102,24 +104,27 @@ def login() -> None:
         'audience': AUTH0_AUDIENCE
     }
 
-    authenticated = False
-    while not authenticated:
-        print('Checking if the login flow has been completed...    no pressure!')
-        token_response = requests.post('https://{}/oauth/token'.format(AUTH0_DOMAIN), data=token_payload)
+    console = Console()
+    with console.status("[bold green]Waiting for auth to complete...") as status:
+        authenticated = False
+        while not authenticated:
+            # print('Checking if the login flow has been completed...    no pressure!')
+            token_response = requests.post('https://{}/oauth/token'.format(AUTH0_DOMAIN), data=token_payload)
 
-        token_data = token_response.json()
-        if token_response.status_code == 200:
-            validate_id_token(token_data['id_token'])
-            print('Authenticated!')
-            os.makedirs(get_config_directory(), exist_ok=True)
-            with open(get_token_file(), 'w') as f:
-                f.write(token_data['refresh_token'])
-            authenticated = True
-        elif token_data['error'] not in ('authorization_pending', 'slow_down'):
-            error = token_data.get('error_description', 'Error authenticating the user. Please wait 30s and try again.')
-            raise ExpectedError(error)
-        else:
-            time.sleep(device_code_data['interval'])
+            token_data = token_response.json()
+            if token_response.status_code == 200:
+                validate_id_token(token_data['id_token'])
+                print('Authenticated!')
+                os.makedirs(get_config_directory(), exist_ok=True)
+                with open(get_token_file(), 'w') as f:
+                    f.write(token_data['refresh_token'])
+                authenticated = True
+            elif token_data['error'] not in ('authorization_pending', 'slow_down'):
+                error = token_data.get('error_description', 'Error authenticating the user. Please wait 30s and try again.')
+                raise ExpectedError(error)
+            else:
+                time.sleep(device_code_data['interval'])
+
 
 
 def logout() -> None:
