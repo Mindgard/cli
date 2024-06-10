@@ -148,15 +148,13 @@ class RunLLMLocalCommand:
                 content = msg.data["payload"]["prompt"]
 
                 response: Union[str, None] = None
-                status = "error"
-                error_code: Optional[ErrorCode] = "CLIError"
+                error_code: Optional[ErrorCode] = None
 
                 try:
                     response = self._model_wrapper(
                         content=content,
                         with_context=context,
                     )
-                    status = "ok"
                 except Exception as ae:
                     error_code = error_callback(ae)
                     if error_code == "CLIError":
@@ -166,10 +164,10 @@ class RunLLMLocalCommand:
                     replyData = {
                         "correlationId": msg.data["correlationId"],
                         "messageType": "Response",
-                        "status": status,
+                        "status": "ok", # Deprecated but kept for compatibility
                         "payload": {
                             "response": response,
-                            "error": error_code if status == "error" else None,
+                            "error": error_code,
                         }
                     }
                     logging.debug(f"sending response {replyData=}")
