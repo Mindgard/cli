@@ -1,6 +1,6 @@
 import os
 
-VERSION: str = "0.33.1"
+VERSION: str = "0.34.0"
 REPOSITORY_URL: str = f"https://pypi.org/pypi/mindgard/json"
 
 ALGORITHMS = ['RS256']
