@@ -3,7 +3,6 @@ import logging
 from typing import Dict, Any, Callable, Literal, Optional, Union, List, cast
 from time import sleep
 from concurrent.futures import ThreadPoolExecutor
-from mindgard.error import ExpectedError
 from rich.console import Console
 from rich.table import Table
 from rich.live import Live
@@ -18,7 +17,8 @@ import requests
 
 import time
 
-from .wrappers import ModelWrapper, ContextManager 
+from .error import ExpectedError
+from .wrappers import ModelWrapper, ContextManager
 
 from .utils import CliResponse
 
@@ -28,7 +28,39 @@ from .api_service import ApiService
 TEST_POLL_INTERVAL = 5
 
 
+
 ErrorCode = Literal["CouldNotContact", "ContentPolicy", "CLIError", "NotImplemented", "NoResponse", "RateLimited", "NetworkIssue"]
+
+# Don't add ones to this that want to raise
+ERROR_CODE_TO_STATUS_CODES: Dict[ErrorCode, List[int]] = {
+    "CouldNotContact": [404],
+    "NoResponse": [500, 444, 401],
+    "RateLimited": [429],
+    "NetworkIssue": [503, 500],
+    "CLIError": [],
+    "ContentPolicy": [],
+    "NotImplemented": []
+}
+
+
+def handle_exception_callback(exception: Exception, handle_visual_exception_callback: Optional[Callable[[str], None]]) -> ErrorCode:
+    text: str = ""
+    error_code: ErrorCode = "CLIError"
+    if isinstance(exception, NotImplementedError):
+        text = f"Attack not yet compatible with this preset"
+        error_code = "NotImplemented"
+    elif isinstance(exception, requests.exceptions.HTTPError):
+        status_code = exception.response.status_code
+        for err_code, status_codes in ERROR_CODE_TO_STATUS_CODES.items():
+            if status_code in status_codes:
+                error_code = err_code
+        logging.error(f"Unexpected HTTPError encountered: {exception}")
+
+    if handle_visual_exception_callback:
+        handle_visual_exception_callback(text)
+
+    logging.debug(exception)
+    return error_code
 
 
 class RunLLMLocalCommand:
@@ -44,7 +76,7 @@ class RunLLMLocalCommand:
         self._context_manager = ContextManager()
 
     @staticmethod
-    def validate_args(args:Dict[str, Any]):
+    def validate_args(args:Dict[str, Any]) -> None:
         # args must include non-zero values for 
         # target: str, json_format: bool, risk_threshold: int, system_prompt: str
         missing_args: List[str]= []
@@ -57,7 +89,7 @@ class RunLLMLocalCommand:
 
 
     def submit_test_progress(
-        self, progress: Progress, access_token: str, target: str, system_prompt: str, error_callback: Union[Callable[[Exception], None], None] = None
+        self, progress: Progress, access_token: str, target: str, system_prompt: str, error_callback: Callable[[Exception], ErrorCode]
     ) -> Dict[str, Any]:
         with progress:
             with ThreadPoolExecutor() as pool:
@@ -74,7 +106,7 @@ class RunLLMLocalCommand:
                 return future.result()
 
     def submit_test_fetching_initial(
-        self, access_token: str, target: str, system_prompt: str, error_callback: Union[Callable[[Exception], None], None] = None
+        self, access_token: str, target: str, system_prompt: str, error_callback: Callable[[Exception], ErrorCode]
     ) -> Dict[str, Any]:
         ws_token_and_group_id = (
             self._api.get_orchestrator_websocket_connection_string(
@@ -113,7 +145,7 @@ class RunLLMLocalCommand:
 
                 response: Union[str, None] = None
                 status = "error"
-                error: Optional[ErrorCode] = None
+                error: Optional[ErrorCode] = "CLIError"
 
                 try:
                     response = self._model_wrapper(
@@ -122,12 +154,9 @@ class RunLLMLocalCommand:
                     )
                     status = "ok"
                 except Exception as ae:
-                    if error_callback:
-                        error = error_callback(ae)
-                    else:
-                        logging.error(ae)
-                        error = "CLIError"
-                        raise
+                    error_code = error_callback(ae)
+                    if error_code == "CLIError":
+                        raise ae
                 finally:
                     # we always try to send a response
                     replyData = {
@@ -241,20 +270,7 @@ class RunLLMLocalCommand:
         exceptions_task_table: Dict[str, TaskID] = {}
         exceptions_count_table: Dict[str, int] = {}
 
-        def _handle_exception_callback(exception: Exception) -> ErrorCode:
-            text: str = ""
-            error_code: ErrorCode
-            if isinstance(exception, NotImplementedError):
-                text = f"Attack not yet compatible with this preset"
-                error_code = "NotImplemented"
-            elif isinstance(exception, requests.exceptions.HTTPError):
-                text = f"HTTP {exception.response.status_code} when contacting LLM"
-                error_code = "CouldNotContact"
-            else:
-                logging.error(exception)
-                error_code = "CLIError"
-                raise
-
+        def _handle_visual_exception_callback(text: str) -> None:
             if not exceptions_task_table.get(text, None):
                 exceptions_count_table[text] = 0
                 exceptions_task_table[text] = exceptions_progress.add_task("")
@@ -265,15 +281,12 @@ class RunLLMLocalCommand:
                 description=f"[dark_orange3][!!!] {text} (x{exceptions_count_table[text]})"
             )
 
-            logging.debug(exception)
-            return error_code
-
 
         test_res: Dict[str, Any]
         with submit_progress:
             test_res = self.submit_test_progress(
                 submit_progress, access_token=access_token, target=target, system_prompt=system_prompt,
-                error_callback=_handle_exception_callback
+                error_callback=lambda x: handle_exception_callback(x, _handle_visual_exception_callback)
             )
 
         attacks = test_res["attacks"]
@@ -361,7 +374,7 @@ class RunLLMLocalCommand:
         self, access_token: str, target: str, risk_threshold: int, system_prompt:str
     ) -> CliResponse:
         test_res = self.submit_test_fetching_initial(
-            access_token=access_token, target=target, system_prompt=system_prompt
+            access_token=access_token, target=target, system_prompt=system_prompt, error_callback=lambda x: handle_exception_callback(x, None)
         )
         test_id = test_res["id"]
         while test_res["hasFinished"] is False:
