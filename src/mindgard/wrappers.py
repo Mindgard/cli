@@ -5,7 +5,7 @@ import logging
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union, cast
 from anthropic import Anthropic
 from anthropic.types import MessageParam
-from .error import ExpectedError
+from .error import ExpectedError, NoOpenAIResponseError
 import requests
 from openai import AzureOpenAI, OpenAI
 import jsonpath_ng
@@ -281,7 +281,7 @@ def openai_call(wrapper: Union[AzureOpenAIWrapper, OpenAIWrapper], content:str, 
     response = chat.choices[0].message.content
 
     if not response:
-        raise ExpectedError("No response from OpenAI.")
+        raise NoOpenAIResponseError("No response from OpenAI.")
 
     if with_context is not None:
         with_context.add(PromptResponse(

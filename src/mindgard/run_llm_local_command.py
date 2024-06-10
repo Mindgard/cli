@@ -17,7 +17,7 @@ import requests
 
 import time
 
-from .error import ExpectedError
+from .error import ExpectedError, NoOpenAIResponseError
 from .wrappers import ModelWrapper, ContextManager
 
 from .utils import CliResponse
@@ -51,10 +51,14 @@ def handle_exception_callback(exception: Exception, handle_visual_exception_call
         error_code = "NotImplemented"
     elif isinstance(exception, requests.exceptions.HTTPError):
         status_code = exception.response.status_code
+        text = f"HTTP {status_code} when contacting LLM"
         for err_code, status_codes in ERROR_CODE_TO_STATUS_CODES.items():
             if status_code in status_codes:
                 error_code = err_code
         logging.error(f"Unexpected HTTPError encountered: {exception}")
+    elif isinstance(exception, NoOpenAIResponseError):
+        text = str(exception)
+        error_code = "NoResponse"
 
     if handle_visual_exception_callback:
         handle_visual_exception_callback(text)
@@ -145,7 +149,7 @@ class RunLLMLocalCommand:
 
                 response: Union[str, None] = None
                 status = "error"
-                error: Optional[ErrorCode] = "CLIError"
+                error_code: Optional[ErrorCode] = "CLIError"
 
                 try:
                     response = self._model_wrapper(
@@ -165,7 +169,7 @@ class RunLLMLocalCommand:
                         "status": status,
                         "payload": {
                             "response": response,
-                            "error": cast(ErrorCode, error) if status == "error" else None,
+                            "error": error_code if status == "error" else None,
                         }
                     }
                     logging.debug(f"sending response {replyData=}")
