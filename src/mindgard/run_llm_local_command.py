@@ -147,7 +147,7 @@ class RunLLMLocalCommand:
                 context = self._context_manager.get_context_or_none(context_id)
                 content = msg.data["payload"]["prompt"]
 
-                response: Union[str, None] = None
+                response: str = ""
                 error_code: Optional[ErrorCode] = None
 
                 try:
