@@ -3,7 +3,7 @@ import logging
 from typing import Dict, Any, Callable, Literal, Optional, List
 from time import sleep
 from concurrent.futures import ThreadPoolExecutor
-from openai import BadRequestError as OpenAIBadRequestError
+from openai import BadRequestError as OpenAIBadRequestError, RateLimitError as OpenAIRateLimitError
 from rich.console import Console
 from rich.table import Table
 from rich.live import Live
@@ -30,7 +30,7 @@ TEST_POLL_INTERVAL = 5
 
 
 
-ErrorCode = Literal["CouldNotContact", "ContentPolicy", "CLIError", "NotImplemented", "NoResponse", "RateLimited", "NetworkIssue"]
+ErrorCode = Literal["CouldNotContact", "ContentPolicy", "CLIError", "NotImplemented", "NoResponse", "RateLimited", "NetworkIssue", "MaxContextLength"]
 
 # Don't add ones to this that want to raise
 ERROR_CODE_TO_STATUS_CODES: Dict[ErrorCode, List[int]] = {
@@ -40,6 +40,7 @@ ERROR_CODE_TO_STATUS_CODES: Dict[ErrorCode, List[int]] = {
     "NetworkIssue": [503, 500],
     "CLIError": [],
     "ContentPolicy": [],
+    "MaxContextLength": [],
     "NotImplemented": []
 }
 
@@ -64,6 +65,12 @@ def handle_exception_callback(exception: Exception, handle_visual_exception_call
         if "content" in str(exception).lower() and "policy" in str(exception).lower():
             text = "Hit model content policy filter"
             error_code = "ContentPolicy"
+        if "maximum" in str(exception).lower() and "tokens" in str(exception).lower() and "context" in str(exception).lower():
+            text = "Hit maximum tokens limit"
+            error_code = "ContentPolicy"
+    elif isinstance(exception, OpenAIRateLimitError):
+        text = "Rate limited by OpenAI"
+        error_code = "RateLimited"
 
     if handle_visual_exception_callback:
         handle_visual_exception_callback(text)
