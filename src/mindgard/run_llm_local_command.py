@@ -1,8 +1,9 @@
 import json
 import logging
-from typing import Dict, Any, Callable, Literal, Optional, Union, List, cast
+from typing import Dict, Any, Callable, Literal, Optional, List
 from time import sleep
 from concurrent.futures import ThreadPoolExecutor
+from openai import BadRequestError as OpenAIBadRequestError
 from rich.console import Console
 from rich.table import Table
 from rich.live import Live
@@ -59,6 +60,10 @@ def handle_exception_callback(exception: Exception, handle_visual_exception_call
     elif isinstance(exception, NoOpenAIResponseError):
         text = str(exception)
         error_code = "NoResponse"
+    elif isinstance(exception, OpenAIBadRequestError):
+        if "content" in str(exception).lower() and "policy" in str(exception).lower():
+            text = "Hit model content policy filter"
+            error_code = "ContentPolicy"
 
     if handle_visual_exception_callback:
         handle_visual_exception_callback(text)
