@@ -61,6 +61,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     test_parser.add_argument('--selector', type=str, help='The selector to retrieve the text response from the LLM response JSON.', required=False)
     test_parser.add_argument('--request-template', type=str, help='The template to wrap the API request in.', required=False)
     test_parser.add_argument('--tokenizer', type=str, help='Choose a HuggingFace model to provide a tokeniser for prompt and chat completion templating.', required=False)
+    test_parser.add_argument('--parallelism', type=int, help='The maximum number of parallel requests that can be made to the API.', required=False, default=5)
 
     return parser.parse_args(args)
 
@@ -103,8 +104,14 @@ def main() -> None:
         model_wrapper = parse_args_into_model(final_args)
         RunLLMLocalCommand.validate_args(final_args)
         api_service = ApiService()
-        llm_test_cmd = RunLLMLocalCommand(api_service=api_service, model_wrapper=model_wrapper)
-        llm_test_res = llm_test_cmd.run(target=final_args["target"], json_format=bool(final_args["json"]), risk_threshold=int(cast(str, final_args["risk_threshold"])), system_prompt=final_args["system_prompt"])
+        parallelism = int(cast(str, final_args["parallelism"]))
+        llm_test_cmd = RunLLMLocalCommand(api_service=api_service, model_wrapper=model_wrapper, parallelism=parallelism)
+        llm_test_res = llm_test_cmd.run(
+            target=final_args["target"], 
+            json_format=bool(final_args["json"]), 
+            risk_threshold=int(cast(str, final_args["risk_threshold"])), 
+            system_prompt=final_args["system_prompt"],
+        )
         exit(llm_test_res.code())
     else:
         print_to_stderr('Which command are you looking for? See: $ mindgard --help')
