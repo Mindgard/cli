@@ -84,11 +84,13 @@ class RunLLMLocalCommand:
         self,
         api_service: ApiService,
         model_wrapper: ModelWrapper,
+        parallelism: int,   
         poll_interval: float = TEST_POLL_INTERVAL,
     ) -> None:
         self._api = api_service
         self._poll_interval = poll_interval  # poll interval is expose to speed up tests
         self._model_wrapper = model_wrapper
+        self._parallelism = parallelism
         self._context_manager = ContextManager()
 
     @staticmethod
@@ -100,6 +102,8 @@ class RunLLMLocalCommand:
             missing_args.append("target")
         if args.get("system_prompt", None) is None:
             missing_args.append("system_prompt")
+        if args['parallelism'] < 1:
+            raise ExpectedError(f"--parallelism must be a positive integer")
         if len(missing_args) > 0:
             raise ExpectedError(f"Missing required arguments: {', '.join(missing_args)}")
 
@@ -126,7 +130,7 @@ class RunLLMLocalCommand:
     ) -> Dict[str, Any]:
         ws_token_and_group_id = (
             self._api.get_orchestrator_websocket_connection_string(
-                access_token=access_token, payload={"target": target, "system_prompt": system_prompt}
+                access_token=access_token, payload={"target": target, "system_prompt": system_prompt, "parallelism": self._parallelism}
             )
         )
 
@@ -257,7 +261,8 @@ class RunLLMLocalCommand:
         return False
 
     def run_inner(
-        self, access_token: str, target: str, json_format: bool, risk_threshold: int, system_prompt: str
+        self, access_token: str, target: str, json_format: bool, 
+        risk_threshold: int, system_prompt: str
     ) -> CliResponse:
         console = Console()
 
