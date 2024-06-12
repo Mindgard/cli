@@ -102,6 +102,8 @@ class RunLLMLocalCommand:
             missing_args.append("target")
         if args.get("system_prompt", None) is None:
             missing_args.append("system_prompt")
+        if args['parallelism'] < 1:
+            raise ExpectedError(f"--parallelism must be a positive integer")
         if len(missing_args) > 0:
             raise ExpectedError(f"Missing required arguments: {', '.join(missing_args)}")
 
