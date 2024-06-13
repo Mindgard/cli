@@ -79,7 +79,7 @@ def main() -> None:
         sys.exit(2)
 
     if new_version := is_version_outdated():
-        print_to_stderr(f"New version available: {new_version}. Run 'pip install mindgard --upgrade' to upgrade. Older versions of the CLI may not be actively maintained.")
+        print_to_stderr(f"New version available: {new_version}. Please upgrade as older versions of the CLI may not be actively maintained.")
 
     if args.command == 'login':
         login()
