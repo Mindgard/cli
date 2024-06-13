@@ -149,6 +149,14 @@ The exit code of a test will be non-zero if the test identifies risks above your
 
 See an example of this in action here: [https://github.com/Mindgard/mindgard-github-action-example](https://github.com/Mindgard/mindgard-github-action-example)
 
+### 📋 Managing request load
+
+You have the option to set the parallelism parameter which sets the maximum amount of requests you want to target your model concurrently. This enables you to protect your model from getting too many requests. 
+
+We require that your model responds within 60s so set parallelism accordingly (it should be less than the number of requests you can serve per minute).
+
+Then run: `mindgard test --config-file mymodel.toml --parallelism X`
+
 ## Acknowledgements.
 
 We would like to thank and acknowledge various research works from the Adversarial Machine Learning community, which inspired and informed the development of several AI security tests accessible through Mindgard CLI.
