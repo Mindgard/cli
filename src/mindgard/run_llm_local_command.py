@@ -3,11 +3,10 @@ import logging
 from typing import Dict, Any, Callable, Literal, Optional, List
 from time import sleep
 from concurrent.futures import ThreadPoolExecutor
-from openai import BadRequestError as OpenAIBadRequestError, RateLimitError as OpenAIRateLimitError
 from rich.console import Console
 from rich.table import Table
 from rich.live import Live
-from rich.progress import Progress, SpinnerColumn, TaskID
+from rich.progress import Progress, SpinnerColumn, TaskID, TextColumn
 
 # Networking
 from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCredential
@@ -67,11 +66,13 @@ def handle_exception_callback(exception: Exception, handle_visual_exception_call
     # TODO - come take a look at this
     if isinstance(exception, MGException):
         error_code: ErrorCode = exceptions_to_status_codes.get(exception, "CLIError") # type: ignore
+        callback_text = str(exception)
     else:
-        logging.error(exception)    
+        logging.error(exception)
+        callback_text = "<unknown>"
 
     if handle_visual_exception_callback:
-        handle_visual_exception_callback("here is some text, it's not ready yet")
+        handle_visual_exception_callback(callback_text)
 
     logging.debug(exception)
     return error_code
@@ -237,18 +238,15 @@ class RunLLMLocalCommand:
             _ = self._model_wrapper.__call__("Hello llm, are you there?")
             return True
         except Uncontactable as cerr:
-            detail = self._model_wrapper.api_url if hasattr(self._model_wrapper, "api_url") else "<unknown>"
-            console.print(f"[red]Could not connect to the model! [white](URL: {detail}, are you sure it's correct?)")
             logging.debug(cerr)
+            model_api = self._model_wrapper.api_url if hasattr(self._model_wrapper, "api_url") else "<unknown>"
+            console.print(f"[red]Could not connect to the model! [white](URL: {model_api}, are you sure it's correct?)")
         except HTTPBaseError as httpbe:
-            logging.error(httpbe)
-            # status_code: int = httperr.response.status_code
-            # status_message: str = requests.status_codes._codes[status_code][0]
-            status_code = 4
-            status_message = "hello"
-            message: str = f"[red]Model pre-flight check returned {status_code} ({status_message}), "
+            logging.debug(httpbe)
+            message: str = f"[red]Model pre-flight check returned {httpbe.status_code} ({httpbe.status_message})"
             console.print(message)
         except Exception as e:
+            # something we've not really accounted for caught
             logging.error(e)
             raise e
         
@@ -311,18 +309,20 @@ class RunLLMLocalCommand:
 
         attacks_progress = Progress(
             "{task.description}",
-            SpinnerColumn(finished_text="Finished"),
+            SpinnerColumn(finished_text="Done"),
+            TextColumn("{task.fields[status]}")
         )
         attacks_task_map: Dict[str, TaskID] = {}
         for attack in attacks:
             attacks_task_map[attack["id"]] = attacks_progress.add_task(
-                f"Attack {attack['attack']}", total=1
+                f"Attack {attack['attack']}", total=1, status="[chartreuse1]Queued"
             )
 
         progress_table.add_row(overall_progress)
         progress_table.add_row(attacks_progress)
         progress_table.add_row("")
         progress_table.add_row(exceptions_progress)
+
 
         with Live(progress_table, refresh_per_second=10):
             while not overall_progress.finished:
@@ -332,9 +332,12 @@ class RunLLMLocalCommand:
                 for attack_res in test_res["attacks"]:
                     task_id = attacks_task_map[attack_res["id"]]
                     if attack_res["state"] == 2:
-                        attacks_progress.update(task_id, completed=1)
+                        attacks_progress.update(task_id, completed=1, status="[chartreuse3]success")
                     elif attack_res["state"] == -1:
-                        attacks_progress.update(task_id, completed=1)
+                        attacks_progress.update(task_id, completed=1, status="[red3]failed")
+                    elif attack_res["state"] == 1:
+                        attacks_progress.update(task_id, status="[orange3]running")
+
 
                 completed = sum(task.completed for task in attacks_progress.tasks)
                 overall_progress.update(overall_task, completed=completed)
