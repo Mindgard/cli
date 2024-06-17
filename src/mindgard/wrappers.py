@@ -7,9 +7,11 @@ from anthropic import Anthropic
 from anthropic.types import MessageParam
 from .error import ExpectedError, NoOpenAIResponseError
 import requests
-from openai import AzureOpenAI, OpenAI
+from openai import AzureOpenAI, OpenAI, OpenAIError
 import jsonpath_ng
 
+# Exceptions
+from .exceptions import Uncontactable, status_code_to_exception, openai_exception_to_exception
 
 @dataclass
 class PromptResponse:
@@ -134,11 +136,10 @@ class APIModelWrapper(ModelWrapper):
             response = requests.post(self.api_url, headers=self.headers, json=request_payload)
             response.raise_for_status()
         except requests.exceptions.ConnectionError as cerr:
-            # this means the endpoint was uncontactable
-            raise cerr
+            raise Uncontactable(str(cerr))
         except requests.exceptions.HTTPError as httperr:
-            # this means the endpoint didn't like how we were acting, i.e check status code
-            raise httperr
+            status_code: int = httperr.response.status_code
+            raise status_code_to_exception(status_code)
         except Exception as e:
             # everything else
             raise e
@@ -149,7 +150,7 @@ class APIModelWrapper(ModelWrapper):
             jsonpath_expr = jsonpath_ng.parse(self.selector)
             match = jsonpath_expr.find(response)
             if match:
-                return match[0].value
+                return str(match[0].value)
             else:
                 raise Exception(f"Selector {self.selector} did not match any elements in the response. {response=}")
 
@@ -160,7 +161,7 @@ class APIModelWrapper(ModelWrapper):
         #         response=response
         #     ))
 
-        return response
+        return str(response)
 
 
 class AzureAIStudioWrapper(APIModelWrapper):
@@ -199,10 +200,13 @@ class AzureAIStudioWrapper(APIModelWrapper):
                 if err_message := err_res_json.get("error", {}).get("message", None):
                     return cast(str, err_message)
             except Exception as e:
-                raise Exception(f"API call failed with {response.status_code=} {response.json()=}. Attempt to decode response failed with {e=}")
+                # TODO- use this
+                message = f"API call failed with {response.status_code=} {response.json()=}. Attempt to decode response failed with {e=}"
+                raise status_code_to_exception(400)
         elif response.status_code != 200:
             # Handle other types of API error
-            raise Exception(f"API call failed with {response.status_code=} {response.json()=}.")
+            message = f"API call failed with {response.status_code=} {response.json()=}."
+            raise status_code_to_exception(response.status_code)
 
         res_json: Dict[str, Any] = cast(Dict[str, Any], response.json())
 
@@ -215,7 +219,7 @@ class AzureAIStudioWrapper(APIModelWrapper):
             jsonpath_expr = jsonpath_ng.parse(self.selector)
             match = jsonpath_expr.find(res_json)
             if match:
-                return match[0].value
+                return str(match[0].value)
             else:
                 raise Exception(f"Selector {self.selector} did not match any elements in the response. {res_json=}")
 
@@ -226,7 +230,7 @@ class AzureAIStudioWrapper(APIModelWrapper):
         #         response=response
         #     ))
     
-        return response
+        return str(response)
 
 
 class HuggingFaceWrapper(APIModelWrapper):
@@ -277,9 +281,14 @@ def openai_call(wrapper: Union[AzureOpenAIWrapper, OpenAIWrapper], content:str, 
     
     messages.append({"role":"user", "content":content})
 
-    chat = wrapper.client.chat.completions.create(model=wrapper.model_name, messages=messages)  # type: ignore # TODO: fix type error
+    try:
+        chat = wrapper.client.chat.completions.create(model=wrapper.model_name, messages=messages)  # type: ignore # TODO: fix type error
+    except OpenAIError as e:
+        raise openai_exception_to_exception(e)
+
     response = chat.choices[0].message.content
 
+    # TODO- evaluate when this actually gets thrown
     if not response:
         raise NoOpenAIResponseError("No response from OpenAI.")
 

@@ -15,6 +15,24 @@ from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs
 
 # Exceptions
 import requests
+from .exceptions import (
+    MGException,
+    ServiceUnavailable,
+    InternalServerError,
+    RateLimitOrInsufficientCredits,
+    FailedDependency,
+    UnprocessableEntity,
+    Timeout,
+    NotFound,
+    BadRequest,
+    Forbidden,
+    Unauthorized,
+    Uncontactable,
+    HTTPBaseError,
+)
+
+# Types
+from typing import Type, cast
 
 import time
 
@@ -27,53 +45,33 @@ from .auth import require_auth
 from .api_service import ApiService
 
 TEST_POLL_INTERVAL = 5
-
-
-
 ErrorCode = Literal["CouldNotContact", "ContentPolicy", "CLIError", "NotImplemented", "NoResponse", "RateLimited", "NetworkIssue", "MaxContextLength"]
 
-# Don't add ones to this that want to raise
-ERROR_CODE_TO_STATUS_CODES: Dict[ErrorCode, List[int]] = {
-    "CouldNotContact": [404],
-    "NoResponse": [500, 444, 401],
-    "RateLimited": [429],
-    "NetworkIssue": [503, 500],
-    "CLIError": [],
-    "ContentPolicy": [],
-    "MaxContextLength": [],
-    "NotImplemented": []
+
+exceptions_to_status_codes: Dict[Type[MGException], ErrorCode] = {
+    Uncontactable: "CouldNotContact",
+    BadRequest: "CLIError", # not sure about this, we don't handle 400 atm
+    Unauthorized: "NoResponse",
+    Forbidden: "NoResponse",
+    NotFound: "NoResponse",
+    Timeout: "NoResponse",
+    UnprocessableEntity: "CLIError", # this is currently being handled as a rate limit issue for some reason
+    FailedDependency: "NoResponse",
+    RateLimitOrInsufficientCredits: "RateLimited",
+    InternalServerError: "NoResponse",
+    ServiceUnavailable: "NoResponse"
 }
 
 
 def handle_exception_callback(exception: Exception, handle_visual_exception_callback: Optional[Callable[[str], None]]) -> ErrorCode:
-    text: str = ""
-    error_code: ErrorCode = "CLIError"
-    if isinstance(exception, NotImplementedError):
-        text = f"Attack not yet compatible with this preset"
-        error_code = "NotImplemented"
-    elif isinstance(exception, requests.exceptions.HTTPError):
-        status_code = exception.response.status_code
-        text = f"HTTP {status_code} when contacting LLM"
-        for err_code, status_codes in ERROR_CODE_TO_STATUS_CODES.items():
-            if status_code in status_codes:
-                error_code = err_code
-        logging.error(f"Unexpected HTTPError encountered: {exception}")
-    elif isinstance(exception, NoOpenAIResponseError):
-        text = str(exception)
-        error_code = "NoResponse"
-    elif isinstance(exception, OpenAIBadRequestError):
-        if "content" in str(exception).lower() and "policy" in str(exception).lower():
-            text = "Hit model content policy filter"
-            error_code = "ContentPolicy"
-        if "maximum" in str(exception).lower() and "tokens" in str(exception).lower() and "context" in str(exception).lower():
-            text = "Hit maximum tokens limit"
-            error_code = "ContentPolicy"
-    elif isinstance(exception, OpenAIRateLimitError):
-        text = "Rate limited by OpenAI"
-        error_code = "RateLimited"
+    # TODO - come take a look at this
+    if isinstance(exception, MGException):
+        error_code: ErrorCode = exceptions_to_status_codes.get(exception, "CLIError") # type: ignore
+    else:
+        logging.error(exception)    
 
     if handle_visual_exception_callback:
-        handle_visual_exception_callback(text)
+        handle_visual_exception_callback("here is some text, it's not ready yet")
 
     logging.debug(exception)
     return error_code
@@ -167,14 +165,18 @@ class RunLLMLocalCommand:
                 error_code: Optional[ErrorCode] = None
 
                 try:
-                    response = self._model_wrapper(
+                    # would pose being explicit with __call__ so we can ctrl+f easier, not a very clear shorthand
+                    response = self._model_wrapper.__call__(
                         content=content,
                         with_context=context,
                     )
-                except Exception as ae:
-                    error_code = error_callback(ae)
+                except MGException as mge:
+                    # TODO- come take a look at this
+                    error_code = error_callback(mge)
                     if error_code == "CLIError":
-                        raise ae
+                        raise mge
+                except Exception as e:
+                    raise e
                 finally:
                     # we always try to send a response
                     replyData = {
@@ -188,7 +190,7 @@ class RunLLMLocalCommand:
                     }
                     logging.debug(f"sending response {replyData=}")
 
-                    ws_client.send_to_group("orchestrator", replyData, data_type="json")
+                    ws_client.send_to_group("orchestrator", replyData, data_type="json") # type: ignore
             elif msg.data["messageType"] == "StartedTest": # should be something like "Submitted", upstream change required.
                 self.submitted_test_id = msg.data["payload"]["testId"]
                 self.submitted_test = True
@@ -197,7 +199,7 @@ class RunLLMLocalCommand:
 
         ws_client.open()
 
-        ws_client.subscribe("group-message", recv_message_handler)
+        ws_client.subscribe("group-message", recv_message_handler) # type: ignore
 
         payload = {
             "correlationId": "",
@@ -205,9 +207,7 @@ class RunLLMLocalCommand:
             "payload": {"groupId": ws_token_and_group_id["groupId"]},
         }
 
-        ws_client.send_to_group(
-            group_name="orchestrator", content=payload, data_type="json"
-        )
+        ws_client.send_to_group(group_name="orchestrator", content=payload, data_type="json") # type: ignore
 
         # wait 
         max_attempts = 30
@@ -236,23 +236,17 @@ class RunLLMLocalCommand:
             console.print("Contacting model...")
             _ = self._model_wrapper.__call__("Hello llm, are you there?")
             return True
-        except requests.exceptions.ConnectionError as cerr:
+        except Uncontactable as cerr:
             detail = self._model_wrapper.api_url if hasattr(self._model_wrapper, "api_url") else "<unknown>"
             console.print(f"[red]Could not connect to the model! [white](URL: {detail}, are you sure it's correct?)")
             logging.debug(cerr)
-        except requests.exceptions.HTTPError as httperr:
-            logging.debug(httperr)
-            status_code: int = httperr.response.status_code
-            status_message: str = requests.status_codes._codes[status_code][0]
+        except HTTPBaseError as httpbe:
+            logging.error(httpbe)
+            # status_code: int = httperr.response.status_code
+            # status_message: str = requests.status_codes._codes[status_code][0]
+            status_code = 4
+            status_message = "hello"
             message: str = f"[red]Model pre-flight check returned {status_code} ({status_message}), "
-            if status_code == 404:
-                message += "is the URL correct?"
-            elif status_code == 503:
-                message += "is the model accepting requests?"
-            elif status_code == 422:
-                message += "are you using the correct model preset?"
-            elif status_code == 424:
-                message += "is the model healthy?"
             console.print(message)
         except Exception as e:
             logging.error(e)

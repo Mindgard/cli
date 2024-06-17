@@ -157,6 +157,12 @@ We require that your model responds within 60s so set parallelism accordingly (i
 
 Then run: `mindgard test --config-file mymodel.toml --parallelism X`
 
+### 🐛 Debugging
+
+You can provide the flag `mindgard --log-level=debug <command>` to get some more info out of whatever command you're running. We've included `run-debug-and-pipe-to-file.sh` to streamline this on unix-like systems.
+
+`./run-debug-and-pipe-to-file.sh examples/openai-using-preset.toml out.txt` will run the openai config and pipe stdout & stderr to out.txt.
+
 ## Acknowledgements.
 
 We would like to thank and acknowledge various research works from the Adversarial Machine Learning community, which inspired and informed the development of several AI security tests accessible through Mindgard CLI.
