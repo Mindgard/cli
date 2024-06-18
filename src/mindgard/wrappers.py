@@ -5,13 +5,12 @@ import logging
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union, cast
 from anthropic import Anthropic
 from anthropic.types import MessageParam
-from .error import ExpectedError, NoOpenAIResponseError
 import requests
 from openai import AzureOpenAI, OpenAI, OpenAIError
 import jsonpath_ng
 
 # Exceptions
-from .exceptions import Uncontactable, status_code_to_exception, openai_exception_to_exception
+from .exceptions import Uncontactable, status_code_to_exception, openai_exception_to_exception, EmptyResponse
 
 @dataclass
 class PromptResponse:
@@ -86,7 +85,7 @@ class APIModelWrapper(ModelWrapper):
             logging.debug("Note that with tokenizer enabled, the request_template format is different.")
             self.request_template =  request_template or '{"prompt": "{tokenized_chat_template}"}'
             if '{tokenized_chat_template}' not in self.request_template:
-                raise ExpectedError("`--request-template` must contain '{tokenized_chat_template}' when using a tokenizer.")
+                raise ValueError("`--request-template` must contain '{tokenized_chat_template}' when using a tokenizer.")
             from transformers import AutoTokenizer
             self.tokenizer = AutoTokenizer.from_pretrained(tokenizer)
         else:
@@ -94,7 +93,7 @@ class APIModelWrapper(ModelWrapper):
             default_template = '{"prompt": "{system_prompt}{prompt}"}' if system_prompt is None else '{"prompt": "{system_prompt} {prompt}"}'
             self.request_template = request_template or default_template
             if '{prompt}' not in self.request_template or '{system_prompt}' not in self.request_template:
-                raise ExpectedError("`--request-template` must contain '{prompt}' and '{system_prompt}'.")
+                raise ValueError("`--request-template` must contain '{prompt}' and '{system_prompt}'.")
         self.selector = selector
         self.system_prompt = system_prompt or ""
         self.headers = headers or {}
@@ -288,9 +287,9 @@ def openai_call(wrapper: Union[AzureOpenAIWrapper, OpenAIWrapper], content:str, 
 
     response = chat.choices[0].message.content
 
-    # TODO- evaluate when this actually gets thrown
+    # TODO - evaluate if this ever runs and how we catch it
     if not response:
-        raise NoOpenAIResponseError("No response from OpenAI.")
+        raise EmptyResponse("OpenAI returned an empty response.")
 
     if with_context is not None:
         with_context.add(PromptResponse(
@@ -349,7 +348,7 @@ def check_expected_args(args: Dict[str, Any], expected_args: List[str]) -> None:
         if not args.get(arg):
             missing_args.append(f"`--{arg.replace('_', '-')}`")
     if missing_args:
-        raise ExpectedError(f"Missing required arguments: {', '.join(missing_args)}")
+        raise ValueError(f"Missing required arguments: {', '.join(missing_args)}")
 
 
 def get_model_wrapper(
@@ -384,15 +383,15 @@ def get_model_wrapper(
         return AzureOpenAIWrapper(api_key=api_key, model_name=model_name, az_api_version=az_api_version, url=url, system_prompt=system_prompt)
     elif preset == 'anthropic':
         if not api_key:
-            raise ExpectedError("`--api-key` argument is required when using the 'anthropic' preset.")
+            raise ValueError("`--api-key` argument is required when using the 'anthropic' preset.")
         return AnthropicWrapper(api_key=api_key, model_name=model_name, system_prompt=system_prompt)
     elif preset == 'tester':
         if not system_prompt:
-            raise ExpectedError("`--system-prompt` argument is required")
+            raise ValueError("`--system-prompt` argument is required")
         return TestStaticResponder(system_prompt=system_prompt)
     else:
         if not url:
-            raise ExpectedError("`--url` argument is required when not using a preset configuration.")
+            raise ValueError("`--url` argument is required when not using a preset configuration.")
         # Convert headers string to dictionary
         if headers_string:
             headers: Dict[str, str] = {}

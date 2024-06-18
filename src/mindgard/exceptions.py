@@ -1,5 +1,13 @@
 # OpenAI exceptions
-from openai import BadRequestError, RateLimitError, PermissionDeniedError, AuthenticationError, NotFoundError, UnprocessableEntityError, OpenAIError
+from openai import (
+    BadRequestError,
+    RateLimitError,
+    PermissionDeniedError,
+    AuthenticationError,
+    NotFoundError,
+    UnprocessableEntityError,
+    OpenAIError,
+    Timeout as OpenAiTimeout)
 
 # Typing
 from typing import Dict
@@ -58,6 +66,9 @@ class InternalServerError(HTTPBaseError):
 class ServiceUnavailable(HTTPBaseError):
     pass
 
+class EmptyResponse(Exception):
+    pass
+
 
 _status_code_exception_map: Dict[int, HTTPBaseError] = {
     400: BadRequest("LLM provider received message that couldn't be handled.", 400),
@@ -66,10 +77,10 @@ _status_code_exception_map: Dict[int, HTTPBaseError] = {
     404: NotFound("This resource was not found.", 404),
     408: Timeout("Timed out while trying to access resource", 408),
     422: UnprocessableEntity("Entity sent to LLM could not be processed.", 422),
-    424: FailedDependency("TODO", 424),
-    429: RateLimitOrInsufficientCredits("TODO", 429),
-    500: InternalServerError("TODO", 500),
-    503: ServiceUnavailable("TODO", 503)
+    424: FailedDependency("Failed Dependency TODO", 424),
+    429: RateLimitOrInsufficientCredits("Rate Limit or Insufficient Credits TODO", 429),
+    500: InternalServerError("Internal Server Error TODO", 500),
+    503: ServiceUnavailable("Service Unavailable TODO", 503)
 }
 
 def status_code_to_exception(status_code: int) -> HTTPBaseError:
@@ -88,4 +99,7 @@ def openai_exception_to_exception(exception: OpenAIError) -> HTTPBaseError:
         return status_code_to_exception(404)
     elif isinstance(exception, UnprocessableEntityError): # 422
         return status_code_to_exception(422)
+    elif isinstance(exception, OpenAiTimeout): # 408
+        return status_code_to_exception(408)
+    
     return status_code_to_exception(-1)

@@ -13,7 +13,6 @@ from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCred
 from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs
 
 # Exceptions
-import requests
 from .exceptions import (
     MGException,
     ServiceUnavailable,
@@ -31,11 +30,10 @@ from .exceptions import (
 )
 
 # Types
-from typing import Type, cast
+from typing import Type
 
 import time
 
-from .error import ExpectedError, NoOpenAIResponseError
 from .wrappers import ModelWrapper, ContextManager
 
 from .utils import CliResponse
@@ -47,29 +45,26 @@ TEST_POLL_INTERVAL = 5
 ErrorCode = Literal["CouldNotContact", "ContentPolicy", "CLIError", "NotImplemented", "NoResponse", "RateLimited", "NetworkIssue", "MaxContextLength"]
 
 
-exceptions_to_status_codes: Dict[Type[MGException], ErrorCode] = {
+exceptions_to_status_codes: Dict[Type[Exception], ErrorCode] = {
     Uncontactable: "CouldNotContact",
-    BadRequest: "CLIError", # not sure about this, we don't handle 400 atm
+    BadRequest: "NoResponse", # not sure about this, we don't handle 400 atm
     Unauthorized: "NoResponse",
     Forbidden: "NoResponse",
     NotFound: "NoResponse",
     Timeout: "NoResponse",
-    UnprocessableEntity: "CLIError", # this is currently being handled as a rate limit issue for some reason
+    UnprocessableEntity: "NoResponse", # this is currently being handled as a rate limit issue for some reason
     FailedDependency: "NoResponse",
     RateLimitOrInsufficientCredits: "RateLimited",
     InternalServerError: "NoResponse",
-    ServiceUnavailable: "NoResponse"
+    ServiceUnavailable: "NoResponse",
+    NotImplementedError: "NotImplemented"
 }
 
 
 def handle_exception_callback(exception: Exception, handle_visual_exception_callback: Optional[Callable[[str], None]]) -> ErrorCode:
     # TODO - come take a look at this
-    if isinstance(exception, MGException):
-        error_code: ErrorCode = exceptions_to_status_codes.get(exception, "CLIError") # type: ignore
-        callback_text = str(exception)
-    else:
-        logging.error(exception)
-        callback_text = "<unknown>"
+    error_code: ErrorCode = exceptions_to_status_codes.get(exception, "CLIError") # type: ignore
+    callback_text = str(exception)
 
     if handle_visual_exception_callback:
         handle_visual_exception_callback(callback_text)
@@ -102,9 +97,9 @@ class RunLLMLocalCommand:
         if args.get("system_prompt", None) is None:
             missing_args.append("system_prompt")
         if args['parallelism'] < 1:
-            raise ExpectedError(f"--parallelism must be a positive integer")
+            raise ValueError(f"--parallelism must be a positive integer")
         if len(missing_args) > 0:
-            raise ExpectedError(f"Missing required arguments: {', '.join(missing_args)}")
+            raise ValueError(f"Missing required arguments: {', '.join(missing_args)}")
 
 
     def submit_test_progress(
@@ -234,8 +229,9 @@ class RunLLMLocalCommand:
         Returns True on success, False on failure
         """
         try:
-            console.print("Contacting model...")
-            _ = self._model_wrapper.__call__("Hello llm, are you there?")
+            console.print("[white]Contacting model...")
+            for i in range(5):
+                _ = self._model_wrapper.__call__("Hello llm, are you there?")
             return True
         except Uncontactable as cerr:
             logging.debug(cerr)
@@ -309,13 +305,13 @@ class RunLLMLocalCommand:
 
         attacks_progress = Progress(
             "{task.description}",
-            SpinnerColumn(finished_text="Done"),
+            SpinnerColumn(finished_text="done"),
             TextColumn("{task.fields[status]}")
         )
         attacks_task_map: Dict[str, TaskID] = {}
         for attack in attacks:
             attacks_task_map[attack["id"]] = attacks_progress.add_task(
-                f"Attack {attack['attack']}", total=1, status="[chartreuse1]Queued"
+                f"Attack {attack['attack']}", total=1, status="[chartreuse1]queued"
             )
 
         progress_table.add_row(overall_progress)
