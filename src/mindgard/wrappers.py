@@ -257,9 +257,9 @@ class AzureOpenAIWrapper(ModelWrapper):
 
 
 class OpenAIWrapper(ModelWrapper):
-    def __init__(self, api_key: str, model_name: Optional[str], system_prompt: Optional[str] = None) -> None:
+    def __init__(self, api_key: str, model_name: Optional[str], system_prompt: Optional[str] = None, api_url: Optional[str] = None) -> None:
         self.api_key = api_key
-        self.client = OpenAI(api_key=api_key)
+        self.client = OpenAI(api_key=api_key) if api_url is None else OpenAI(api_key=api_key, base_url=api_url)
         self.model_name = model_name or "gpt-3.5-turbo"
         self.system_prompt = system_prompt
 
@@ -280,16 +280,15 @@ def openai_call(wrapper: Union[AzureOpenAIWrapper, OpenAIWrapper], content:str, 
     
     messages.append({"role":"user", "content":content})
 
+    logging.debug(messages)
+
     try:
         chat = wrapper.client.chat.completions.create(model=wrapper.model_name, messages=messages)  # type: ignore # TODO: fix type error
+        response = chat.choices[0].message.content
+        if not response:
+            raise EmptyResponse("Model returned an empty response.")
     except OpenAIError as e:
         raise openai_exception_to_exception(e)
-
-    response = chat.choices[0].message.content
-
-    # TODO - evaluate if this ever runs and how we catch it
-    if not response:
-        raise EmptyResponse("OpenAI returned an empty response.")
 
     if with_context is not None:
         with_context.add(PromptResponse(
@@ -353,7 +352,7 @@ def check_expected_args(args: Dict[str, Any], expected_args: List[str]) -> None:
 
 def get_model_wrapper(
     headers_string: Optional[str],
-    preset: Optional[Literal['huggingface', 'openai', 'azure-openai', 'azure-aistudio', 'anthropic', 'tester']] = None,
+    preset: Optional[Literal['huggingface-openai', 'huggingface', 'openai', 'azure-openai', 'azure-aistudio', 'anthropic', 'tester']] = None,
     api_key: Optional[str] = None,
     url: Optional[str] = None,
     model_name: Optional[str] = None,
@@ -365,7 +364,13 @@ def get_model_wrapper(
 ) -> ModelWrapper:
 
     # Create model based on preset
-    if preset == 'huggingface':
+    if preset == 'huggingface-openai':
+        check_expected_args(locals(), ['api_key', 'url'])
+        api_key, url, request_template = cast(Tuple[str, str, str], (api_key, url, request_template))
+        if url[-4:] != "/v1/":
+            url += "/v1/"
+        return OpenAIWrapper(api_key=api_key, api_url=url, system_prompt=system_prompt, model_name="tgi")
+    elif preset == "huggingface":
         check_expected_args(locals(), ['api_key', 'url', 'request_template'])
         api_key, url, request_template = cast(Tuple[str, str, str], (api_key, url, request_template))
         return HuggingFaceWrapper(api_key=api_key, api_url=url, system_prompt=system_prompt, request_template=request_template)

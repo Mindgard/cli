@@ -1,6 +1,6 @@
 from typing import List
 from unittest.mock import Mock
-from ...src.mindgard.run_llm_local_command import ERROR_CODE_TO_STATUS_CODES, handle_exception_callback
+from ...src.mindgard.run_llm_local_command import exceptions_to_cli_status_codes, handle_exception_callback
 from requests import HTTPError, Response
 
 
@@ -21,8 +21,8 @@ def test_http_error_code_handling() -> None:
             res.raise_for_status()
         except HTTPError as e:
             err_code = handle_exception_callback(e, None)
-            if ERROR_CODE_TO_STATUS_CODES.get(err_code):
-                assert res.status_code in ERROR_CODE_TO_STATUS_CODES[err_code]
+            if exceptions_to_cli_status_codes.get(err_code):
+                assert res.status_code in exceptions_to_cli_status_codes[err_code]
             else:
                 assert err_code == "CLIError" # We could not detect the error type from the http error
 

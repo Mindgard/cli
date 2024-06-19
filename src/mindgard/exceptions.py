@@ -1,17 +1,25 @@
 # OpenAI exceptions
 from openai import (
-    BadRequestError,
-    RateLimitError,
-    PermissionDeniedError,
-    AuthenticationError,
-    NotFoundError,
-    UnprocessableEntityError,
+    APIError,
     OpenAIError,
-    Timeout as OpenAiTimeout)
+    ConflictError,
+    NotFoundError,
+    APIStatusError,
+    RateLimitError,
+    APITimeoutError,
+    BadRequestError,
+    APIConnectionError,
+    AuthenticationError,
+    InternalServerError as OPAIInternalServerError,
+    PermissionDeniedError,
+    UnprocessableEntityError,
+    APIResponseValidationError)
 
 # Typing
 from typing import Dict
 from requests import status_codes
+
+import logging
 
 class MGException(Exception):
     def __init__(self, message: str) -> None:
@@ -66,7 +74,7 @@ class InternalServerError(HTTPBaseError):
 class ServiceUnavailable(HTTPBaseError):
     pass
 
-class EmptyResponse(Exception):
+class EmptyResponse(MGException):
     pass
 
 
@@ -86,20 +94,17 @@ _status_code_exception_map: Dict[int, HTTPBaseError] = {
 def status_code_to_exception(status_code: int) -> HTTPBaseError:
     return _status_code_exception_map.get(status_code, HTTPBaseError("Error specifics unknown", -1))
 
-def openai_exception_to_exception(exception: OpenAIError) -> HTTPBaseError:
-    if isinstance(exception, BadRequestError): # 400
-        return status_code_to_exception(400)
-    elif isinstance(exception, RateLimitError): # 429
-        return status_code_to_exception(429)
-    elif isinstance(exception, PermissionDeniedError): # 403
-        return status_code_to_exception(403)
-    elif isinstance(exception, AuthenticationError): # 401
-        return status_code_to_exception(401)
-    elif isinstance(exception, NotFoundError): # 404
-        return status_code_to_exception(404)
-    elif isinstance(exception, UnprocessableEntityError): # 422
-        return status_code_to_exception(422)
-    elif isinstance(exception, OpenAiTimeout): # 408
-        return status_code_to_exception(408)
-    
-    return status_code_to_exception(-1)
+def openai_exception_to_exception(exception: OpenAIError) -> MGException:
+    # if its an API error with a status code do this
+    if isinstance(exception, APIStatusError):
+        if exception.status_code == 422:
+            err_message = "<none>"
+            try:
+                err_message = exception.response.json().get("error", err_message)
+            except Exception:
+                pass
+            return UnprocessableEntity(f"Received 422 from provider: {err_message}", 422)
+        return status_code_to_exception(exception.status_code)
+    # otherwise do this, this needs to be refined more
+    else:
+        return EmptyResponse("response was empty or something")

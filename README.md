@@ -163,6 +163,18 @@ You can provide the flag `mindgard --log-level=debug <command>` to get some more
 
 `./run-debug-and-pipe-to-file.sh examples/openai-using-preset.toml out.txt` will run the openai config and pipe stdout & stderr to out.txt.
 
+### Model Compatability Debugging
+
+When running tests with `huggingface-openai` preset you may encounter compatibility issues. Some models, e.g. [llama2](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf), [mistral-7b-instruct](https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.2) are not fully compatible with the OpenAI system. This can manifest in Template errors which can be seen by setting `--log-level=debug`:
+```
+DEBUG Received 422 from provider: Template error: unknown method: string has no method named strip (in <string>:1)
+
+DEBUG Received 422 from provider: Template error: syntax error: Conversation roles must alternate user/assistant/user/assistant/... (in <string>:1)
+```
+Try using the simpler `huggingface` preset, which provides more compatibility through manual configuration, but sacrifices chat completion support.
+
+From our experience, newer versions of models have started including the correct jinja templates so will not require config adjustments.
+
 ## Acknowledgements.
 
 We would like to thank and acknowledge various research works from the Adversarial Machine Learning community, which inspired and informed the development of several AI security tests accessible through Mindgard CLI.

@@ -27,6 +27,7 @@ from .exceptions import (
     Unauthorized,
     Uncontactable,
     HTTPBaseError,
+    EmptyResponse
 )
 
 # Types
@@ -45,7 +46,7 @@ TEST_POLL_INTERVAL = 5
 ErrorCode = Literal["CouldNotContact", "ContentPolicy", "CLIError", "NotImplemented", "NoResponse", "RateLimited", "NetworkIssue", "MaxContextLength"]
 
 
-exceptions_to_status_codes: Dict[Type[Exception], ErrorCode] = {
+exceptions_to_cli_status_codes: Dict[Type[Exception], ErrorCode] = {
     Uncontactable: "CouldNotContact",
     BadRequest: "NoResponse", # not sure about this, we don't handle 400 atm
     Unauthorized: "NoResponse",
@@ -57,13 +58,14 @@ exceptions_to_status_codes: Dict[Type[Exception], ErrorCode] = {
     RateLimitOrInsufficientCredits: "RateLimited",
     InternalServerError: "NoResponse",
     ServiceUnavailable: "NoResponse",
-    NotImplementedError: "NotImplemented"
+    NotImplementedError: "NotImplemented",
+    EmptyResponse: "NoResponse"
 }
 
 
 def handle_exception_callback(exception: Exception, handle_visual_exception_callback: Optional[Callable[[str], None]]) -> ErrorCode:
     # TODO - come take a look at this
-    error_code: ErrorCode = exceptions_to_status_codes.get(exception, "CLIError") # type: ignore
+    error_code: ErrorCode = exceptions_to_cli_status_codes.get(type(exception), "CLIError") # type: ignore
     callback_text = str(exception)
 
     if handle_visual_exception_callback:
@@ -167,7 +169,6 @@ class RunLLMLocalCommand:
                         with_context=context,
                     )
                 except MGException as mge:
-                    # TODO- come take a look at this
                     error_code = error_callback(mge)
                     if error_code == "CLIError":
                         raise mge
