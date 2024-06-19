@@ -6,7 +6,6 @@ import traceback
 from typing import List, cast
 
 from .wrappers import parse_args_into_model
-from .error import ExpectedError
 
 from .list_tests_command import ListTestsCommand
 from .run_test_command import RunTestCommand
@@ -120,7 +119,7 @@ def main() -> None:
 if __name__ == '__main__':
     try:
         main()
-    except ExpectedError as e:
+    except ValueError as e:
         print_to_stderr(str(e))
         exit(2)
     except Exception:

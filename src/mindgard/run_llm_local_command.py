@@ -3,22 +3,38 @@ import logging
 from typing import Dict, Any, Callable, Literal, Optional, List
 from time import sleep
 from concurrent.futures import ThreadPoolExecutor
-from openai import BadRequestError as OpenAIBadRequestError, RateLimitError as OpenAIRateLimitError
 from rich.console import Console
 from rich.table import Table
 from rich.live import Live
-from rich.progress import Progress, SpinnerColumn, TaskID
+from rich.progress import Progress, SpinnerColumn, TaskID, TextColumn
 
 # Networking
 from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCredential
 from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs
 
 # Exceptions
-import requests
+from .exceptions import (
+    MGException,
+    ServiceUnavailable,
+    InternalServerError,
+    RateLimitOrInsufficientCredits,
+    FailedDependency,
+    UnprocessableEntity,
+    Timeout,
+    NotFound,
+    BadRequest,
+    Forbidden,
+    Unauthorized,
+    Uncontactable,
+    HTTPBaseError,
+    EmptyResponse
+)
+
+# Types
+from typing import Type
 
 import time
 
-from .error import ExpectedError, NoOpenAIResponseError
 from .wrappers import ModelWrapper, ContextManager
 
 from .utils import CliResponse
@@ -27,53 +43,33 @@ from .auth import require_auth
 from .api_service import ApiService
 
 TEST_POLL_INTERVAL = 5
-
-
-
 ErrorCode = Literal["CouldNotContact", "ContentPolicy", "CLIError", "NotImplemented", "NoResponse", "RateLimited", "NetworkIssue", "MaxContextLength"]
 
-# Don't add ones to this that want to raise
-ERROR_CODE_TO_STATUS_CODES: Dict[ErrorCode, List[int]] = {
-    "CouldNotContact": [404],
-    "NoResponse": [500, 444, 401],
-    "RateLimited": [429],
-    "NetworkIssue": [503, 500],
-    "CLIError": [],
-    "ContentPolicy": [],
-    "MaxContextLength": [],
-    "NotImplemented": []
+
+exceptions_to_cli_status_codes: Dict[Type[Exception], ErrorCode] = {
+    Uncontactable: "CouldNotContact",
+    BadRequest: "NoResponse", # not sure about this, we don't handle 400 atm
+    Unauthorized: "NoResponse",
+    Forbidden: "NoResponse",
+    NotFound: "NoResponse",
+    Timeout: "NoResponse",
+    UnprocessableEntity: "NoResponse", # this is currently being handled as a rate limit issue for some reason
+    FailedDependency: "NoResponse",
+    RateLimitOrInsufficientCredits: "RateLimited",
+    InternalServerError: "NoResponse",
+    ServiceUnavailable: "NoResponse",
+    NotImplementedError: "NotImplemented",
+    EmptyResponse: "NoResponse"
 }
 
 
 def handle_exception_callback(exception: Exception, handle_visual_exception_callback: Optional[Callable[[str], None]]) -> ErrorCode:
-    text: str = ""
-    error_code: ErrorCode = "CLIError"
-    if isinstance(exception, NotImplementedError):
-        text = f"Attack not yet compatible with this preset"
-        error_code = "NotImplemented"
-    elif isinstance(exception, requests.exceptions.HTTPError):
-        status_code = exception.response.status_code
-        text = f"HTTP {status_code} when contacting LLM"
-        for err_code, status_codes in ERROR_CODE_TO_STATUS_CODES.items():
-            if status_code in status_codes:
-                error_code = err_code
-        logging.error(f"Unexpected HTTPError encountered: {exception}")
-    elif isinstance(exception, NoOpenAIResponseError):
-        text = str(exception)
-        error_code = "NoResponse"
-    elif isinstance(exception, OpenAIBadRequestError):
-        if "content" in str(exception).lower() and "policy" in str(exception).lower():
-            text = "Hit model content policy filter"
-            error_code = "ContentPolicy"
-        if "maximum" in str(exception).lower() and "tokens" in str(exception).lower() and "context" in str(exception).lower():
-            text = "Hit maximum tokens limit"
-            error_code = "ContentPolicy"
-    elif isinstance(exception, OpenAIRateLimitError):
-        text = "Rate limited by OpenAI"
-        error_code = "RateLimited"
+    # TODO - come take a look at this
+    error_code: ErrorCode = exceptions_to_cli_status_codes.get(type(exception), "CLIError") # type: ignore
+    callback_text = str(exception)
 
     if handle_visual_exception_callback:
-        handle_visual_exception_callback(text)
+        handle_visual_exception_callback(callback_text)
 
     logging.debug(exception)
     return error_code
@@ -103,9 +99,9 @@ class RunLLMLocalCommand:
         if args.get("system_prompt", None) is None:
             missing_args.append("system_prompt")
         if args['parallelism'] < 1:
-            raise ExpectedError(f"--parallelism must be a positive integer")
+            raise ValueError(f"--parallelism must be a positive integer")
         if len(missing_args) > 0:
-            raise ExpectedError(f"Missing required arguments: {', '.join(missing_args)}")
+            raise ValueError(f"Missing required arguments: {', '.join(missing_args)}")
 
 
     def submit_test_progress(
@@ -167,14 +163,17 @@ class RunLLMLocalCommand:
                 error_code: Optional[ErrorCode] = None
 
                 try:
-                    response = self._model_wrapper(
+                    # would pose being explicit with __call__ so we can ctrl+f easier, not a very clear shorthand
+                    response = self._model_wrapper.__call__(
                         content=content,
                         with_context=context,
                     )
-                except Exception as ae:
-                    error_code = error_callback(ae)
+                except MGException as mge:
+                    error_code = error_callback(mge)
                     if error_code == "CLIError":
-                        raise ae
+                        raise mge
+                except Exception as e:
+                    raise e
                 finally:
                     # we always try to send a response
                     replyData = {
@@ -188,7 +187,7 @@ class RunLLMLocalCommand:
                     }
                     logging.debug(f"sending response {replyData=}")
 
-                    ws_client.send_to_group("orchestrator", replyData, data_type="json")
+                    ws_client.send_to_group("orchestrator", replyData, data_type="json") # type: ignore
             elif msg.data["messageType"] == "StartedTest": # should be something like "Submitted", upstream change required.
                 self.submitted_test_id = msg.data["payload"]["testId"]
                 self.submitted_test = True
@@ -197,7 +196,7 @@ class RunLLMLocalCommand:
 
         ws_client.open()
 
-        ws_client.subscribe("group-message", recv_message_handler)
+        ws_client.subscribe("group-message", recv_message_handler) # type: ignore
 
         payload = {
             "correlationId": "",
@@ -205,9 +204,7 @@ class RunLLMLocalCommand:
             "payload": {"groupId": ws_token_and_group_id["groupId"]},
         }
 
-        ws_client.send_to_group(
-            group_name="orchestrator", content=payload, data_type="json"
-        )
+        ws_client.send_to_group(group_name="orchestrator", content=payload, data_type="json") # type: ignore
 
         # wait 
         max_attempts = 30
@@ -233,28 +230,20 @@ class RunLLMLocalCommand:
         Returns True on success, False on failure
         """
         try:
-            console.print("Contacting model...")
-            _ = self._model_wrapper.__call__("Hello llm, are you there?")
+            console.print("[white]Contacting model...")
+            for i in range(5):
+                _ = self._model_wrapper.__call__("Hello llm, are you there?")
             return True
-        except requests.exceptions.ConnectionError as cerr:
-            detail = self._model_wrapper.api_url if hasattr(self._model_wrapper, "api_url") else "<unknown>"
-            console.print(f"[red]Could not connect to the model! [white](URL: {detail}, are you sure it's correct?)")
+        except Uncontactable as cerr:
             logging.debug(cerr)
-        except requests.exceptions.HTTPError as httperr:
-            logging.debug(httperr)
-            status_code: int = httperr.response.status_code
-            status_message: str = requests.status_codes._codes[status_code][0]
-            message: str = f"[red]Model pre-flight check returned {status_code} ({status_message}), "
-            if status_code == 404:
-                message += "is the URL correct?"
-            elif status_code == 503:
-                message += "is the model accepting requests?"
-            elif status_code == 422:
-                message += "are you using the correct model preset?"
-            elif status_code == 424:
-                message += "is the model healthy?"
+            model_api = self._model_wrapper.api_url if hasattr(self._model_wrapper, "api_url") else "<unknown>"
+            console.print(f"[red]Could not connect to the model! [white](URL: {model_api}, are you sure it's correct?)")
+        except HTTPBaseError as httpbe:
+            logging.debug(httpbe)
+            message: str = f"[red]Model pre-flight check returned {httpbe.status_code} ({httpbe.status_message})"
             console.print(message)
         except Exception as e:
+            # something we've not really accounted for caught
             logging.error(e)
             raise e
         
@@ -317,18 +306,20 @@ class RunLLMLocalCommand:
 
         attacks_progress = Progress(
             "{task.description}",
-            SpinnerColumn(finished_text="Finished"),
+            SpinnerColumn(finished_text="done"),
+            TextColumn("{task.fields[status]}")
         )
         attacks_task_map: Dict[str, TaskID] = {}
         for attack in attacks:
             attacks_task_map[attack["id"]] = attacks_progress.add_task(
-                f"Attack {attack['attack']}", total=1
+                f"Attack {attack['attack']}", total=1, status="[chartreuse1]queued"
             )
 
         progress_table.add_row(overall_progress)
         progress_table.add_row(attacks_progress)
         progress_table.add_row("")
         progress_table.add_row(exceptions_progress)
+
 
         with Live(progress_table, refresh_per_second=10):
             while not overall_progress.finished:
@@ -338,9 +329,12 @@ class RunLLMLocalCommand:
                 for attack_res in test_res["attacks"]:
                     task_id = attacks_task_map[attack_res["id"]]
                     if attack_res["state"] == 2:
-                        attacks_progress.update(task_id, completed=1)
+                        attacks_progress.update(task_id, completed=1, status="[chartreuse3]success")
                     elif attack_res["state"] == -1:
-                        attacks_progress.update(task_id, completed=1)
+                        attacks_progress.update(task_id, completed=1, status="[red3]failed")
+                    elif attack_res["state"] == 1:
+                        attacks_progress.update(task_id, status="[orange3]running")
+
 
                 completed = sum(task.completed for task in attacks_progress.tasks)
                 overall_progress.update(overall_task, completed=completed)

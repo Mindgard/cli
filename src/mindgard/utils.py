@@ -3,7 +3,6 @@ import sys
 from typing import Any, Dict, Optional, Tuple
 
 import toml
-from .error import ExpectedError
 import requests
 
 from .constants import REPOSITORY_URL, VERSION
@@ -65,7 +64,7 @@ def parse_toml_and_args_into_final_args(config_file_path: Optional[str], args: N
         if config_file_path is None:
             pass
         else:
-            raise ExpectedError(f"Config file not found: {config_file=}. Check that the file exists on disk.")
+            raise ValueError(f"Config file not found: {config_file=}. Check that the file exists on disk.")
 
     final_args = {k: v or toml_args.get(k) or toml_args.get(k.replace("_", "-")) for k, v in vars(args).items()}
 

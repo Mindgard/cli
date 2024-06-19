@@ -5,11 +5,12 @@ import logging
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union, cast
 from anthropic import Anthropic
 from anthropic.types import MessageParam
-from .error import ExpectedError, NoOpenAIResponseError
 import requests
-from openai import AzureOpenAI, OpenAI
+from openai import AzureOpenAI, OpenAI, OpenAIError
 import jsonpath_ng
 
+# Exceptions
+from .exceptions import Uncontactable, status_code_to_exception, openai_exception_to_exception, EmptyResponse
 
 @dataclass
 class PromptResponse:
@@ -84,7 +85,7 @@ class APIModelWrapper(ModelWrapper):
             logging.debug("Note that with tokenizer enabled, the request_template format is different.")
             self.request_template =  request_template or '{"prompt": "{tokenized_chat_template}"}'
             if '{tokenized_chat_template}' not in self.request_template:
-                raise ExpectedError("`--request-template` must contain '{tokenized_chat_template}' when using a tokenizer.")
+                raise ValueError("`--request-template` must contain '{tokenized_chat_template}' when using a tokenizer.")
             from transformers import AutoTokenizer
             self.tokenizer = AutoTokenizer.from_pretrained(tokenizer)
         else:
@@ -92,7 +93,7 @@ class APIModelWrapper(ModelWrapper):
             default_template = '{"prompt": "{system_prompt}{prompt}"}' if system_prompt is None else '{"prompt": "{system_prompt} {prompt}"}'
             self.request_template = request_template or default_template
             if '{prompt}' not in self.request_template or '{system_prompt}' not in self.request_template:
-                raise ExpectedError("`--request-template` must contain '{prompt}' and '{system_prompt}'.")
+                raise ValueError("`--request-template` must contain '{prompt}' and '{system_prompt}'.")
         self.selector = selector
         self.system_prompt = system_prompt or ""
         self.headers = headers or {}
@@ -134,11 +135,10 @@ class APIModelWrapper(ModelWrapper):
             response = requests.post(self.api_url, headers=self.headers, json=request_payload)
             response.raise_for_status()
         except requests.exceptions.ConnectionError as cerr:
-            # this means the endpoint was uncontactable
-            raise cerr
+            raise Uncontactable(str(cerr))
         except requests.exceptions.HTTPError as httperr:
-            # this means the endpoint didn't like how we were acting, i.e check status code
-            raise httperr
+            status_code: int = httperr.response.status_code
+            raise status_code_to_exception(status_code)
         except Exception as e:
             # everything else
             raise e
@@ -149,7 +149,7 @@ class APIModelWrapper(ModelWrapper):
             jsonpath_expr = jsonpath_ng.parse(self.selector)
             match = jsonpath_expr.find(response)
             if match:
-                return match[0].value
+                return str(match[0].value)
             else:
                 raise Exception(f"Selector {self.selector} did not match any elements in the response. {response=}")
 
@@ -160,7 +160,7 @@ class APIModelWrapper(ModelWrapper):
         #         response=response
         #     ))
 
-        return response
+        return str(response)
 
 
 class AzureAIStudioWrapper(APIModelWrapper):
@@ -198,11 +198,12 @@ class AzureAIStudioWrapper(APIModelWrapper):
                 err_res_json = response.json()
                 if err_message := err_res_json.get("error", {}).get("message", None):
                     return cast(str, err_message)
-            except Exception as e:
-                raise Exception(f"API call failed with {response.status_code=} {response.json()=}. Attempt to decode response failed with {e=}")
+            except Exception:
+                raise status_code_to_exception(400)
         elif response.status_code != 200:
             # Handle other types of API error
-            raise Exception(f"API call failed with {response.status_code=} {response.json()=}.")
+            message = f"API call failed with {response.status_code=} {response.json()=}."
+            raise status_code_to_exception(response.status_code)
 
         res_json: Dict[str, Any] = cast(Dict[str, Any], response.json())
 
@@ -215,7 +216,7 @@ class AzureAIStudioWrapper(APIModelWrapper):
             jsonpath_expr = jsonpath_ng.parse(self.selector)
             match = jsonpath_expr.find(res_json)
             if match:
-                return match[0].value
+                return str(match[0].value)
             else:
                 raise Exception(f"Selector {self.selector} did not match any elements in the response. {res_json=}")
 
@@ -226,7 +227,7 @@ class AzureAIStudioWrapper(APIModelWrapper):
         #         response=response
         #     ))
     
-        return response
+        return str(response)
 
 
 class HuggingFaceWrapper(APIModelWrapper):
@@ -254,9 +255,9 @@ class AzureOpenAIWrapper(ModelWrapper):
 
 
 class OpenAIWrapper(ModelWrapper):
-    def __init__(self, api_key: str, model_name: Optional[str], system_prompt: Optional[str] = None) -> None:
+    def __init__(self, api_key: str, model_name: Optional[str], system_prompt: Optional[str] = None, api_url: Optional[str] = None) -> None:
         self.api_key = api_key
-        self.client = OpenAI(api_key=api_key)
+        self.client = OpenAI(api_key=api_key) if api_url is None else OpenAI(api_key=api_key, base_url=api_url)
         self.model_name = model_name or "gpt-3.5-turbo"
         self.system_prompt = system_prompt
 
@@ -277,11 +278,15 @@ def openai_call(wrapper: Union[AzureOpenAIWrapper, OpenAIWrapper], content:str, 
     
     messages.append({"role":"user", "content":content})
 
-    chat = wrapper.client.chat.completions.create(model=wrapper.model_name, messages=messages)  # type: ignore # TODO: fix type error
-    response = chat.choices[0].message.content
+    logging.debug(messages)
 
-    if not response:
-        raise NoOpenAIResponseError("No response from OpenAI.")
+    try:
+        chat = wrapper.client.chat.completions.create(model=wrapper.model_name, messages=messages)  # type: ignore # TODO: fix type error
+        response = chat.choices[0].message.content
+        if not response:
+            raise EmptyResponse("Model returned an empty response.")
+    except OpenAIError as e:
+        raise openai_exception_to_exception(e)
 
     if with_context is not None:
         with_context.add(PromptResponse(
@@ -340,12 +345,12 @@ def check_expected_args(args: Dict[str, Any], expected_args: List[str]) -> None:
         if not args.get(arg):
             missing_args.append(f"`--{arg.replace('_', '-')}`")
     if missing_args:
-        raise ExpectedError(f"Missing required arguments: {', '.join(missing_args)}")
+        raise ValueError(f"Missing required arguments: {', '.join(missing_args)}")
 
 
 def get_model_wrapper(
     headers_string: Optional[str],
-    preset: Optional[Literal['huggingface', 'openai', 'azure-openai', 'azure-aistudio', 'anthropic', 'tester']] = None,
+    preset: Optional[Literal['huggingface-openai', 'huggingface', 'openai', 'azure-openai', 'azure-aistudio', 'anthropic', 'tester']] = None,
     api_key: Optional[str] = None,
     url: Optional[str] = None,
     model_name: Optional[str] = None,
@@ -357,7 +362,13 @@ def get_model_wrapper(
 ) -> ModelWrapper:
 
     # Create model based on preset
-    if preset == 'huggingface':
+    if preset == 'huggingface-openai':
+        check_expected_args(locals(), ['api_key', 'url'])
+        api_key, url, request_template = cast(Tuple[str, str, str], (api_key, url, request_template))
+        if url[-4:] != "/v1/":
+            url += "/v1/"
+        return OpenAIWrapper(api_key=api_key, api_url=url, system_prompt=system_prompt, model_name="tgi")
+    elif preset == "huggingface":
         check_expected_args(locals(), ['api_key', 'url', 'request_template'])
         api_key, url, request_template = cast(Tuple[str, str, str], (api_key, url, request_template))
         return HuggingFaceWrapper(api_key=api_key, api_url=url, system_prompt=system_prompt, request_template=request_template)
@@ -375,15 +386,15 @@ def get_model_wrapper(
         return AzureOpenAIWrapper(api_key=api_key, model_name=model_name, az_api_version=az_api_version, url=url, system_prompt=system_prompt)
     elif preset == 'anthropic':
         if not api_key:
-            raise ExpectedError("`--api-key` argument is required when using the 'anthropic' preset.")
+            raise ValueError("`--api-key` argument is required when using the 'anthropic' preset.")
         return AnthropicWrapper(api_key=api_key, model_name=model_name, system_prompt=system_prompt)
     elif preset == 'tester':
         if not system_prompt:
-            raise ExpectedError("`--system-prompt` argument is required")
+            raise ValueError("`--system-prompt` argument is required")
         return TestStaticResponder(system_prompt=system_prompt)
     else:
         if not url:
-            raise ExpectedError("`--url` argument is required when not using a preset configuration.")
+            raise ValueError("`--url` argument is required when not using a preset configuration.")
         # Convert headers string to dictionary
         if headers_string:
             headers: Dict[str, str] = {}
