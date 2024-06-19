@@ -159,7 +159,7 @@ Then run: `mindgard test --config-file mymodel.toml --parallelism X`
 
 ### 🐛 Debugging
 
-You can provide the flag `mindgard --log-level=debug <command>` to get some more info out of whatever command you're running. On unix-like systems, `mindgard --log-level=debug test --config=<toml> >><file> 2>&1 --parallelism=5` will write stdout and stderr to file.
+You can provide the flag `mindgard --log-level=debug <command>` to get some more info out of whatever command you're running. On unix-like systems, `mindgard --log-level=debug test --config=<toml> --parallelism=5 2> stderr.log` will write stdout and stderr to file.
 
 ### Model Compatability Debugging
 

@@ -198,9 +198,7 @@ class AzureAIStudioWrapper(APIModelWrapper):
                 err_res_json = response.json()
                 if err_message := err_res_json.get("error", {}).get("message", None):
                     return cast(str, err_message)
-            except Exception as e:
-                # TODO- use this
-                message = f"API call failed with {response.status_code=} {response.json()=}. Attempt to decode response failed with {e=}"
+            except Exception:
                 raise status_code_to_exception(400)
         elif response.status_code != 200:
             # Handle other types of API error
