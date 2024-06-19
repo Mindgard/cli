@@ -159,9 +159,7 @@ Then run: `mindgard test --config-file mymodel.toml --parallelism X`
 
 ### 🐛 Debugging
 
-You can provide the flag `mindgard --log-level=debug <command>` to get some more info out of whatever command you're running. We've included `run-debug-and-pipe-to-file.sh` to streamline this on unix-like systems.
-
-`./run-debug-and-pipe-to-file.sh examples/openai-using-preset.toml out.txt` will run the openai config and pipe stdout & stderr to out.txt.
+You can provide the flag `mindgard --log-level=debug <command>` to get some more info out of whatever command you're running. On unix-like systems, `mindgard --log-level=debug test --config=<toml> >><file> 2>&1 --parallelism=5` will write stdout and stderr to file.
 
 ### Model Compatability Debugging
 
