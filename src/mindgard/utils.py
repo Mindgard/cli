@@ -1,4 +1,5 @@
 from argparse import Namespace
+import os
 import sys
 from typing import Any, Dict, Optional, Tuple
 
@@ -67,5 +68,8 @@ def parse_toml_and_args_into_final_args(config_file_path: Optional[str], args: N
             raise ValueError(f"Config file not found: {config_file=}. Check that the file exists on disk.")
 
     final_args = {k: v or toml_args.get(k) or toml_args.get(k.replace("_", "-")) for k, v in vars(args).items()}
+
+
+    final_args["api_key"] = final_args["api_key"] or os.environ.get('MODEL_API_KEY', None)
 
     return final_args
