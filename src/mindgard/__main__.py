@@ -117,26 +117,29 @@ def main() -> None:
         final_args = parse_toml_and_args_into_final_args(args.config_file, args)
         model_wrapper = parse_args_into_model(final_args)
         passed:bool = preflight(model_wrapper, console=console)
+        response = CliResponse(passed)
 
         if args.command == 'test':
-            # load args from file mindgard.toml
-            RunLLMLocalCommand.validate_args(final_args)
             console.print(f"{'[green bold] Model contactable, tests will start!' if passed else '[red bold]Model not contactable, tests will not start!'}")
-            api_service = ApiService()
-            parallelism = int(cast(str, final_args["parallelism"]))
-            llm_test_cmd = RunLLMLocalCommand(api_service=api_service, model_wrapper=model_wrapper, parallelism=parallelism)
-            llm_test_res = llm_test_cmd.run(
-                target=final_args["target"], 
-                json_format=bool(final_args["json"]), 
-                risk_threshold=int(cast(str, final_args["risk_threshold"])), 
-                system_prompt=final_args["system_prompt"],
-                console=console
-            )
-            exit(llm_test_res.code())
+            if passed:
+                # load args from file mindgard.toml
+                RunLLMLocalCommand.validate_args(final_args)
+                api_service = ApiService()
+                parallelism = int(cast(str, final_args["parallelism"]))
+                llm_test_cmd = RunLLMLocalCommand(api_service=api_service, model_wrapper=model_wrapper, parallelism=parallelism)
+                llm_test_res = llm_test_cmd.run(
+                    target=final_args["target"], 
+                    json_format=bool(final_args["json"]), 
+                    risk_threshold=int(cast(str, final_args["risk_threshold"])), 
+                    system_prompt=final_args["system_prompt"],
+                    console=console
+                )
+                exit(llm_test_res.code())
         else:
             console.print(f"{'[green bold] Model contactable!' if passed else '[red bold]Model not contactable!'}")
-            response = CliResponse(passed)
-            exit(response.code())
+        
+        exit(response.code())
+        
     else:
         print_to_stderr('Which command are you looking for? See: $ mindgard --help')
 
