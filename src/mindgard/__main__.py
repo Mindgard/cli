@@ -120,7 +120,7 @@ def main() -> None:
         response = CliResponse(passed)
 
         if args.command == 'test':
-            console.print(f"{'[green bold] Model contactable, tests will start!' if passed else '[red bold]Model not contactable, tests will not start!'}")
+            console.print(f"{'[green bold]Model contactable, tests will start!' if passed else '[red bold]Model not contactable, tests will not start!'}")
             if passed:
                 # load args from file mindgard.toml
                 RunLLMLocalCommand.validate_args(final_args)
@@ -136,7 +136,7 @@ def main() -> None:
                 )
                 exit(llm_test_res.code())
         else:
-            console.print(f"{'[green bold] Model contactable!' if passed else '[red bold]Model not contactable!'}")
+            console.print(f"{'[green bold]Model contactable!' if passed else '[red bold]Model not contactable!'}")
         
         exit(response.code())
         

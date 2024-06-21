@@ -76,6 +76,18 @@ mindgard test my-model-name \
   --system-prompt 'respond with hello' # system prompt to test the model with
 ```
 
+### Validate model is online before launching tests
+`mindgard validate --url <url> <other settings>`
+
+```
+mindgard validate \
+  --url http://127.0.0.1/infer \ # url to test
+  --selector '["response"]' \ # JSON selector to match the textual response
+  --request-template '{"prompt": "[INST] {system_prompt} {prompt} [/INST]"}' \ # how to format the system prompt and prompt in the API request
+  --system-prompt 'respond with hello' # system prompt to test the model with
+```
+
+
 ### 📋 Using a Configuration File
 
 You can specify the settings for the `mindgard test` command in a TOML configuration file. This allows you to manage your settings in a more structured way and avoid passing them as command-line arguments.
