@@ -1,15 +1,16 @@
 
 
 import argparse
+from argparse import _SubParsersAction, ArgumentParser
 import sys
 import traceback
-from typing import List, cast
+from typing import List, cast, Any
 
 from .wrappers import parse_args_into_model
 
 from .list_tests_command import ListTestsCommand
 from .run_test_command import RunTestCommand
-from .run_llm_local_command import RunLLMLocalCommand
+from .run_llm_local_command import RunLLMLocalCommand, preflight
 
 from .api_service import ApiService
 
@@ -20,6 +21,28 @@ from .utils import is_version_outdated, print_to_stderr, parse_toml_and_args_int
 import logging
 from rich.logging import RichHandler
 from rich.console import Console
+
+
+# both validate and test need these same arguments, so have factored them out
+def subparser_for_llm_contact(command_str: str, description_str: str, argparser: Any) -> ArgumentParser:
+    parser: ArgumentParser = argparser.add_parser(command_str, help=description_str)
+    parser.add_argument('target', nargs='?', type=str, help="This is your own model identifier.")
+    parser.add_argument('--config-file', type=str, help='Path to mindgard.toml config file', default=None, required=False)
+    parser.add_argument('--json', action="store_true", help='Output the info in JSON format.', required=False)
+    parser.add_argument('--headers', type=str, help='The headers to use', required=False)
+    parser.add_argument('--preset', type=str, help='The preset to use', choices=['huggingface', 'openai', 'anthropic', 'azure-openai', 'azure-aistudio', 'custom_mistral', 'tester'], required=False)
+    parser.add_argument('--api-key', type=str, help='Specify the API key for the wrapper', required=False)
+    parser.add_argument('--url', type=str, help='Specify the url for the wrapper', required=False)
+    parser.add_argument('--model-name', type=str, help='Specify which model to run against (OpenAI and Anthropic)', required=False)
+    parser.add_argument('--az-api-version', type=str, help='Specify the Azure OpenAI API version (Azure only)', required=False)
+    parser.add_argument('--prompt', type=str, help='Specify the prompt to use', required=False)
+    parser.add_argument('--system-prompt', type=str, help='Text file containing system prompt to use.', required=False)
+    parser.add_argument('--selector', type=str, help='The selector to retrieve the text response from the LLM response JSON.', required=False)
+    parser.add_argument('--request-template', type=str, help='The template to wrap the API request in.', required=False)
+    parser.add_argument('--tokenizer', type=str, help='Choose a HuggingFace model to provide a tokeniser for prompt and chat completion templating.', required=False)
+
+    return parser
+
 
 def parse_args(args: List[str]) -> argparse.Namespace:
     log_levels = ['critical', 'fatal', 'error', 'warn', 'warning', 'info', 'debug', 'notset'] # [n.lower() for n in logging.getLevelNamesMapping().keys()]
@@ -44,23 +67,11 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     list_test_parser.add_argument('--json', action="store_true", help='Return json output', required=False)
     list_test_parser.add_argument('--id', type=str, help='Get the details of a specific test.', required=False)
 
-    test_parser = subparsers.add_parser('test', help='Attack commands')
-    test_parser.add_argument('target', nargs='?', type=str, help="This is your own model identifier.")
-    test_parser.add_argument('--config-file', type=str, help='Path to mindgard.toml config file', default=None, required=False)
+    test_parser = subparser_for_llm_contact("test", "Attacks command", subparsers)
     test_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=80)
-    test_parser.add_argument('--json', action="store_true", help='Output the info in JSON format.', required=False)
-    test_parser.add_argument('--headers', type=str, help='The headers to use', required=False)
-    test_parser.add_argument('--preset', type=str, help='The preset to use', choices=['huggingface', 'openai', 'anthropic', 'azure-openai', 'azure-aistudio', 'custom_mistral', 'tester'], required=False)
-    test_parser.add_argument('--api-key', type=str, help='Specify the API key for the wrapper', required=False)
-    test_parser.add_argument('--url', type=str, help='Specify the url for the wrapper', required=False)
-    test_parser.add_argument('--model-name', type=str, help='Specify which model to run against (OpenAI and Anthropic)', required=False)
-    test_parser.add_argument('--az-api-version', type=str, help='Specify the Azure OpenAI API version (Azure only)', required=False)
-    test_parser.add_argument('--prompt', type=str, help='Specify the prompt to use', required=False)
-    test_parser.add_argument('--system-prompt', type=str, help='Text file containing system prompt to use.', required=False)
-    test_parser.add_argument('--selector', type=str, help='The selector to retrieve the text response from the LLM response JSON.', required=False)
-    test_parser.add_argument('--request-template', type=str, help='The template to wrap the API request in.', required=False)
-    test_parser.add_argument('--tokenizer', type=str, help='Choose a HuggingFace model to provide a tokeniser for prompt and chat completion templating.', required=False)
     test_parser.add_argument('--parallelism', type=int, help='The maximum number of parallel requests that can be made to the API.', required=False, default=5)
+
+    validate_parser = subparser_for_llm_contact("validate", "Validates that we can communicate with your model", subparsers)
 
     return parser.parse_args(args)
 
@@ -97,6 +108,13 @@ def main() -> None:
         run_test_cmd = RunTestCommand(api_service)
         run_test_res = run_test_cmd.run(model_name=args.target, json_format=bool(args.json), risk_threshold=int(args.risk_threshold))
         exit(run_test_res.code())
+    elif args.command == "validate":
+        final_args = parse_toml_and_args_into_final_args(args.config_file, args)
+        model_wrapper = parse_args_into_model(final_args)
+        console = Console()
+        passed:bool = preflight(model_wrapper, console=console)
+        console.print(f"{'[green bold] Model contactable!' if passed else '[red bold]Model not contactable!'}")
+        exit(passed)
     elif args.command == 'test':
         # load args from file mindgard.toml
         final_args = parse_toml_and_args_into_final_args(args.config_file, args)
