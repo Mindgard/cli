@@ -6,7 +6,9 @@ from typing import Any, Dict, Optional, Tuple
 import toml
 import requests
 
-from .constants import REPOSITORY_URL, VERSION
+from .constants import REPOSITORY_URL, VERSION, API_RETRY_ATTEMPTS, API_RETRY_WAIT_BETWEEN_ATTEMPTS_SECONDS
+
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 class CliResponse():
     def __init__(self, code:int):
@@ -23,12 +25,14 @@ def version_to_tuple(version: str) -> Tuple[int, ...]:
     return tuple(map(int, version.split(".")))
 
 
+@retry(stop=stop_after_attempt(API_RETRY_ATTEMPTS), wait=wait_fixed(API_RETRY_WAIT_BETWEEN_ATTEMPTS_SECONDS))
 def api_get(url: str, access_token: str) -> requests.Response:
     res = requests.get(url, headers=standard_headers(access_token))
     res.raise_for_status()
     return res
 
 
+@retry(stop=stop_after_attempt(API_RETRY_ATTEMPTS), wait=wait_fixed(API_RETRY_WAIT_BETWEEN_ATTEMPTS_SECONDS))
 def api_post(url: str, access_token: str, json: Dict[str, Any]) -> requests.Response:
     res = requests.post(url, headers=standard_headers(access_token), json=json)
     res.raise_for_status()
