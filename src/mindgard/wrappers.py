@@ -10,7 +10,7 @@ from openai import AzureOpenAI, OpenAI, OpenAIError
 import jsonpath_ng
 
 # Exceptions
-from .exceptions import Uncontactable, status_code_to_exception, openai_exception_to_exception, EmptyResponse
+from .exceptions import Uncontactable, status_code_to_exception, openai_exception_to_exception, EmptyResponse, NotImplemented
 
 @dataclass
 class PromptResponse:
@@ -126,7 +126,7 @@ class APIModelWrapper(ModelWrapper):
     def __call__(self, content:str, with_context:Optional[Context] = None) -> str:
         if with_context is not None:
             logging.debug("APIModelWrapper is temporarily incompatible with chat completions history. Attacks that require chat completions history fail.")
-            raise NotImplementedError("The crescendo attack is currently incompatible with custom model wrappers.")
+            raise NotImplemented("The crescendo attack is currently incompatible with custom model wrappers.")
 
         request_payload = self.prompt_to_request_payload(content)
 

@@ -1,16 +1,20 @@
 
 
 import argparse
-from argparse import _SubParsersAction, ArgumentParser
+from argparse import ArgumentParser
 import sys
 import traceback
 from typing import List, cast, Any
 
 from .wrappers import parse_args_into_model
 
+from .utils import CliResponse
+
 from .list_tests_command import ListTestsCommand
 from .run_test_command import RunTestCommand
-from .run_llm_local_command import RunLLMLocalCommand, preflight
+from .run_llm_local_command import RunLLMLocalCommand
+
+from .preflight import preflight
 
 from .api_service import ApiService
 
@@ -108,28 +112,31 @@ def main() -> None:
         run_test_cmd = RunTestCommand(api_service)
         run_test_res = run_test_cmd.run(model_name=args.target, json_format=bool(args.json), risk_threshold=int(args.risk_threshold))
         exit(run_test_res.code())
-    elif args.command == "validate":
-        final_args = parse_toml_and_args_into_final_args(args.config_file, args)
-        model_wrapper = parse_args_into_model(final_args)
+    if args.command == "validate" or args.command == "test":
         console = Console()
-        passed:bool = preflight(model_wrapper, console=console)
-        console.print(f"{'[green bold] Model contactable!' if passed else '[red bold]Model not contactable!'}")
-        exit(passed)
-    elif args.command == 'test':
-        # load args from file mindgard.toml
         final_args = parse_toml_and_args_into_final_args(args.config_file, args)
         model_wrapper = parse_args_into_model(final_args)
-        RunLLMLocalCommand.validate_args(final_args)
-        api_service = ApiService()
-        parallelism = int(cast(str, final_args["parallelism"]))
-        llm_test_cmd = RunLLMLocalCommand(api_service=api_service, model_wrapper=model_wrapper, parallelism=parallelism)
-        llm_test_res = llm_test_cmd.run(
-            target=final_args["target"], 
-            json_format=bool(final_args["json"]), 
-            risk_threshold=int(cast(str, final_args["risk_threshold"])), 
-            system_prompt=final_args["system_prompt"],
-        )
-        exit(llm_test_res.code())
+        passed:bool = preflight(model_wrapper, console=console)
+
+        if args.command == 'test':
+            # load args from file mindgard.toml
+            RunLLMLocalCommand.validate_args(final_args)
+            console.print(f"{'[green bold] Model contactable, tests will start!' if passed else '[red bold]Model not contactable, tests will not start!'}")
+            api_service = ApiService()
+            parallelism = int(cast(str, final_args["parallelism"]))
+            llm_test_cmd = RunLLMLocalCommand(api_service=api_service, model_wrapper=model_wrapper, parallelism=parallelism)
+            llm_test_res = llm_test_cmd.run(
+                target=final_args["target"], 
+                json_format=bool(final_args["json"]), 
+                risk_threshold=int(cast(str, final_args["risk_threshold"])), 
+                system_prompt=final_args["system_prompt"],
+                console=console
+            )
+            exit(llm_test_res.code())
+        else:
+            console.print(f"{'[green bold] Model contactable!' if passed else '[red bold]Model not contactable!'}")
+            response = CliResponse(passed)
+            exit(response.code())
     else:
         print_to_stderr('Which command are you looking for? See: $ mindgard --help')
 

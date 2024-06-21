@@ -77,6 +77,9 @@ class ServiceUnavailable(HTTPBaseError):
 class EmptyResponse(MGException):
     pass
 
+class NotImplemented(MGException):
+    pass
+
 
 _status_code_exception_map: Dict[int, HTTPBaseError] = {
     400: BadRequest("LLM provider received message that couldn't be handled.", 400),

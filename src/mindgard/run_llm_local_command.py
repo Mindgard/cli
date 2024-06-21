@@ -27,7 +27,8 @@ from .exceptions import (
     Unauthorized,
     Uncontactable,
     HTTPBaseError,
-    EmptyResponse
+    EmptyResponse,
+    NotImplemented
 )
 
 # Types
@@ -58,7 +59,7 @@ exceptions_to_cli_status_codes: Dict[Type[Exception], ErrorCode] = {
     RateLimitOrInsufficientCredits: "RateLimited",
     InternalServerError: "NoResponse",
     ServiceUnavailable: "NoResponse",
-    NotImplementedError: "NotImplemented",
+    NotImplemented: "NotImplemented",
     EmptyResponse: "NoResponse"
 }
 
@@ -73,34 +74,6 @@ def handle_exception_callback(exception: Exception, handle_visual_exception_call
 
     logging.debug(exception)
     return error_code
-
-
-def preflight(model_wrapper: ModelWrapper, console: Console) -> bool:
-    """
-    Makes requests to the LLM to validate basic connectivity before submitting
-    test.
-
-    Returns True on success, False on failure
-    """
-    try:
-        console.print("[white]Contacting model...")
-        for i in range(5):
-            _ = model_wrapper.__call__("Hello llm, are you there?")
-        return True
-    except Uncontactable as cerr:
-        logging.debug(cerr)
-        model_api = model_wrapper.api_url if hasattr(model_wrapper, "api_url") else "<unknown>"
-        console.print(f"[red]Could not connect to the model! [white](URL: {model_api}, are you sure it's correct?)")
-    except HTTPBaseError as httpbe:
-        logging.debug(httpbe)
-        message: str = f"[red]Model pre-flight check returned {httpbe.status_code} ({httpbe.status_message})"
-        console.print(message)
-    except Exception as e:
-        # something we've not really accounted for caught
-        logging.error(e)
-        raise e
-    
-    return False
 
 
 class RunLLMLocalCommand:
@@ -252,12 +225,8 @@ class RunLLMLocalCommand:
 
     def run_inner(
         self, access_token: str, target: str, json_format: bool, 
-        risk_threshold: int, system_prompt: str
+        risk_threshold: int, system_prompt: str, console: Console
     ) -> CliResponse:
-        console = Console()
-
-        if preflight(model_wrapper = self._model_wrapper, console=console) == False:
-            return CliResponse(2)
 
         if json_format:
             return self.run_json(
@@ -369,7 +338,7 @@ class RunLLMLocalCommand:
 
     @require_auth
     def run(
-        self, access_token: str, target: str, json_format: bool, risk_threshold: int, system_prompt: str
+        self, access_token: str, target: str, json_format: bool, risk_threshold: int, system_prompt: str, console: Console
     ) -> CliResponse:
         """
         Run the command.
@@ -382,6 +351,7 @@ class RunLLMLocalCommand:
             target=target,
             risk_threshold=risk_threshold,
             system_prompt=system_prompt,
+            console=console
         )
 
     def run_json(
