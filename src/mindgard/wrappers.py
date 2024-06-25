@@ -12,6 +12,10 @@ import jsonpath_ng
 # Exceptions
 from .exceptions import Uncontactable, status_code_to_exception, openai_exception_to_exception, EmptyResponse
 
+# Litellm
+import litellm
+
+
 @dataclass
 class PromptResponse:
     prompt:str
@@ -265,9 +269,10 @@ class OpenAIWrapper(ModelWrapper):
         return openai_call(wrapper=self, content=content, with_context=with_context)
 
 
-def openai_call(wrapper: Union[AzureOpenAIWrapper, OpenAIWrapper], content:str, with_context:Optional[Context] = None) -> str:
-    if wrapper.system_prompt:
-        messages = [{"role": "system", "content": wrapper.system_prompt}]
+def construct_messages(content: str, system_prompt: Union[str, None] = None, with_context:Optional[Context] = None) -> List[Dict[str, str]]:
+    messages = []
+    if system_prompt:
+        messages = [{"role": "system", "content": system_prompt}]
     else:
         messages = []
 
@@ -277,7 +282,11 @@ def openai_call(wrapper: Union[AzureOpenAIWrapper, OpenAIWrapper], content:str, 
             messages.append({"role":"assistant","content": prompt_response.response})
     
     messages.append({"role":"user", "content":content})
+    return messages
 
+
+def openai_call(wrapper: Union[AzureOpenAIWrapper, OpenAIWrapper], content:str, with_context:Optional[Context] = None) -> str:
+    messages = construct_messages(content=content, system_prompt=wrapper.system_prompt, with_context=with_context)
     logging.debug(messages)
 
     try:
@@ -337,7 +346,27 @@ class AnthropicWrapper(ModelWrapper):
         return response
     
 
-    
+class LiteLLMWrapper(ModelWrapper):
+    def __init__(self, api_key: str, model_name: Optional[str], system_prompt: Optional[str] = None, url: Union[str, None] = None) -> None:
+        self.system_prompt = system_prompt
+        # sets the api key backstop that all providers check, means we don't need to set env var per provider 🔥
+        # https://docs.litellm.ai/docs/set_keys#litellmapi_key
+        litellm.api_key = api_key
+        self.model_name = model_name
+        self.url = url
+
+
+    def __call__(self, content:str, with_context:Optional[Context] = None) -> str:
+        messages = construct_messages(content=content, system_prompt=self.system_prompt, with_context=with_context)
+        try:
+            response = litellm.completion(model=self.model_name, messages=messages, base_url=self.url)
+            if not response:
+                raise EmptyResponse("Model returned an empty response.")
+        # litellm maps to the openai exceptions which we already handle
+        except OpenAIError as e:
+            raise openai_exception_to_exception(e)
+        return str(response.choices[0].message.content)
+
 
 def check_expected_args(args: Dict[str, Any], expected_args: List[str]) -> None:
     missing_args: List[str] = []
@@ -368,30 +397,48 @@ def get_model_wrapper(
         if url[-4:] != "/v1/":
             url += "/v1/"
         return OpenAIWrapper(api_key=api_key, api_url=url, system_prompt=system_prompt, model_name="tgi")
+    
+    elif preset == "litellm":
+        check_expected_args(locals(), ['model_name', 'api-key'])
+        api_key, model_name = cast(Tuple[str, str], (api_key, model_name))
+        return LiteLLMWrapper(api_key=api_key, model_name=model_name, system_prompt=system_prompt, url=None)
+    
+    elif preset == "litellm-url":
+        # this preset is the same as above but expects a base url to point to a custom endpoint (i.e hf model)
+        check_expected_args(locals(), ['model_name', 'url', 'api-key'])
+        api_key, model_name, url = cast(Tuple[str, str, str], (api_key, model_name, url))
+        return LiteLLMWrapper(api_key=api_key, model_name=model_name, system_prompt=system_prompt, url=url)
+    
     elif preset == "huggingface":
         check_expected_args(locals(), ['api_key', 'url', 'request_template'])
         api_key, url, request_template = cast(Tuple[str, str, str], (api_key, url, request_template))
         return HuggingFaceWrapper(api_key=api_key, api_url=url, system_prompt=system_prompt, request_template=request_template)
+    
     elif preset == 'azure-aistudio':
         check_expected_args(locals(), ['api_key', 'url', 'system_prompt'])
         api_key, url, system_prompt = cast(Tuple[str, str, str], (api_key, url, system_prompt))
         return AzureAIStudioWrapper(api_key=api_key, url=url, request_template=request_template, system_prompt=system_prompt)
+    
     elif preset == 'openai':
         check_expected_args(locals(), ['api_key'])
         api_key = cast(str, api_key)
         return OpenAIWrapper(api_key=api_key, model_name=model_name, system_prompt=system_prompt)
+    
     elif preset == 'azure-openai':
         check_expected_args(locals(), ['api_key', 'model_name', 'az_api_version', 'url'])
         api_key, model_name, az_api_version, url = cast(Tuple[str, str, str, str], (api_key, model_name, az_api_version, url))
         return AzureOpenAIWrapper(api_key=api_key, model_name=model_name, az_api_version=az_api_version, url=url, system_prompt=system_prompt)
+    
     elif preset == 'anthropic':
         if not api_key:
             raise ValueError("`--api-key` argument is required when using the 'anthropic' preset.")
         return AnthropicWrapper(api_key=api_key, model_name=model_name, system_prompt=system_prompt)
+    
     elif preset == 'tester':
         if not system_prompt:
             raise ValueError("`--system-prompt` argument is required")
         return TestStaticResponder(system_prompt=system_prompt)
+    
     else:
         if not url:
             raise ValueError("`--url` argument is required when not using a preset configuration.")
