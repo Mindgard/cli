@@ -119,9 +119,10 @@ def main() -> None:
         passed:bool = preflight(model_wrapper, console=console)
         response = CliResponse(passed)
 
-        if args.command == 'test':
-            console.print(f"{'[green bold]Model contactable, tests will start!' if passed else '[red bold]Model not contactable, tests will not start!'}")
-            if passed:
+        console.print(f"{'[green bold]Model contactable!' if passed else '[red bold]Model not contactable!'}")
+
+        if passed:
+            if args.command == 'test':
                 # load args from file mindgard.toml
                 RunLLMLocalCommand.validate_args(final_args)
                 api_service = ApiService()
@@ -135,10 +136,9 @@ def main() -> None:
                     console=console
                 )
                 exit(llm_test_res.code())
-        else:
-            console.print(f"{'[green bold]Model contactable!' if passed else '[red bold]Model not contactable!'}")
-        
+
         exit(response.code())
+        
         
     else:
         print_to_stderr('Which command are you looking for? See: $ mindgard --help')
