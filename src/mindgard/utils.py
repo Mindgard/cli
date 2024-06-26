@@ -25,14 +25,14 @@ def version_to_tuple(version: str) -> Tuple[int, ...]:
     return tuple(map(int, version.split(".")))
 
 
-@retry(stop=stop_after_attempt(API_RETRY_ATTEMPTS), wait=wait_fixed(API_RETRY_WAIT_BETWEEN_ATTEMPTS_SECONDS))
+@retry(stop=stop_after_attempt(API_RETRY_ATTEMPTS), wait=wait_fixed(API_RETRY_WAIT_BETWEEN_ATTEMPTS_SECONDS), reraise=True)
 def api_get(url: str, access_token: str) -> requests.Response:
     res = requests.get(url, headers=standard_headers(access_token))
     res.raise_for_status()
     return res
 
 
-@retry(stop=stop_after_attempt(API_RETRY_ATTEMPTS), wait=wait_fixed(API_RETRY_WAIT_BETWEEN_ATTEMPTS_SECONDS))
+@retry(stop=stop_after_attempt(API_RETRY_ATTEMPTS), wait=wait_fixed(API_RETRY_WAIT_BETWEEN_ATTEMPTS_SECONDS), reraise=True)
 def api_post(url: str, access_token: str, json: Dict[str, Any]) -> requests.Response:
     res = requests.post(url, headers=standard_headers(access_token), json=json)
     res.raise_for_status()

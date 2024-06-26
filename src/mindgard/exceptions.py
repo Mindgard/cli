@@ -22,7 +22,7 @@ from requests import status_codes
 import logging
 
 class MGException(Exception):
-    def __init__(self, message: str) -> None:
+    def __init__(self, message: str = "exception") -> None:
         super().__init__(self)
         self.message = message
 

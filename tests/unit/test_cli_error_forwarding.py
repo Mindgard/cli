@@ -3,6 +3,8 @@ from unittest.mock import Mock
 from ...src.mindgard.run_llm_local_command import exceptions_to_cli_status_codes, handle_exception_callback
 from requests import HTTPError, Response
 
+from ...src.mindgard.exceptions import NotImplemented
+
 
 def generate_mock_http_responses() -> List[Response]:
     responses: List[Response] = []
@@ -29,6 +31,6 @@ def test_http_error_code_handling() -> None:
 def test_non_http_error_code_handling() -> None:
     # TODO: when we can detect ContentPolicy errors, add a test for that
     assert handle_exception_callback(Exception(), None) == "CLIError"
-    assert handle_exception_callback(NotImplementedError(), None) == "NotImplemented"
+    assert handle_exception_callback(NotImplemented(), None) == "NotImplemented"
     assert handle_exception_callback(ZeroDivisionError(), None) == "CLIError" # Example of an unexpected error
 
