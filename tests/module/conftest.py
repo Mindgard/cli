@@ -6,8 +6,8 @@ from pytest import Config
 
 from .utils import suppress_output
 
-from ...src.mindgard.auth import get_token_file, load_access_token
-
+from ...src.mindgard.config import get_token_file
+from ...src.mindgard.auth import load_access_token
 
 class ExampleIds(TypedDict):
     test_id: str

@@ -9,7 +9,7 @@ from rich.live import Live
 from rich.progress import Progress, SpinnerColumn, TaskID
 
 from .utils import CliResponse
-
+from .constants import DASHBOARD_URL
 from .auth import require_auth
 from .api_service import ApiService
 
@@ -95,7 +95,7 @@ class RunTestCommand(): # called 'RunTest..' to avoid pytest thinking it's a tes
                 overall_progress.update(overall_task, completed=completed)
         
 
-        table = Table(title=f"Results - https://sandbox.mindgard.ai/r/test/{test_id}", width=80)
+        table = Table(title=f"Results - {DASHBOARD_URL}/r/test/{test_id}", width=80)
         table.add_column("Pass", style="cyan")
         table.add_column("Name", style="magenta")
         table.add_column("Risk", justify="right", style="green")

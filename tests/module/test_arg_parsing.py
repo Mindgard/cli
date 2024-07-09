@@ -7,7 +7,9 @@ from ...src.mindgard.__main__ import parse_args
 
 
 argparse_success_test_cases: List[Tuple[str, Namespace]] = [
-    ("login", Namespace(command='login', log_level='warn')),
+    ("sandbox_login", Namespace(command='login', log_level='warn')),
+    # TODO verify how instance being passes as an args should be tested
+    ("instance_login", Namespace(command='login', log_level='warn', instance=None)),
     # new cli structure:
     ("sandbox cfp_faces", Namespace(command='sandbox', target='cfp_faces', json=False, risk_threshold=80, log_level='warn')),
 
