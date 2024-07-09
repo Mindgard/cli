@@ -13,22 +13,11 @@ from auth0.authentication.token_verifier import (AsymmetricSignatureVerifier, # 
 
 from .constants import AUTH0_AUDIENCE, AUTH0_CLIENT_ID, AUTH0_DOMAIN
 from .utils import CliResponse, print_to_stderr
-
-
-
-def get_config_directory() -> str:
-    config_dir = os.environ.get('MINDGARD_CONFIG_DIR')
-    return config_dir or os.path.join(os.path.expanduser('~'), '.mindgard')
-
-
-def get_token_file() -> str:
-    return os.path.join(get_config_directory(), 'token.txt')
-
+from .config import get_token_file, get_instance_file, create_config_directory
 
 def clear_token() -> None:
     if os.path.exists(get_token_file()):
         os.remove(get_token_file())
-
 
 # TODO: test
 def validate_id_token(id_token: str) -> None:
@@ -42,7 +31,6 @@ def validate_id_token(id_token: str) -> None:
     sv = AsymmetricSignatureVerifier(jwks_url)
     tv = TokenVerifier(signature_verifier=sv, issuer=issuer, audience=AUTH0_CLIENT_ID)
     tv.verify(id_token)
-
 
 def load_access_token() -> Optional[str]:
     """
@@ -68,15 +56,40 @@ def load_access_token() -> Optional[str]:
     return None
     
 
-def login() -> None:
+def login(instance: str = None) -> None:
     """
-    Runs the device authorization flow and stores the user token in memory
+    Runs the device authorization flow and stores the user token in memory.
+    If instance is set by user, grab required instance variables from their deployment.
+    
+    :param instance: string
     """
 
     print("Welcome to Mindgard! Let\'s get you authenticated...")
     print("\033[1;37mNote: Mindgard is an AI security testing tool that will run red-team attacks to assess the risk of the AI systems you are testing.")
     print("Only use Mindgard with systems you have authorization to test in this manner.\033[0;0m\n")
     print("By continuing you acknowledge this and the terms of service.\n")
+
+    # Create config directory
+    create_config_directory()
+
+    if instance:
+        customer_instance_response = requests.get('https://api.{}.mindgard.ai/api/v1/cli/context'.format(instance))
+        
+        if customer_instance_response.status_code != 200:
+            print_to_stderr('Error communicating with deployed instance. Please validate instance name and try again. Contact Mindgard support if the issue persists.')
+            raise ValueError(f"Error communicating with deployed instance: {customer_instance_response.json()}")
+        
+        customer_instance_data = customer_instance_response.json()
+        print(customer_instance_data)
+        
+        # Write instance variables to config dir
+        with open(get_instance_file(), 'w') as f:
+            f.write(customer_instance_data)
+        
+        # Override env variables with instance config
+        # AUTH0_AUDIENCE = 
+        # AUTH0_CLIENT_ID = 
+        # AUTH0_DOMAIN = 
 
     device_code_payload = {
         'client_id': AUTH0_CLIENT_ID,
@@ -114,7 +127,6 @@ def login() -> None:
             if token_response.status_code == 200:
                 validate_id_token(token_data['id_token'])
                 print('Authenticated!')
-                os.makedirs(get_config_directory(), exist_ok=True)
                 with open(get_token_file(), 'w') as f:
                     f.write(token_data['refresh_token'])
                 authenticated = True

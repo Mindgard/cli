@@ -57,7 +57,9 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     parser.add_argument('--log-level', type=str, help='Specify the output verbosity', choices=log_levels, required=False, default=default_log_level)
 
     subparsers = parser.add_subparsers(dest='command', title='commands', description='Use these commands to interact with the Mindgard API')
-    subparsers.add_parser('login', help='Login to the Mindgard platform')
+    login_parser = subparsers.add_parser('login', help='Login to the Mindgard platform')
+    login_parser.add_argument('--instance', nargs='?', type=str, help='Point to your deployed Mindgard instance. If empty, cli points towards Mindgard Sandbox')
+    
     subparsers.add_parser('logout', help='Logout of the Mindgard platform in the CLI')
 
     sandbox_test_parser = subparsers.add_parser('sandbox', help='Test a mindgard example model')
@@ -96,7 +98,7 @@ def main() -> None:
         print_to_stderr(f"New version available: {new_version}. Please upgrade as older versions of the CLI may not be actively maintained.")
 
     if args.command == 'login':
-        login()
+        login(instance=args.instance)
     elif args.command == 'logout':
         logout()
     elif args.command == 'list':
