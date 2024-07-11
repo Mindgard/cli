@@ -4,10 +4,8 @@ import tempfile
 from unittest import mock
 import requests_mock
 
-from ...src.mindgard.constants import AUTH0_DOMAIN
-
 from ...src.mindgard.auth import (clear_token, clear_instance, load_access_token, logout)
-from ...src.mindgard.config import get_config_directory, get_token_file, get_instance_file, instance_auth_config, sandbox_auth_config
+from ...src.mindgard.config import get_config_directory, get_token_file, get_instance_file, instance_auth_config, load_auth_config, sandbox_auth_config
 
 def generate_instance_config() -> dict[str, str]:
      config = {
@@ -56,9 +54,10 @@ def test_token_load(requests_mock: requests_mock.Mocker) -> None:
             with open(token_file, 'w') as f:
                 f.write('test token')
             assert os.path.exists(token_file)
-
+            auth_configs = load_auth_config()
+            
             requests_mock.post(
-                'https://{}/oauth/token'.format(AUTH0_DOMAIN), 
+                'https://{}/oauth/token'.format(auth_configs.AUTH0_DOMAIN), 
                 json={'access_token': 'test token'}
             )
             assert 'test token' == load_access_token()
@@ -73,9 +72,11 @@ def test_token_load_env_vars(requests_mock: requests_mock.Mocker) -> None:
 
             assert None == load_access_token()
 
+            auth_configs = load_auth_config()
+
             with mock.patch.dict(os.environ, {"MINDGARD_API_KEY": "test token"}):
                 requests_mock.post(
-                    'https://{}/oauth/token'.format(AUTH0_DOMAIN), 
+                    'https://{}/oauth/token'.format(auth_configs.AUTH0_DOMAIN), 
                     json={'access_token': 'test tokenasdf'}
                 )
                 assert 'test tokenasdf' == load_access_token()
