@@ -8,6 +8,8 @@ from rich.table import Table
 from rich.live import Live
 from rich.progress import Progress, SpinnerColumn, TaskID, TextColumn
 
+from .constants import RESULTS_URL
+
 # Networking
 from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCredential
 from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs
@@ -309,9 +311,7 @@ class RunLLMLocalCommand:
                 completed = sum(task.completed for task in attacks_progress.tasks)
                 overall_progress.update(overall_task, completed=completed)
 
-        table = Table(
-            title=f"Results - https://sandbox.mindgard.ai/r/test/{test_id}", width=80
-        )
+        table = Table(title=f"Results - {RESULTS_URL}/{test_id}", width=80)
         table.add_column("Pass", style="cyan")
         table.add_column("Name", style="magenta")
         table.add_column("Risk", justify="right", style="green")
