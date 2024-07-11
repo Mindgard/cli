@@ -8,7 +8,7 @@ from rich.table import Table
 from rich.live import Live
 from rich.progress import Progress, SpinnerColumn, TaskID, TextColumn
 
-from .constants import RESULTS_URL
+from .constants import DASHBOARD_URL
 
 # Networking
 from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCredential
