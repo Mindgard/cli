@@ -53,6 +53,24 @@ Table of Contents
 
 `mindgard login`
 
+If you're a mindgard enterprise customer, login to your enterprise instance using the command:
+
+`mindgard login --instance <name>`  
+
+Replace <name> with the instance name provided by your Mindgard representative. This instance name identifies your SaaS, private tenant, or on-prem deployment.
+
+### 🥞🥞 Bulk Deployment
+
+To perform a bulk deployment:
+
+1. **Login and Configure**: Login and Configure the Mindgard CLI on a test workstation 
+2. **Provision Files**: Provision the files contained in the `.mindgard/` folder within your home directory to your target instances via your preferred deployment mechanism. 
+
+The `.mindgard/` folder contains:
+
+* `token.txt`: A JWT for authentication.
+* `instance.txt` (enterprise only): Custom instance configuration for your SaaS or private tenant.
+
 <a id="Tests"></a>
 ### ✅ Test a mindgard hosted model
 
