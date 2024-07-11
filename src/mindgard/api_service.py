@@ -2,7 +2,7 @@ import json
 import os
 from typing import List, Dict, Any
 from .utils import api_get, api_post
-from .constants import API_BASE
+from .constants import API_BASE, DASHBOARD_URL
 
 class ApiService():
     def get_tests(self, access_token: str) ->  List[Dict[str, Any]]:
@@ -15,10 +15,10 @@ class ApiService():
         # augment the output with the shortened url
         for test in data:
             test_id = test["id"]
-            test["url"] = f"https://sandbox.mindgard.ai/r/test/{test_id}"
+            test["url"] = f"{DASHBOARD_URL}/r/test/{test_id}"
             for attack in test["attacks"]:
                 attack_id = attack["id"]
-                attack["url"] = f"https://sandbox.mindgard.ai/r/attack/{attack_id}"
+                attack["url"] = f"{DASHBOARD_URL}/r/attack/{attack_id}"
 
         return data
 
@@ -27,10 +27,10 @@ class ApiService():
         res = api_get(url, access_token)
         data: Dict[str, Any] = res.json()
 
-        data["url"] = f"https://sandbox.mindgard.ai/r/test/{test_id}"
+        data["url"] = f"{DASHBOARD_URL}/r/test/{test_id}"
         for attack in data["attacks"]:
             attack_id = attack["id"]
-            attack["url"] = f"https://sandbox.mindgard.ai/r/attack/{attack_id}"
+            attack["url"] = f"{DASHBOARD_URL}/r/attack/{attack_id}"
 
         return data
 
