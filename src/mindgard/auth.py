@@ -19,6 +19,9 @@ def clear_token() -> None:
         os.remove(get_token_file())
 
 def clear_instance() -> None:
+    """
+    Deletes the instance file
+    """
     if os.path.exists(get_instance_file()):
         os.remove(get_instance_file())
 
