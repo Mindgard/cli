@@ -31,7 +31,7 @@ Identify & remediate your AI models' security risks with Mindgard's market leadi
 Mindgard CLI is fully integrated with Mindgard's platform to help you identify and triage threats, select remediations, and track your security posture over time.
 
 <h2 align="center">
-  <img src="https://github.com/Mindgard/public-resources/blob/main/cli-2024-04.gif?raw=true"/>
+  <img src="https://github.com/Mindgard/public-resources/blob/main/videos/cli/clijuly.mid.gif?raw=true"/>
 </h2>
 
 Test continuously in your MLops pipeline to identify model posture changes from customisation activities including prompt engineering, RAG, fine-tuning, and pre-training.
