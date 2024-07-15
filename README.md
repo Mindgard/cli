@@ -53,11 +53,11 @@ Table of Contents
 
 `mindgard login`
 
-If you're a mindgard enterprise customer, login to your enterprise instance using the command:
+If you are a mindgard enterprise customer, login to your enterprise instance using the command:
 
 `mindgard login --instance <name>`  
 
-Replace <name> with the instance name provided by your Mindgard representative. This instance name identifies your SaaS, private tenant, or on-prem deployment.
+Replace `<name>` with the instance name provided by your Mindgard representative. This instance name identifies your SaaS, private tenant, or on-prem deployment.
 
 ### 🥞🥞 Bulk Deployment
 
