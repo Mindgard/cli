@@ -6,6 +6,8 @@ import sys
 import traceback
 from typing import List, cast, Any
 
+from .image_wrappers import ImageModelWrapper
+
 from .wrappers import parse_args_into_model
 
 from .utils import CliResponse
@@ -13,6 +15,7 @@ from .utils import CliResponse
 from .list_tests_command import ListTestsCommand
 from .run_test_command import RunTestCommand
 from .run_llm_local_command import RunLLMLocalCommand
+from .run_against_image_model import RunImageCommand
 
 from .preflight import preflight
 
@@ -61,6 +64,10 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     login_parser.add_argument('--instance', nargs='?', type=str, help='Point to your deployed Mindgard instance. If not provided, cli will point towards Mindgard Sandbox')
     
     subparsers.add_parser('logout', help='Logout of the Mindgard platform in the CLI')
+
+    nonllm_parser = subparsers.add_parser('nonllm', help='Run a non-LLM model')
+    nonllm_parser.add_argument('--api_key',  nargs='?', type=str, help='Specify the API key for the wrapper', required=True)
+    nonllm_parser.add_argument('--url', type=str, help='Specify the url for your inference endpoint', required=True)
 
     sandbox_test_parser = subparsers.add_parser('sandbox', help='Test a mindgard example model')
     sandbox_test_parser.add_argument('target', nargs='?', type=str, choices=['cfp_faces', 'mistral'])
@@ -115,6 +122,13 @@ def main() -> None:
         run_test_cmd = RunTestCommand(api_service)
         run_test_res = run_test_cmd.run(model_name=args.target, json_format=bool(args.json), risk_threshold=int(args.risk_threshold))
         exit(run_test_res.code())
+
+    elif args.command == 'nonllm':
+        image_model = ImageModelWrapper(api_key=args.api_key, url=args.url)
+        image_test_cmd = RunImageCommand(model_wrapper=image_model, parallelism=5 , directory="test_images")
+        llm_test_res = image_test_cmd.run()
+        exit(1)
+
     if args.command == "validate" or args.command == "test":
         console = Console()
         final_args = parse_toml_and_args_into_final_args(args.config_file, args)
