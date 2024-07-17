@@ -127,27 +127,27 @@ class RunLLMLocalCommand:
     def submit_test_fetching_initial(
         self, access_token: str, target: str, system_prompt: str, error_callback: Callable[[Exception], ErrorCode]
     ) -> Dict[str, Any]:
-        ws_token_and_group_id = (
-            self._api.get_orchestrator_websocket_connection_string(
-                access_token=access_token, payload={"target": target, "system_prompt": system_prompt, "parallelism": self._parallelism}
-            )
-        )
+        # ws_token_and_group_id = (
+        #     self._api.get_orchestrator_websocket_connection_string(
+        #         access_token=access_token, payload={"target": target, "system_prompt": system_prompt, "parallelism": self._parallelism}
+        #     )
+        # )
 
-        url = ws_token_and_group_id.get("url", None)
-        group_id = ws_token_and_group_id.get("groupId", None)
+        # url = ws_token_and_group_id.get("url", None)
+        # group_id = ws_token_and_group_id.get("groupId", None)
 
-        if url is None:
-            raise Exception(
-                "URL from API server missing for LLM forwarding!"
-            )
-        if group_id is None:
-            raise Exception(
-                "groupId from API server missing for LLM forwarding!"
-            )
+        # if url is None:
+        #     raise Exception(
+        #         "URL from API server missing for LLM forwarding!"
+        #     )
+        # if group_id is None:
+        #     raise Exception(
+        #         "groupId from API server missing for LLM forwarding!"
+        #     )
 
-        # Should fire the connect event on the orchestrator
-        credentials = WebPubSubClientCredential(client_access_url_provider=url)
-        ws_client = WebPubSubClient(credential=credentials)
+        # # Should fire the connect event on the orchestrator
+        # credentials = WebPubSubClientCredential(client_access_url_provider=url)
+        # ws_client = WebPubSubClient(credential=credentials)
 
         self.submitted_test = False
         self.submitted_test_id = ""
@@ -197,17 +197,17 @@ class RunLLMLocalCommand:
             else:
                 pass
 
-        ws_client.open()
+        # ws_client.open()
 
-        ws_client.subscribe("group-message", recv_message_handler) # type: ignore
+        # ws_client.subscribe("group-message", recv_message_handler) # type: ignore
 
-        payload = {
-            "correlationId": "",
-            "messageType": "StartTest",
-            "payload": {"groupId": ws_token_and_group_id["groupId"]},
-        }
+        # payload = {
+        #     "correlationId": "",
+        #     "messageType": "StartTest",
+        #     "payload": {"groupId": ws_token_and_group_id["groupId"]},
+        # }
 
-        ws_client.send_to_group(group_name="orchestrator", content=payload, data_type="json") # type: ignore
+        # ws_client.send_to_group(group_name="orchestrator", content=payload, data_type="json") # type: ignore
 
         # wait 
         max_attempts = 30
