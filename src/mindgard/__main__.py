@@ -81,7 +81,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     list_test_parser.add_argument('--id', type=str, help='Get the details of a specific test.', required=False)
 
     test_parser = subparser_for_llm_contact("test", "Attacks command", subparsers)
-    test_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=80)
+    test_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=50)
     test_parser.add_argument('--parallelism', type=int, help='The maximum number of parallel requests that can be made to the API.', required=False, default=5)
 
     validate_parser = subparser_for_llm_contact("validate", "Validates that we can communicate with your model", subparsers)
@@ -97,6 +97,7 @@ def main() -> None:
     logging.basicConfig(
         level=args.log_level.upper(), format=FORMAT, datefmt="[%X]", handlers=[RichHandler(console=Console(stderr=True))]
     )
+    console = Console()
 
     if not (sys.version_info.major == 3 and sys.version_info.minor >= 8):
         print_to_stderr("Python 3.8 or later is required to run the Mindgard CLI.")
@@ -125,12 +126,11 @@ def main() -> None:
 
     elif args.command == 'nonllm':
         image_model = ImageModelWrapper(api_key=args.api_key, url=args.url)
-        image_test_cmd = RunImageCommand(model_wrapper=image_model, parallelism=5 , directory="test_images")
-        llm_test_res = image_test_cmd.run()
-        exit(1)
+        image_test_cmd = RunImageCommand(model_wrapper=image_model, parallelism=5)
+        image_test_res = image_test_cmd.run(console=console)
+        exit(image_test_res.code())
 
-    if args.command == "validate" or args.command == "test":
-        console = Console()
+    elif args.command == "validate" or args.command == "test":
         final_args = parse_toml_and_args_into_final_args(args.config_file, args)
         model_wrapper = parse_args_into_model(final_args)
         passed:bool = preflight(model_wrapper, console=console)
