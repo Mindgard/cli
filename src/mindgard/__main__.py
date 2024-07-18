@@ -26,6 +26,8 @@ import logging
 from rich.logging import RichHandler
 from rich.console import Console
 
+from .run_command import cli_run, LLMArguments
+
 
 # both validate and test need these same arguments, so have factored them out
 def subparser_for_llm_contact(command_str: str, description_str: str, argparser: Any) -> ArgumentParser:
@@ -79,6 +81,9 @@ def parse_args(args: List[str]) -> argparse.Namespace:
 
     validate_parser = subparser_for_llm_contact("validate", "Validates that we can communicate with your model", subparsers)
 
+    newcli_parser = subparser_for_llm_contact("newcli", "Attacks command", subparsers)
+    newcli_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=80)
+    newcli_parser.add_argument('--parallelism', type=int, help='The maximum number of parallel requests that can be made to the API.', required=False, default=5)
 
     return parser.parse_args(args)
 
@@ -115,7 +120,20 @@ def main() -> None:
         run_test_cmd = RunTestCommand(api_service)
         run_test_res = run_test_cmd.run(model_name=args.target, json_format=bool(args.json), risk_threshold=int(args.risk_threshold))
         exit(run_test_res.code())
-    if args.command == "validate" or args.command == "test":
+
+    elif args.command == "newcli":
+        params = LLMArguments(system_prompt="You are a useful assistant")
+        final_args = parse_toml_and_args_into_final_args(args.config_file, args)
+        model_wrapper = parse_args_into_model(final_args)
+        response = cli_run(json_format=True,
+                           risk_threshold=int(final_args["risk_threshold"]),
+                           target=final_args["target"],
+                           parallelism=int(final_args["parallelism"]),
+                           model_wrapper=model_wrapper,
+                           modality_specific_args=params)
+        exit(response.code())
+
+    elif args.command == "validate" or args.command == "test":
         console = Console()
         final_args = parse_toml_and_args_into_final_args(args.config_file, args)
         model_wrapper = parse_args_into_model(final_args)

@@ -1,10 +1,11 @@
 # Typing
 from .utils import CliResponse
-from typing import Any, Dict, Callable, Optional, Literal, Type
+from typing import Any, Dict, Callable, Optional, Literal, Type, cast, List
 from dataclasses import dataclass
 from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCredential
 from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs
 from .wrappers import ModelWrapper as TextModelWrapper, ContextManager
+from pydantic import BaseModel
 
 # Exceptions
 from .exceptions import *
@@ -14,20 +15,24 @@ from .auth import require_auth
 
 # API
 from .api_service import ApiService
-from tenacity import retry
+import json
 
 # Logging
 import logging
+from .utils import print_to_stderr
 
-# Type aliases
-type_kwargs = Dict[str, Any]
+# Misc
+from time import sleep
+
+# Constants
+from .constants import API_RETRY_WAIT_BETWEEN_ATTEMPTS_SECONDS
 
 
-def validate_kwargs(kwargs: type_kwargs) -> bool:
-    if "system_prompt" in kwargs:
-        return True
-    else:
-        return False
+api_service = ApiService()
+
+
+class LLMArguments(BaseModel):
+    system_prompt: str
 
 
 @dataclass
@@ -88,7 +93,7 @@ def llm_submit_attack(
     parallelism: int,
     system_prompt: str,
     model_wrapper: TextModelWrapper,
-) -> str:
+) -> List[str]:
     websocket_details = create_websocket_and_get_details(
         access_token=access_token,
         target=target,
@@ -154,7 +159,7 @@ def llm_submit_attack(
         group_id=websocket_details.group_id,
     )
 
-    return submitted_id[0]
+    return submitted_id
 
 
 def websocket_initial_connection(
@@ -209,7 +214,6 @@ def create_websocket_and_get_details(
     system_prompt: Optional[str],
     modality: str,
 ) -> WebsocketDetails:
-    api_service = ApiService()
     payload = {"target": target, "parallelism": parallelism, "modality": modality}
     # LLM experiments require system prompt before experiment can start, hence variably included
     if system_prompt is not None:
@@ -236,69 +240,83 @@ def create_websocket_and_get_details(
     )
 
 
+def poll_for_successful_submission(submitted_id: List[str]) -> str:
+    max_attempts = 30
+    attempts_remaining = max_attempts
+    while submitted_id[0] == "":
+        sleep(1)
+        attempts_remaining -= 1
+        if attempts_remaining == 0:
+            break
+
+    # we're here if submitting was a success...
+    if attempts_remaining != 0:
+        return submitted_id[0]
+    else:
+        raise Exception(
+            f"did not receive notification of test submitted within timeout ({max_attempts}s); failed to start test"
+        )
+
+
 def run_test_with_ui(
-    access_token: str, target: str, risk_threshold: int, **kwargs: type_kwargs
+    access_token: str,
+    target: str,
+    parallelism: int,
+    risk_threshold: int,
+    model_wrapper: TextModelWrapper,
 ) -> CliResponse:
     return CliResponse(0)
 
 
 def run_test_with_json_output(
-    access_token: str, target: str, parallelism: int, risk_threshold: int, model_wrapper: TextModelWrapper, kwargs: type_kwargs
+    access_token: str,
+    target: str,
+    parallelism: int,
+    risk_threshold: int,
+    model_wrapper: TextModelWrapper,
+    modality_specific_args: BaseModel,
 ) -> CliResponse:
-    system_prompt: str = kwargs.get("system_prompt", "")
-    llm_submit_attack(access_token, target, parallelism, system_prompt, model_wrapper)
+    # there will be a switch of some kind for this:
+    llm_args: LLMArguments = cast(LLMArguments, modality_specific_args)
+    submitted_id = llm_submit_attack(
+        access_token, target, parallelism, llm_args.system_prompt, model_wrapper
+    )
+    test_id = poll_for_successful_submission(submitted_id)
+    test_res = api_service.get_test(access_token=access_token, test_id=test_id)
+    while test_res.get("hasFinished", False) is False:
+        test_res = api_service.get_test(access_token=access_token, test_id=test_id)
+        sleep(API_RETRY_WAIT_BETWEEN_ATTEMPTS_SECONDS)
 
-    return CliResponse(0)
+    print(json.dumps(test_res))
+    return CliResponse(1 if test_res.get("risk", 100) > risk_threshold else 0)
 
 
+# Decorator for authentication, automatically fetches access token for logged in user
+@require_auth
 def cli_run(
     access_token: str,
     json_format: bool,
     risk_threshold: int,
     target: str,
-    validate_args: Callable[[type_kwargs], bool],
-    **kwargs: type_kwargs,
+    parallelism: int,
+    model_wrapper: TextModelWrapper,
+    modality_specific_args: BaseModel,
 ) -> CliResponse:
-
-    # Validates the arguments for specific test modality
-    if not validate_args(kwargs):
-        return CliResponse(1)
 
     if json_format:
         return run_test_with_json_output(
             access_token=access_token,
             risk_threshold=risk_threshold,
             target=target,
-            kwargs=kwargs,
+            parallelism=parallelism,
+            model_wrapper=model_wrapper,
+            modality_specific_args=modality_specific_args,
         )
     else:
         return run_test_with_ui(
             access_token=access_token,
             risk_threshold=risk_threshold,
             target=target,
-            kwargs=kwargs,
+            parallelism=parallelism,
+            model_wrapper=model_wrapper,
         )
-
-
-@require_auth  # Decorator for authentication, automatically fetches access token for logged in user
-def cli_run_authed(
-    access_token: str,
-    json_format: bool,
-    risk_threshold: int,
-    target: str,
-    validate_args: Callable[[type_kwargs], bool],
-    **kwargs: type_kwargs,
-) -> CliResponse:
-    """
-    Wraps the functionality to run the Cli.
-
-    Returns int of exit code
-    """
-    return cli_run(
-        access_token=access_token,
-        json_format=json_format,
-        risk_threshold=risk_threshold,
-        target=target,
-        validate_args=validate_args,
-        kwargs=kwargs,
-    )
