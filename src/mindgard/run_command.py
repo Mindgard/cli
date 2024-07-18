@@ -40,7 +40,7 @@ api_service = ApiService()
 # access token, target,
 # parallelism, model_wrapper,
 # visual_exception_callback, modality_specific_args
-type_submit_attack_function = Callable[
+type_submit_test_function = Callable[
     [str, str, int, ModelWrapper, Callable[[str], None], Optional[BaseModel]],
     List[str],
 ]
@@ -157,7 +157,7 @@ def run_test_with_ui(
     parallelism: int,
     risk_threshold: int,
     model_wrapper: ModelWrapper,
-    submit_attack_function: type_submit_attack_function,
+    submit_test_function: type_submit_test_function,
     modality_specific_args: Optional[BaseModel | None] = None,
 ) -> CliResponse:
     console = Console()
@@ -183,7 +183,7 @@ def run_test_with_ui(
         )
 
     with submit_progress:
-        submitted_id = submit_attack_function(
+        submitted_id = submit_test_function(
             access_token,
             target,
             parallelism,
@@ -267,7 +267,7 @@ def run_test_with_json_output(
     parallelism: int,
     risk_threshold: int,
     model_wrapper: ModelWrapper,
-    submit_attack_function: type_submit_attack_function,
+    submit_test_function: type_submit_test_function,
     modality_specific_args: Optional[BaseModel | None] = None,
 ) -> CliResponse:
 
@@ -275,7 +275,7 @@ def run_test_with_json_output(
         pass
 
     # there will be a switch of some kind for this:
-    submitted_id = submit_attack_function(
+    submitted_id = submit_test_function(
         access_token,
         target,
         parallelism,
@@ -302,7 +302,7 @@ def cli_run(
     target: str,
     parallelism: int,
     model_wrapper: ModelWrapper,
-    submit_attack_function: type_submit_attack_function,
+    submit_test_function: type_submit_test_function,
     modality_specific_args: Optional[BaseModel | None] = None,
 ) -> CliResponse:
 
@@ -314,7 +314,7 @@ def cli_run(
             parallelism=parallelism,
             model_wrapper=model_wrapper,
             modality_specific_args=modality_specific_args,
-            submit_attack_function=submit_attack_function,
+            submit_test_function=submit_test_function,
         )
     else:
         return run_test_with_ui(
@@ -324,5 +324,5 @@ def cli_run(
             parallelism=parallelism,
             model_wrapper=model_wrapper,
             modality_specific_args=modality_specific_args,
-            submit_attack_function=submit_attack_function,
+            submit_test_function=submit_test_function,
         )

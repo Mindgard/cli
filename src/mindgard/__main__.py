@@ -4,7 +4,7 @@ import argparse
 from argparse import ArgumentParser
 import sys
 import traceback
-from typing import List, cast, Any
+from typing import List, Any
 
 from .wrappers import parse_args_into_model
 
@@ -12,7 +12,6 @@ from .utils import CliResponse, print_to_stderr, is_version_outdated, parse_toml
 
 from .list_tests_command import ListTestsCommand
 from .run_test_command import RunTestCommand
-from .run_llm_local_command import RunLLMLocalCommand
 
 from .preflight import preflight
 
@@ -21,8 +20,8 @@ from .api_service import ApiService
 from .auth import login, logout
 from .constants import VERSION
 
-from .llm_model_handler import llm_submit_attack, LLMArguments
-from .image_model_handler import image_submit_attack
+from .llm_model_handler import submit_llm_test, LLMArguments
+from .image_model_handler import submit_image_test
 
 import logging
 from rich.logging import RichHandler
@@ -80,12 +79,9 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     test_parser = subparser_for_llm_contact("test", "Attacks command", subparsers)
     test_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=80)
     test_parser.add_argument('--parallelism', type=int, help='The maximum number of parallel requests that can be made to the API.', required=False, default=5)
+    test_parser.add_argument('--model-type', type=str, help='Specify the model type', choices=['llm', 'image'], required=False, default='llm')
 
     validate_parser = subparser_for_llm_contact("validate", "Validates that we can communicate with your model", subparsers)
-
-    newcli_parser = subparser_for_llm_contact("newcli", "Attacks command", subparsers)
-    newcli_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=80)
-    newcli_parser.add_argument('--parallelism', type=int, help='The maximum number of parallel requests that can be made to the API.', required=False, default=5)
 
     return parser.parse_args(args)
 
@@ -123,61 +119,35 @@ def main() -> None:
         run_test_res = run_test_cmd.run(model_name=args.target, json_format=bool(args.json), risk_threshold=int(args.risk_threshold))
         exit(run_test_res.code())
 
-    elif args.command == "newcli":
-        console = Console()
-        final_args = parse_toml_and_args_into_final_args(args.config_file, args)
-        model_wrapper = parse_args_into_model(final_args)
-        passed:bool = preflight(model_wrapper, console=console)
-        response = CliResponse(passed)
-
-        console.print(f"{'[green bold]Model contactable!' if passed else '[red bold]Model not contactable!'}")
-
-        flag = "llm"
-        if flag == "llm":
-            params = LLMArguments(system_prompt="You are a useful assistant")
-            submit_function = llm_submit_attack
-        else:
-            # params = ImageArguments(input_size=[1, 3, 224, 224]) # theoretical future use
-            params = None
-            submit_function = image_submit_attack
-        
-        response = cli_run(json_format=False,
-                           risk_threshold=int(final_args["risk_threshold"]),
-                           target=final_args["target"],
-                           parallelism=int(final_args["parallelism"]),
-                           model_wrapper=model_wrapper,
-                           modality_specific_args=params,
-                           submit_attack_function=submit_function)
-        
-        exit(response.code())
 
     elif args.command == "validate" or args.command == "test":
         console = Console()
         final_args = parse_toml_and_args_into_final_args(args.config_file, args)
         model_wrapper = parse_args_into_model(final_args)
-        passed:bool = preflight(model_wrapper, console=console)
-        response = CliResponse(passed)
+        passed_preflight:bool = preflight(model_wrapper, console=console)
+        response = CliResponse(passed_preflight)
 
-        console.print(f"{'[green bold]Model contactable!' if passed else '[red bold]Model not contactable!'}")
+        console.print(f"{'[green bold]Model contactable!' if passed_preflight else '[red bold]Model not contactable!'}")
 
-        if passed:
+        if passed_preflight:
             if args.command == 'test':
-                # load args from file mindgard.toml
-                RunLLMLocalCommand.validate_args(final_args)
-                api_service = ApiService()
-                parallelism = int(cast(str, final_args["parallelism"]))
-                llm_test_cmd = RunLLMLocalCommand(api_service=api_service, model_wrapper=model_wrapper, parallelism=parallelism)
-                llm_test_res = llm_test_cmd.run(
-                    target=final_args["target"], 
-                    json_format=bool(final_args["json"]), 
-                    risk_threshold=int(cast(str, final_args["risk_threshold"])), 
-                    system_prompt=final_args["system_prompt"],
-                    console=console
-                )
-                exit(llm_test_res.code())
-
-        exit(response.code())
-        
+                if args.model_type == "llm":
+                    params = LLMArguments(system_prompt=final_args["system_prompt"])
+                    submit_function = submit_llm_test
+                elif args.model_type == "image":
+                    # params = ImageArguments(input_size=[1, 3, 224, 224]) # theoretical future use
+                    params = None
+                    submit_function = submit_image_test
+                
+                response = cli_run(json_format=False,
+                                risk_threshold=int(final_args["risk_threshold"]),
+                                target=final_args["target"],
+                                parallelism=int(final_args["parallelism"]),
+                                model_wrapper=model_wrapper,
+                                modality_specific_args=params,
+                                submit_test_function=submit_function)
+                
+                exit(response.code())
         
     else:
         print_to_stderr('Which command are you looking for? See: $ mindgard --help')

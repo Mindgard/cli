@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from .wrappers import ModelWrapper
 
 
-def image_submit_attack(
+def submit_image_test(
     access_token: str,
     target: str,
     parallelism: int,

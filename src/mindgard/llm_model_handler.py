@@ -65,7 +65,7 @@ def handle_exception_callback(
 
 # We're passing around a list as it can be remotely updated by the 'submitted_callback'.
 # You're not able to return values from event fired functions usually, but this allows for it.
-def llm_submit_attack(
+def submit_llm_test(
     access_token: str,
     target: str,
     parallelism: int,
