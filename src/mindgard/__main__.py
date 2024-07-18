@@ -8,7 +8,7 @@ from typing import List, cast, Any
 
 from .wrappers import parse_args_into_model
 
-from .utils import CliResponse
+from .utils import CliResponse, print_to_stderr, is_version_outdated, parse_toml_and_args_into_final_args
 
 from .list_tests_command import ListTestsCommand
 from .run_test_command import RunTestCommand
@@ -20,13 +20,15 @@ from .api_service import ApiService
 
 from .auth import login, logout
 from .constants import VERSION
-from .utils import is_version_outdated, print_to_stderr, parse_toml_and_args_into_final_args
+
+from .llm_model_handler import llm_submit_attack, LLMArguments
+from .image_model_handler import image_submit_attack
 
 import logging
 from rich.logging import RichHandler
 from rich.console import Console
 
-from .run_command import cli_run, LLMArguments
+from .run_command import cli_run
 
 
 # both validate and test need these same arguments, so have factored them out
@@ -122,15 +124,31 @@ def main() -> None:
         exit(run_test_res.code())
 
     elif args.command == "newcli":
-        params = LLMArguments(system_prompt="You are a useful assistant")
+        console = Console()
         final_args = parse_toml_and_args_into_final_args(args.config_file, args)
         model_wrapper = parse_args_into_model(final_args)
-        response = cli_run(json_format=True,
+        passed:bool = preflight(model_wrapper, console=console)
+        response = CliResponse(passed)
+
+        console.print(f"{'[green bold]Model contactable!' if passed else '[red bold]Model not contactable!'}")
+
+        flag = "llm"
+        if flag == "llm":
+            params = LLMArguments(system_prompt="You are a useful assistant")
+            submit_function = llm_submit_attack
+        else:
+            # params = ImageArguments(input_size=[1, 3, 224, 224]) # theoretical future use
+            params = None
+            submit_function = image_submit_attack
+        
+        response = cli_run(json_format=False,
                            risk_threshold=int(final_args["risk_threshold"]),
                            target=final_args["target"],
                            parallelism=int(final_args["parallelism"]),
                            model_wrapper=model_wrapper,
-                           modality_specific_args=params)
+                           modality_specific_args=params,
+                           submit_attack_function=submit_function)
+        
         exit(response.code())
 
     elif args.command == "validate" or args.command == "test":
