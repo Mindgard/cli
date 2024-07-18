@@ -1,6 +1,6 @@
 from typing import List
 from unittest.mock import Mock
-from ...src.mindgard.run_llm_local_command import exceptions_to_cli_status_codes, handle_exception_callback
+from ...src.mindgard.llm_model_handler import exceptions_to_cli_status_codes, handle_exception_callback
 from requests import HTTPError, Response
 
 from ...src.mindgard.exceptions import NotImplemented
