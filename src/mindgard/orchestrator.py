@@ -55,7 +55,21 @@ class OrchestratorSetupResponse(BaseModel):
 
 class OrchestratorTestResponse(BaseModel):
     test_url: str
-    attack_urls: List[str]
+    attack_ids: List[str]
+
+
+class OrchestratorAttackResponse(BaseModel):
+    attack: str
+    id: str
+    state: int
+    is_finished: bool
+
+    @model_validator(mode="after")  # type: ignore
+    def check_state_is_in_range(self):
+        if self.state > 2 or self.state < -1:
+            raise ValueError("State must be between -1 and 2 (inclusive).")
+
+        return self
 
 
 def get_test_by_id(
@@ -65,18 +79,35 @@ def get_test_by_id(
 
     try:
         response = request_function(test_url, access_token)
-        attack_urls = [
-            f"{DASHBOARD_URL}/r/attack/{attack['id']}"
-            for attack in response.json()["attacks"]
-        ]
+        attack_ids = [attack["id"] for attack in response.json()["attacks"]]
+        test_url = f"{DASHBOARD_URL}/r/test/{test_id}"
 
-        return OrchestratorTestResponse(
-            test_url=f"{DASHBOARD_URL}/r/test/{test_id}", attack_urls=attack_urls
+        return OrchestratorTestResponse(test_url=test_url, attack_ids=attack_ids)
+
+    except HTTPError as httpe:
+        if httpe.response.status_code == 404:
+            raise ValueError(f"Test with test_id {test_id=} not found!")
+        else:
+            raise httpe
+
+    except Exception as e:
+        raise e
+
+
+def get_attack_by_id(
+    attack_id: str, access_token: str, request_function: type_get_request_function
+) -> OrchestratorAttackResponse:
+    attack_url = f"{DASHBOARD_URL}/r/attack/{attack_id}"
+    try:
+        response = request_function(attack_url, access_token)
+        response_data = response.json()
+        return OrchestratorAttackResponse(
+            **response_data, is_finished=response_data["state"] == 2
         )
 
     except HTTPError as httpe:
         if httpe.response.status_code == 404:
-            raise ValueError(f"Test with test_id {test_id} not found!")
+            raise ValueError(f"Attack with {attack_id=} not found!")
         else:
             raise httpe
 
