@@ -13,6 +13,7 @@ from .utils import CliResponse
 from .submit_functions.list_tests import list_test_submit_factory, list_test_polling_factory
 from .submit_functions.submit_sandbox_test import submit_sandbox_submit_factory, submit_sandbox_polling_factory
 from .submit_functions.llm_model import run_local_llm_test_submit_factory, run_local_llm_test_polling_factory
+from .submit_functions.image_model import run_local_image_test_submit_factory, run_local_image_test_polling_factory
 from .run_poll_display import cli_run
 
 from .preflight import preflight
@@ -33,7 +34,7 @@ def subparser_for_llm_contact(command_str: str, description_str: str, argparser:
     parser: ArgumentParser = argparser.add_parser(command_str, help=description_str)
     parser.add_argument('target', nargs='?', type=str, help="This is your own model identifier.")
     parser.add_argument('--config-file', type=str, help='Path to mindgard.toml config file', default=None, required=False)
-    parser.add_argument('--json', action="store_true", help='Output the info in JSON format.', required=False)
+    parser.add_argument('--json', action="store_true", help='Output the info in JSON format.', required=False, default=False)
     parser.add_argument('--headers', type=str, help='The headers to use', required=False)
     parser.add_argument('--preset', type=str, help='The preset to use', choices=['huggingface', 'openai', 'anthropic', 'azure-openai', 'azure-aistudio', 'custom_mistral', 'tester'], required=False)
     parser.add_argument('--api-key', type=str, help='Specify the API key for the wrapper', required=False)
@@ -108,7 +109,7 @@ def main() -> None:
             list_test_submit_function = list_test_submit_factory()
             list_test_polling_function = list_test_polling_factory()
 
-            cli_response = cli_run(list_test_submit_function, list_test_polling_function)
+            cli_response = cli_run(list_test_submit_function, list_test_polling_function, json_out=args.json)
             exit(cli_response.code())
         else:
             print_to_stderr('Provide a resource to list. Eg `list tests`.')
@@ -116,7 +117,7 @@ def main() -> None:
         submit_sandbox_submit_function = submit_sandbox_submit_factory(model_name=args.target)
         submit_sandbox_polling_function = submit_sandbox_polling_factory(risk_threshold=int(args.risk_threshold))
 
-        cli_response = cli_run(submit_sandbox_submit_function, submit_sandbox_polling_function)
+        cli_response = cli_run(submit_sandbox_submit_function, submit_sandbox_polling_function, json_out=args.json)
         exit(cli_response.code())
 
     if args.command == "validate" or args.command == "test":
@@ -130,14 +131,19 @@ def main() -> None:
 
         if passed_preflight:
             if args.command == 'test':
-                run_local_llm_test_submit = run_local_llm_test_submit_factory(
+                # if args.model_type == "llm":
+                submit_func = run_local_llm_test_submit_factory(
                     target=final_args["target"],
                     parallelism=int(final_args["parallelism"]),
                     system_prompt=final_args["system_prompt"],
                     model_wrapper=model_wrapper
                 )
-                run_local_llm_test_polling = run_local_llm_test_polling_factory(risk_threshold=int(final_args["risk_threshold"]))
-                cli_response = cli_run(run_local_llm_test_submit, run_local_llm_test_polling)
+                poll_func = run_local_llm_test_polling_factory(risk_threshold=int(final_args["risk_threshold"]))
+                # if args.model_type == "image":
+                #     submit_func = run_local_image_test_submit_factory()
+                #     poll_func = run_local_image_test_polling_factory(risk_threshold=int(final_args["risk_threshold"]))
+
+                cli_response = cli_run(submit_func, poll_func, json_out=args.json)
                 exit(cli_response.code())
 
         exit(response.code())
