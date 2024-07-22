@@ -10,21 +10,23 @@ from .wrappers import parse_args_into_model
 
 from .utils import CliResponse
 
-from .list_tests_command import ListTestsCommand
-from .run_test_command import RunTestCommand
+from .commands.list_tests import list_tests
+# from .commands.run_test import RunTestCommand
 from .run_llm_local_command import RunLLMLocalCommand
 
 from .preflight import preflight
 
 from .api_service import ApiService
 
-from .auth import login, logout
 from .constants import VERSION
 from .utils import is_version_outdated, print_to_stderr, parse_toml_and_args_into_final_args
 
 import logging
 from rich.logging import RichHandler
 from rich.console import Console
+
+# commands
+from .commands.login import login, logout
 
 
 # both validate and test need these same arguments, so have factored them out
@@ -104,17 +106,15 @@ def main() -> None:
         logout()
     elif args.command == 'list':
         if args.list_command == 'tests':
-            api_service = ApiService()
-            cmd = ListTestsCommand(api_service)
-            res = cmd.run(json_format=bool(args.json), test_id=args.id)
+            res = list_tests(json_format=bool(args.json), test_id=args.id)
             exit(res.code())
         else:
             print_to_stderr('Provide a resource to list. Eg `list tests`.')
-    elif args.command == 'sandbox':
-        api_service = ApiService()
-        run_test_cmd = RunTestCommand(api_service)
-        run_test_res = run_test_cmd.run(model_name=args.target, json_format=bool(args.json), risk_threshold=int(args.risk_threshold))
-        exit(run_test_res.code())
+    # elif args.command == 'sandbox':
+    #     api_service = ApiService()
+    #     run_test_cmd = RunTestCommand(api_service)
+    #     run_test_res = run_test_cmd.run(model_name=args.target, json_format=bool(args.json), risk_threshold=int(args.risk_threshold))
+    #     exit(run_test_res.code())
     if args.command == "validate" or args.command == "test":
         console = Console()
         final_args = parse_toml_and_args_into_final_args(args.config_file, args)
