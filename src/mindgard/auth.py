@@ -1,10 +1,7 @@
-import json
+
 import os
-import time
 from typing import Any, Callable, Optional, TypeVar, cast
 from functools import wraps
-
-from rich.progress import Console
 
 import requests
 from auth0.authentication.token_verifier import (
@@ -16,11 +13,7 @@ from .utils import CliResponse, print_to_stderr
 from .config import (
     get_token_file,
     get_instance_file,
-    create_config_directory,
     load_auth_config,
-    is_instance_set,
-    instance_auth_config,
-    sandbox_auth_config,
 )
 
 

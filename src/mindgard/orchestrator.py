@@ -53,36 +53,68 @@ class OrchestratorSetupResponse(BaseModel):
     group_id: str
 
 
-class OrchestratorTestResponse(BaseModel):
-    test_url: str
-    attack_ids: List[str]
-
-
-class OrchestratorAttackResponse(BaseModel):
-    attack: str
+class AttackModel(BaseModel):
     id: str
-    state: int
-    is_finished: bool
+    submitted_at: str
+    submitted_at_unix: float
+    run_at: str
+    run_at_unix: float
+    state: Literal[0, 1, 2, -1]
+    state_message: Literal["Completed", "Queued", "Running", "Failed"]
+    runtime: float
+    model: str
+    dataset: str
+    attack: str
+    risk: int
+    stacktrace: Optional[str]
 
-    @model_validator(mode="after")  # type: ignore
-    def check_state_is_in_range(self):
-        if self.state > 2 or self.state < -1:
-            raise ValueError("State must be between -1 and 2 (inclusive).")
 
-        return self
+class OrchestratorTestResponse(BaseModel):
+    id: str
+    mindgardModelName: str
+    source: Literal["threat_intel", "user"]
+    createdAt: str
+    attacks: List[AttackModel]
+    isCompleted: bool
+    hasFinished: bool
+    risk: int
+    test_url: str
+
+
+# class OrchestratorAttackResponse(BaseModel):
+#     attack: str
+#     id: int
+#     is_finished: bool
+
+
+def get_tests(
+    access_token: str, request_function: type_get_request_function
+) -> List[OrchestratorTestResponse]:
+    url = f"{API_BASE}/assessments?ungrouped=true"
+
+    try:
+        response = request_function(url, access_token)
+
+        return [
+            OrchestratorTestResponse(
+                **data, test_url=f"{API_BASE}/assessments/{data['id']}"
+            )
+            for data in response.json()
+        ]
+    except Exception as e:
+        raise e
 
 
 def get_test_by_id(
     test_id: str, access_token: str, request_function: type_get_request_function
 ) -> OrchestratorTestResponse:
-    test_url = f"{API_BASE}/assessments?ungrouped=true"
+    test_url = f"{API_BASE}/assessments/{test_id}"
 
     try:
         response = request_function(test_url, access_token)
-        attack_ids = [attack["id"] for attack in response.json()["attacks"]]
         test_url = f"{DASHBOARD_URL}/r/test/{test_id}"
 
-        return OrchestratorTestResponse(test_url=test_url, attack_ids=attack_ids)
+        return OrchestratorTestResponse(test_url=test_url, **response.json())
 
     except HTTPError as httpe:
         if httpe.response.status_code == 404:
@@ -94,25 +126,25 @@ def get_test_by_id(
         raise e
 
 
-def get_attack_by_id(
-    attack_id: str, access_token: str, request_function: type_get_request_function
-) -> OrchestratorAttackResponse:
-    attack_url = f"{DASHBOARD_URL}/r/attack/{attack_id}"
-    try:
-        response = request_function(attack_url, access_token)
-        response_data = response.json()
-        return OrchestratorAttackResponse(
-            **response_data, is_finished=response_data["state"] == 2
-        )
+# def get_attack_by_id(
+#     attack_id: int, access_token: str, request_function: type_get_request_function
+# ) -> OrchestratorAttackResponse:
+#     attack_url = f"{DASHBOARD_URL}/r/attack/{attack_id}"
+#     try:
+#         response = request_function(attack_url, access_token)
+#         response_data = response.json()
+#         return OrchestratorAttackResponse(
+#             **response_data, is_finished=response_data["state"] == 2
+#         )
 
-    except HTTPError as httpe:
-        if httpe.response.status_code == 404:
-            raise ValueError(f"Attack with {attack_id=} not found!")
-        else:
-            raise httpe
+#     except HTTPError as httpe:
+#         if httpe.response.status_code == 404:
+#             raise ValueError(f"Attack with {attack_id=} not found!")
+#         else:
+#             raise httpe
 
-    except Exception as e:
-        raise e
+#     except Exception as e:
+#         raise e
 
 
 def get_extra_config_from_env() -> Dict[str, Any]:
