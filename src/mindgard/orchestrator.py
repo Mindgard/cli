@@ -24,15 +24,12 @@ type_source = Literal["threat_intel", "user", "mindgard"]
 
 
 class OrchestratorSetupRequest(BaseModel):
-    user: str
-    userAgent: str
-    targetModelName: str
-    url: str
+    target: str
     model_type: str
     system_prompt: Optional[str] = None
     dataset: Optional[str] = None
-    attackPack: type_attack_pack
-    extraConfig: Optional[Dict[str, Any]]
+    attackPack: Optional[type_attack_pack] = None
+    extraConfig: Optional[Dict[str, Any]] = None
     attackSource: str
     parallelism: int
 
@@ -156,7 +153,7 @@ def get_attack_pack_from_env() -> type_attack_pack:
 def setup_orchestrator_webpubsub_request(
     request: OrchestratorSetupRequest,
     access_token: str,
-    request_function: type_post_request_function,
+    request_function: type_post_request_function = api_post,
 ) -> OrchestratorSetupResponse:
     url = f"{API_BASE}/tests/cli_init"
 

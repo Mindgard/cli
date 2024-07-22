@@ -21,10 +21,7 @@ def get_orchestrator_setup_request(parallelism: int = 1) -> Dict[str, Any]:
     os.environ["ATTACK_PACK"] = "threat_intel"
     os.environ["MINDGARD_EXTRA_CONFIG"] = '{"test": "test"}'
     return {
-        "user": "test",
-        "userAgent": "test",
-        "targetModelName": "test",
-        "url": "test",
+        "target": "test",
         "model_type": "test",
         "attackSource": "test",
         "parallelism": parallelism,
