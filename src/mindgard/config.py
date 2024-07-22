@@ -15,7 +15,7 @@ def get_config_directory() -> str:
     config_dir = os.environ.get('MINDGARD_CONFIG_DIR')
     return config_dir or os.path.join(os.path.expanduser('~'), '.mindgard')
 
-def create_config_directory():
+def create_config_directory() -> None:
     os.makedirs(get_config_directory(), exist_ok=True)
     
 def get_token_file() -> str:

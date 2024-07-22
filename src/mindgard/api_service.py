@@ -1,5 +1,5 @@
 # Types
-from typing import Callable, Dict, Any, Union, cast
+from typing import Callable, Dict, Any
 
 # Requests
 import requests
