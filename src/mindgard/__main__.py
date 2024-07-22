@@ -12,6 +12,7 @@ from .utils import CliResponse
 
 from .submit_functions.list_tests import list_test_submit_factory, list_test_polling_factory
 from .submit_functions.submit_sandbox_test import submit_sandbox_submit_factory, submit_sandbox_polling_factory
+from .submit_functions.llm_model import run_local_llm_test_submit_factory, run_local_llm_test_polling_factory
 from .run_poll_display import cli_run
 
 from .preflight import preflight
@@ -117,32 +118,29 @@ def main() -> None:
 
         cli_response = cli_run(submit_sandbox_submit_function, submit_sandbox_polling_function)
         exit(cli_response.code())
-    # if args.command == "validate" or args.command == "test":
-    #     console = Console()
-    #     final_args = parse_toml_and_args_into_final_args(args.config_file, args)
-    #     model_wrapper = parse_args_into_model(final_args)
-    #     passed:bool = preflight(model_wrapper, console=console)
-    #     response = CliResponse(passed)
 
-    #     console.print(f"{'[green bold]Model contactable!' if passed else '[red bold]Model not contactable!'}")
+    if args.command == "validate" or args.command == "test":
+        console = Console()
+        final_args = parse_toml_and_args_into_final_args(args.config_file, args)
+        model_wrapper = parse_args_into_model(final_args)
+        passed_preflight: bool = preflight(model_wrapper, console=console)
+        response = CliResponse(passed_preflight)
 
-    #     if passed:
-    #         if args.command == 'test':
-    #             # load args from file mindgard.toml
-    #             RunLLMLocalCommand.validate_args(final_args)
-    #             api_service = ApiService()
-    #             parallelism = int(cast(str, final_args["parallelism"]))
-    #             llm_test_cmd = RunLLMLocalCommand(api_service=api_service, model_wrapper=model_wrapper, parallelism=parallelism)
-    #             llm_test_res = llm_test_cmd.run(
-    #                 target=final_args["target"], 
-    #                 json_format=bool(final_args["json"]), 
-    #                 risk_threshold=int(cast(str, final_args["risk_threshold"])), 
-    #                 system_prompt=final_args["system_prompt"],
-    #                 console=console
-    #             )
-    #             exit(llm_test_res.code())
+        console.print(f"{'[green bold]Model contactable!' if passed_preflight else '[red bold]Model not contactable!'}")
 
-    #     exit(response.code())
+        if passed_preflight:
+            if args.command == 'test':
+                run_local_llm_test_submit = run_local_llm_test_submit_factory(
+                    target=final_args["target"],
+                    parallelism=int(final_args["parallelism"]),
+                    system_prompt=final_args["system_prompt"],
+                    model_wrapper=model_wrapper
+                )
+                run_local_llm_test_polling = run_local_llm_test_polling_factory(risk_threshold=int(final_args["risk_threshold"]))
+                cli_response = cli_run(run_local_llm_test_submit, run_local_llm_test_polling)
+                exit(cli_response.code())
+
+        exit(response.code())
         
         
     else:
