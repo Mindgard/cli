@@ -9,7 +9,34 @@
 #     api_service: ApiService
 #     access_token: str
 #     model_name: str
+# class Fixture(NamedTuple):
+#     api_service: ApiService
+#     access_token: str
+#     model_name: str
 
+# def _helper_fixtures() -> Fixture:
+#     model_name = "mymodel"
+#     access_token = "atoken"
+#     api_service = ApiService()
+#     api_service.submit_test = MagicMock(return_value={
+#         "id" : "test_id"
+#     })
+#     api_service.get_test = MagicMock(return_value={
+#         "id" : "test_id",
+#         "hasFinished" : True,
+#         "risk" : 50,
+#         "attacks" : [{
+#             "id" : "attack_id1",
+#             "attack" : "myattack",
+#             "state": 2,
+#             "risk": 12,
+#         }]
+#     })
+#     return Fixture(
+#         api_service=api_service,
+#         model_name=model_name,
+#         access_token=access_token,
+#     )
 # def _helper_fixtures() -> Fixture:
 #     model_name = "mymodel"
 #     access_token = "atoken"
@@ -51,6 +78,8 @@
 #     stdout = captured.out
 #     snapshot.assert_match(stdout, 'stdout.json')
 
+# @pytest.mark.skipif(platform.system() == "Windows",
+#                     reason="TODO: cli output formatting is different on windows")
 # def test_text_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot):
 #     fixture = _helper_fixtures()
 
