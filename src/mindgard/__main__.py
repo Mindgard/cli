@@ -4,19 +4,17 @@ import argparse
 from argparse import ArgumentParser
 import sys
 import traceback
-from typing import List, cast, Any
+from typing import List, Any
 
 from .wrappers import parse_args_into_model
 
 from .utils import CliResponse
 
-from .commands.list_tests import list_tests
-# from .commands.run_test import RunTestCommand
-from .run_llm_local_command import RunLLMLocalCommand
+from .submit_functions.list_tests import list_test_submit_factory, list_test_polling_factory
+from .submit_functions.submit_sandbox_test import submit_sandbox_submit_factory, submit_sandbox_polling_factory
+from .run_poll_display import cli_run
 
 from .preflight import preflight
-
-from .api_service import ApiService
 
 from .constants import VERSION
 from .utils import is_version_outdated, print_to_stderr, parse_toml_and_args_into_final_args
@@ -106,41 +104,45 @@ def main() -> None:
         logout()
     elif args.command == 'list':
         if args.list_command == 'tests':
-            res = list_tests(json_format=bool(args.json), test_id=args.id)
-            exit(res.code())
+            list_test_submit_function = list_test_submit_factory()
+            list_test_polling_function = list_test_polling_factory()
+
+            cli_response = cli_run(list_test_submit_function, list_test_polling_function)
+            exit(cli_response.code())
         else:
             print_to_stderr('Provide a resource to list. Eg `list tests`.')
-    # elif args.command == 'sandbox':
-    #     api_service = ApiService()
-    #     run_test_cmd = RunTestCommand(api_service)
-    #     run_test_res = run_test_cmd.run(model_name=args.target, json_format=bool(args.json), risk_threshold=int(args.risk_threshold))
-    #     exit(run_test_res.code())
-    if args.command == "validate" or args.command == "test":
-        console = Console()
-        final_args = parse_toml_and_args_into_final_args(args.config_file, args)
-        model_wrapper = parse_args_into_model(final_args)
-        passed:bool = preflight(model_wrapper, console=console)
-        response = CliResponse(passed)
+    elif args.command == 'sandbox':
+        submit_sandbox_submit_function = submit_sandbox_submit_factory(model_name=args.target)
+        submit_sandbox_polling_function = submit_sandbox_polling_factory(risk_threshold=int(args.risk_threshold))
 
-        console.print(f"{'[green bold]Model contactable!' if passed else '[red bold]Model not contactable!'}")
+        cli_response = cli_run(submit_sandbox_submit_function, submit_sandbox_polling_function)
+        exit(cli_response.code())
+    # if args.command == "validate" or args.command == "test":
+    #     console = Console()
+    #     final_args = parse_toml_and_args_into_final_args(args.config_file, args)
+    #     model_wrapper = parse_args_into_model(final_args)
+    #     passed:bool = preflight(model_wrapper, console=console)
+    #     response = CliResponse(passed)
 
-        if passed:
-            if args.command == 'test':
-                # load args from file mindgard.toml
-                RunLLMLocalCommand.validate_args(final_args)
-                api_service = ApiService()
-                parallelism = int(cast(str, final_args["parallelism"]))
-                llm_test_cmd = RunLLMLocalCommand(api_service=api_service, model_wrapper=model_wrapper, parallelism=parallelism)
-                llm_test_res = llm_test_cmd.run(
-                    target=final_args["target"], 
-                    json_format=bool(final_args["json"]), 
-                    risk_threshold=int(cast(str, final_args["risk_threshold"])), 
-                    system_prompt=final_args["system_prompt"],
-                    console=console
-                )
-                exit(llm_test_res.code())
+    #     console.print(f"{'[green bold]Model contactable!' if passed else '[red bold]Model not contactable!'}")
 
-        exit(response.code())
+    #     if passed:
+    #         if args.command == 'test':
+    #             # load args from file mindgard.toml
+    #             RunLLMLocalCommand.validate_args(final_args)
+    #             api_service = ApiService()
+    #             parallelism = int(cast(str, final_args["parallelism"]))
+    #             llm_test_cmd = RunLLMLocalCommand(api_service=api_service, model_wrapper=model_wrapper, parallelism=parallelism)
+    #             llm_test_res = llm_test_cmd.run(
+    #                 target=final_args["target"], 
+    #                 json_format=bool(final_args["json"]), 
+    #                 risk_threshold=int(cast(str, final_args["risk_threshold"])), 
+    #                 system_prompt=final_args["system_prompt"],
+    #                 console=console
+    #             )
+    #             exit(llm_test_res.code())
+
+    #     exit(response.code())
         
         
     else:

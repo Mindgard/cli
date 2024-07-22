@@ -2,7 +2,7 @@ import pytest
 import requests_mock
 
 from src.mindgard.api_service import api_get
-from src.mindgard.orchestrator import get_test_by_id, get_tests
+from src.mindgard.orchestrator import get_test_by_id, get_tests, submit_sandbox_test
 from src.mindgard.constants import API_BASE
 from unittest.mock import MagicMock
 
@@ -30,7 +30,9 @@ def get_valid_attack_data(attack_id: str = "valid_id") -> Dict[str, Any]:
     }
 
 
-def get_valid_test_data(id: str = "valid_test_id", attack_id: str = "valid_id") -> Dict[str, Any]:
+def get_valid_test_data(
+    id: str = "valid_test_id", attack_id: str = "valid_id"
+) -> Dict[str, Any]:
     return {
         "id": id,
         "mindgardModelName": "<model_name>",
@@ -74,56 +76,28 @@ def test_get_test_by_id(requests_mock: requests_mock.Mocker) -> None:
     assert len(test.attacks) == 1
 
 
-# def test_test_does_not_exist(requests_mock: requests_mock.Mocker) -> None:
-#     test_id = 2
-#     access_token = "valid_access_token"
-#     api_get.retry.sleep = MagicMock()
-#     requests_mock.get(f"{API_BASE}/assessments/{test_id}", status_code=404)
-#     with pytest.raises(ValueError):
-#         get_test_by_id(
-#             test_id=test_id, access_token=access_token, request_function=api_get
-#         )
+def test_submit_sandbox_test(requests_mock: requests_mock.Mocker) -> None:
+    test_id = "valid_test_id"
+    access_token = "valid_access_token"
 
+    test_data = get_valid_test_data(id=test_id)
 
-# def test_get_attack_by_id(requests_mock: requests_mock.Mocker) -> None:
-#     attack_id = 22
-#     access_token = "valid_access_token"
-#     api_get.retry.sleep = MagicMock()
-#     requests_mock.get(
-#         f"{DASHBOARD_URL}/r/attack/{attack_id}",
-#         status_code=200,
-#         json=get_valid_attack_data(),
-#     )
-#     attack = get_attack_by_id(
-#         attack_id=attack_id, access_token=access_token, request_function=api_get
-#     )
-#     assert attack.state == 2  # asserts attack is completed(2)
-#     assert attack.id == attack_id
-#     assert attack.is_finished
-#     assert attack.attack == "SquareAttack"
+    requests_mock.post(
+        f"{API_BASE}/assessments",
+        json=test_data,
+        status_code=200,
+    )
 
+    requests_mock.get(
+        f"{API_BASE}/assessments/{test_id}",
+        json=get_valid_test_data(id=test_id),
+        status_code=200,
+    )
 
-# def test_attack_does_not_exist(requests_mock: requests_mock.Mocker) -> None:
-#     attack_id = 2
-#     access_token = "valid_access_token"
-#     api_get.retry.sleep = MagicMock()
-#     requests_mock.get(f"{DASHBOARD_URL}/r/attack/{attack_id}", status_code=404)
-#     with pytest.raises(ValueError):
-#         get_attack_by_id(
-#             attack_id=attack_id, access_token=access_token, request_function=api_get
-#         )
+    res = submit_sandbox_test(
+        access_token=access_token, target_name=test_data["mindgardModelName"]
+    )
 
-
-# def test_attack_invalid_state(requests_mock: requests_mock.Mocker) -> None:
-#     attack_id = 7
-#     access_token = "valid_access_token"
-#     api_get.retry.sleep = MagicMock()
-#     requests_mock.get(
-#         f"{DASHBOARD_URL}/r/attack/{attack_id}",
-#         status_code=200,
-#         json={"attack": "SquareAttack", "id": attack_id, "state": -2},
-#     )
-#     with pytest.raises(ValueError):
-#         get_attack_by_id(
-#             attack_id=attack_id, access_token=access_token, request_function=api_get
-#         )
+    assert len(res.attacks) == len(test_data["attacks"])
+    assert res.id == test_id
+    assert res.mindgardModelName == test_data["mindgardModelName"]

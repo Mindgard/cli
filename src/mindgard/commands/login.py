@@ -1,13 +1,15 @@
 from ..auth import (
-    is_instance_set,
-    sandbox_auth_config,
-    instance_auth_config,
     validate_id_token,
-    create_config_directory,
     get_token_file,
     get_instance_file,
     clear_token,
     clear_instance,
+)
+from ..config import (
+    is_instance_set,
+    instance_auth_config,
+    sandbox_auth_config,
+    create_config_directory,
 )
 import requests
 from ..utils import print_to_stderr

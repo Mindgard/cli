@@ -3,7 +3,12 @@ from pydantic import BaseModel, model_validator
 from typing import Optional, Any, Dict, Literal, cast, List
 
 from .constants import API_BASE, DASHBOARD_URL
-from .api_service import type_post_request_function, type_get_request_function, api_get
+from .api_service import (
+    type_post_request_function,
+    type_get_request_function,
+    api_get,
+    api_post,
+)
 
 import os
 import json
@@ -15,6 +20,7 @@ BaseModel.model_config["protected_namespaces"] = ()
 
 # Type definitions
 type_attack_pack = Literal["sandbox", "threat_intel"]
+type_source = Literal["threat_intel", "user", "mindgard"]
 
 
 class OrchestratorSetupRequest(BaseModel):
@@ -72,7 +78,7 @@ class AttackModel(BaseModel):
 class OrchestratorTestResponse(BaseModel):
     id: str
     mindgardModelName: str
-    source: Literal["threat_intel", "user"]
+    source: type_source
     createdAt: str
     attacks: List[AttackModel]
     isCompleted: bool
@@ -81,14 +87,23 @@ class OrchestratorTestResponse(BaseModel):
     test_url: str
 
 
-# class OrchestratorAttackResponse(BaseModel):
-#     attack: str
-#     id: int
-#     is_finished: bool
+def submit_sandbox_test(
+    access_token: str,
+    target_name: str,
+    post_request_function: type_post_request_function = api_post,
+    get_request_function: type_get_request_function = api_get,
+) -> OrchestratorTestResponse:
+    url = f"{API_BASE}/assessments"
+    post_body = {"mindgardModelName": target_name}
+    res = post_request_function(url, access_token, post_body)
+    id = res.json().get("id", None)
+    return get_test_by_id(
+        test_id=id, access_token=access_token, request_function=get_request_function
+    )
 
 
 def get_tests(
-    access_token: str, request_function: type_get_request_function
+    access_token: str, request_function: type_get_request_function = api_get
 ) -> List[OrchestratorTestResponse]:
     url = f"{API_BASE}/assessments?ungrouped=true"
 
@@ -106,7 +121,9 @@ def get_tests(
 
 
 def get_test_by_id(
-    test_id: str, access_token: str, request_function: type_get_request_function
+    test_id: str,
+    access_token: str,
+    request_function: type_get_request_function = api_get,
 ) -> OrchestratorTestResponse:
     test_url = f"{API_BASE}/assessments/{test_id}"
 
@@ -124,27 +141,6 @@ def get_test_by_id(
 
     except Exception as e:
         raise e
-
-
-# def get_attack_by_id(
-#     attack_id: int, access_token: str, request_function: type_get_request_function
-# ) -> OrchestratorAttackResponse:
-#     attack_url = f"{DASHBOARD_URL}/r/attack/{attack_id}"
-#     try:
-#         response = request_function(attack_url, access_token)
-#         response_data = response.json()
-#         return OrchestratorAttackResponse(
-#             **response_data, is_finished=response_data["state"] == 2
-#         )
-
-#     except HTTPError as httpe:
-#         if httpe.response.status_code == 404:
-#             raise ValueError(f"Attack with {attack_id=} not found!")
-#         else:
-#             raise httpe
-
-#     except Exception as e:
-#         raise e
 
 
 def get_extra_config_from_env() -> Dict[str, Any]:
