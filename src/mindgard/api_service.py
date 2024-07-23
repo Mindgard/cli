@@ -3,14 +3,15 @@ from typing import Callable, Dict, Any
 
 # Requests
 import requests
+from tenacity import retry, stop_after_attempt, wait_fixed
 
+# Constants
 from .constants import (
     VERSION,
     API_RETRY_ATTEMPTS,
     API_RETRY_WAIT_BETWEEN_ATTEMPTS_SECONDS,
 )
 
-from tenacity import retry, stop_after_attempt, wait_fixed
 
 # Type aliases
 type_post_request_function = Callable[[str, str, Dict[str, Any]], requests.Response]

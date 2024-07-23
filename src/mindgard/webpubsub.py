@@ -1,11 +1,12 @@
+# Types
 from pydantic import BaseModel, model_validator
-
 from typing import Literal, Dict, Any, Optional
+
+# Networking
+from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs
 
 # Type aliases
 type_wps_message_type = Literal["StartTest", "StartedTest", "Response", "Request"]
-
-from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs
 
 
 class WebPubSubMessage(BaseModel):
