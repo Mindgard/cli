@@ -34,8 +34,8 @@ def list_test_polling(
     tests_response: List[OrchestratorTestResponse],
     ui_task_map: type_ui_task_map,
     ui_task_progress: Progress,
-) -> Optional[int]:
-    return 0
+) -> Optional[List[OrchestratorTestResponse]]:
+    return tests_response
 
 
 def list_test_output(
