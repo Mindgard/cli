@@ -6,7 +6,6 @@ def test_cli_on_path() -> None:
     assert result.returncode == 0
     assert 'usage: mindgard [command] [options]' in result.stdout
 
-
 def test_cli_help() -> None:
     result = subprocess.run(['python3', '-m', 'mindgard', '-h'], capture_output=True, text=True)
     assert result.returncode == 0
