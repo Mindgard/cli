@@ -10,16 +10,16 @@ from .wrappers import parse_args_into_model
 
 from .utils import CliResponse
 
-from .submit_functions.list_tests import list_test_submit_factory, list_test_polling_factory
-from .submit_functions.sandbox_test import submit_sandbox_submit_factory, submit_sandbox_polling_factory
-from .submit_functions.llm_model_test import llm_test_submit_factory, llm_test_polling_factory
+from .submit_functions.list_tests import list_test_submit, list_test_polling, list_test_output
+from .submit_functions.sandbox_test import submit_sandbox_submit_factory, submit_sandbox_polling
+from .submit_functions.llm_model_test import llm_test_submit_factory, llm_test_polling, llm_test_output_factory
 from .submit_functions.image_model_test import image_test_submit_factory, image_test_polling_factory
 from .run_poll_display import cli_run
 
 from .preflight import preflight
 
 from .constants import VERSION
-from .utils import is_version_outdated, print_to_stderr, parse_toml_and_args_into_final_args
+from .utils import is_version_outdated, print_to_stderr, parse_toml_and_args_into_final_args, test_to_cli_response
 
 import logging
 from rich.logging import RichHandler
@@ -65,7 +65,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     subparsers.add_parser('logout', help='Logout of the Mindgard platform in the CLI')
 
     sandbox_test_parser = subparsers.add_parser('sandbox', help='Test a mindgard example model')
-    sandbox_test_parser.add_argument('target', nargs='?', type=str, choices=['cfp_faces', 'mistral'])
+    sandbox_test_parser.add_argument('target', nargs='?', type=str, choices=['cfp_faces', 'mistral'], default="cfp_faces")
     sandbox_test_parser.add_argument('--json', action="store_true", help='Return json output', required=False)
     sandbox_test_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=80)
 
@@ -106,28 +106,25 @@ def main() -> None:
         logout()
     elif args.command == 'list':
         if args.list_command == 'tests':
-            list_test_submit_func = list_test_submit_factory()
-            list_test_polling_func = list_test_polling_factory()
-
-            cli_response = cli_run(list_test_submit_func, list_test_polling_func, json_out=args.json)
-            exit(cli_response.code())
+            cli_run(submit_func=list_test_submit, polling_func=list_test_polling, output_func=list_test_output, json_out=args.json, submitting_text="Fetching tests...")
+            exit(CliResponse(0).code())
         else:
             print_to_stderr('Provide a resource to list. Eg `list tests`.')
     elif args.command == 'sandbox':
         submit_sandbox_submit_func = submit_sandbox_submit_factory(model_name=args.target)
-        submit_sandbox_polling_func = submit_sandbox_polling_factory(risk_threshold=int(args.risk_threshold))
+        submit_sandbox_output_func = llm_test_output_factory(risk_threshold=100)
 
-        cli_response = cli_run(submit_sandbox_submit_func, submit_sandbox_polling_func, json_out=args.json)
-        exit(cli_response.code())
+        cli_response = cli_run(submit_func=submit_sandbox_submit_func, polling_func=submit_sandbox_polling, output_func=submit_sandbox_output_func, json_out=args.json)
+        exit(test_to_cli_response(test=cli_response, risk_threshold=100).code()) #type: ignore
 
-    if args.command == "validate" or args.command == "test":
+    elif args.command == "validate" or args.command == "test":
         console = Console()
         final_args = parse_toml_and_args_into_final_args(args.config_file, args)
         model_wrapper = parse_args_into_model(final_args)
-        passed_preflight: bool = preflight(model_wrapper, console=console)
-        response = CliResponse(passed_preflight)
+        passed_preflight: bool = preflight(model_wrapper, console=console, json_out=args.json)
 
-        console.print(f"{'[green bold]Model contactable!' if passed_preflight else '[red bold]Model not contactable!'}")
+        if not args.json:
+            console.print(f"{'[green bold]Model contactable!' if passed_preflight else '[red bold]Model not contactable!'}")
 
         if passed_preflight:
             if args.command == 'test':
@@ -138,16 +135,12 @@ def main() -> None:
                     system_prompt=final_args["system_prompt"],
                     model_wrapper=model_wrapper
                 )
-                poll_func = llm_test_polling_factory(risk_threshold=int(final_args["risk_threshold"]))
-                # if args.model_type == "image":
-                #     submit_func = run_local_image_test_submit_factory()
-                #     poll_func = run_local_image_test_polling_factory(risk_threshold=int(final_args["risk_threshold"]))
+                output_func = llm_test_output_factory(risk_threshold=int(final_args["risk_threshold"]))
+                cli_response = cli_run(submit_func, llm_test_polling, output_func=output_func, json_out=args.json)
+                exit(test_to_cli_response(test=cli_response, risk_threshold=int(final_args["risk_threshold"])).code()) # type: ignore
 
-                cli_response = cli_run(submit_func, poll_func, json_out=args.json)
-                exit(cli_response.code())
-
-        exit(response.code())
-        
+        else:
+            exit(CliResponse(1).code())
         
     else:
         print_to_stderr('Which command are you looking for? See: $ mindgard --help')
