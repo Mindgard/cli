@@ -1,4 +1,10 @@
-from ..run_poll_display import type_submit_func, type_polling_func, type_ui_task_map
+from ..run_poll_display import (
+    type_submit_func,
+    type_polling_func,
+    type_ui_task_map,
+    type_ui_exception_map,
+    ExceptionCountTuple,
+)
 
 from typing import Optional, Callable, Literal, List, Optional, Dict, Type
 
@@ -87,15 +93,15 @@ def handle_exception_callback(
     return error_code
 
 
-def _handle_visual_exception_callback(text: str) -> None:
-    print_to_stderr(text)
-
-
 def llm_test_submit_factory(
     target: str, parallelism: int, model_wrapper: ModelWrapper, system_prompt: str
 ) -> type_submit_func:
 
-    def llm_test_submit(access_token: str) -> OrchestratorTestResponse:
+    def llm_test_submit(
+        access_token: str,
+        ui_exception_map: type_ui_exception_map,
+        ui_exception_progress: Progress,
+    ) -> OrchestratorTestResponse:
 
         request = OrchestratorSetupRequest(
             target=target,
@@ -115,6 +121,18 @@ def llm_test_submit_factory(
         context_manager = ContextManager()
 
         submitted_test_id: List[Optional[str]] = [None]
+
+        def _handle_visual_exception_callback(text: str) -> None:
+            if not ui_exception_map.get(text, None):
+                ui_exception_map[text] = ExceptionCountTuple(
+                    ui_exception_progress.add_task(""), 0
+                )
+
+            ui_exception_map[text].count += 1
+            ui_exception_progress.update(
+                ui_exception_map[text].task_id,
+                description=f"[dark_orange3][!!!] {text} (x{ui_exception_map[text].count})",
+            )
 
         def temp_handler(e: Exception) -> ErrorCode:
             return handle_exception_callback(e, _handle_visual_exception_callback)
@@ -205,25 +223,27 @@ def llm_test_polling_factory(risk_threshold: int) -> type_polling_func:
         access_token: str,
         test_res: OrchestratorTestResponse,
         ui_task_map: type_ui_task_map,
-        ui_progress: Progress,
+        ui_task_progress: Progress,
         json_out: bool,
     ) -> Optional[int]:
         test_res = get_test_by_id(access_token=access_token, test_id=test_res.id)
 
         if len(ui_task_map.keys()) == 0:
             for attack in test_res.attacks:
-                ui_task_map[attack.id] = ui_progress.add_task(
+                ui_task_map[attack.id] = ui_task_progress.add_task(
                     f"Attack {attack.attack}", total=1, status="[chartreuse1]queued"
                 )
 
         for attack in test_res.attacks:
             task_id = ui_task_map[attack.id]
             if attack.state == 2:
-                ui_progress.update(task_id, completed=1, status="[chartreuse3]success")
+                ui_task_progress.update(
+                    task_id, completed=1, status="[chartreuse3]success"
+                )
             elif attack.state == -1:
-                ui_progress.update(task_id, completed=1, status="[red3]failed")
+                ui_task_progress.update(task_id, completed=1, status="[red3]failed")
             elif attack.state == 1:
-                ui_progress.update(task_id, status="[orange3]running")
+                ui_task_progress.update(task_id, status="[orange3]running")
 
         if test_res.hasFinished is False:
             return None
