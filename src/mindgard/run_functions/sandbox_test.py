@@ -4,7 +4,7 @@ from ..run_poll_display import (
     type_ui_task_map,
 )
 
-from .llm_model_test import poll_and_display_test
+from ..ui_prefabs import poll_and_display_test
 
 from typing import Optional
 
