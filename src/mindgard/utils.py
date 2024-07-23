@@ -2,6 +2,7 @@ from argparse import Namespace
 import os
 import sys
 from typing import Any, Dict, Optional, Tuple
+import json
 
 import toml
 import requests
@@ -16,6 +17,8 @@ from .constants import (
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 
+from .orchestrator import OrchestratorTestResponse
+
 class CliResponse:
     def __init__(self, code: int):
         self._code = code
@@ -24,8 +27,19 @@ class CliResponse:
         return self._code
 
 
+def test_to_cli_response(test: OrchestratorTestResponse, risk_threshold: int) -> CliResponse:
+    if test.risk > risk_threshold:
+        return CliResponse(1)
+    else:
+        return CliResponse(0)
+
+
 def print_to_stderr(*args: Any, **kwargs: Any) -> None:
     print(*args, file=sys.stderr, **kwargs)
+
+
+def print_to_stderr_as_json(dict: Any) -> None:
+    print(json.dumps(dict), file=sys.stderr)
 
 
 def version_to_tuple(version: str) -> Tuple[int, ...]:
