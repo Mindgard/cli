@@ -1,4 +1,4 @@
-from ..run_poll_display import type_submit_function, type_polling_function
+from ..run_poll_display import type_submit_func, type_polling_func
 
 from ..orchestrator import submit_sandbox_test, OrchestratorTestResponse, get_test_by_id
 
@@ -9,7 +9,7 @@ from ..utils import print_to_stderr
 POLL_INTERVAL_SECONDS = 3
 
 
-def submit_sandbox_submit_factory(model_name: str) -> type_submit_function:
+def submit_sandbox_submit_factory(model_name: str) -> type_submit_func:
 
     def submit_sandbox_submit(access_token: str) -> OrchestratorTestResponse:
         return submit_sandbox_test(access_token=access_token, target_name=model_name)
@@ -17,7 +17,7 @@ def submit_sandbox_submit_factory(model_name: str) -> type_submit_function:
     return submit_sandbox_submit
 
 
-def submit_sandbox_polling_factory(risk_threshold: int) -> type_polling_function:
+def submit_sandbox_polling_factory(risk_threshold: int) -> type_polling_func:
     def submit_sandbox_polling(
         access_token: str, test: OrchestratorTestResponse
     ) -> int:

@@ -11,9 +11,9 @@ from .wrappers import parse_args_into_model
 from .utils import CliResponse
 
 from .submit_functions.list_tests import list_test_submit_factory, list_test_polling_factory
-from .submit_functions.submit_sandbox_test import submit_sandbox_submit_factory, submit_sandbox_polling_factory
-from .submit_functions.llm_model import run_local_llm_test_submit_factory, run_local_llm_test_polling_factory
-from .submit_functions.image_model import run_local_image_test_submit_factory, run_local_image_test_polling_factory
+from .submit_functions.sandbox_test import submit_sandbox_submit_factory, submit_sandbox_polling_factory
+from .submit_functions.llm_model_test import llm_test_submit_factory, llm_test_polling_factory
+from .submit_functions.image_model_test import image_test_submit_factory, image_test_polling_factory
 from .run_poll_display import cli_run
 
 from .preflight import preflight
@@ -106,18 +106,18 @@ def main() -> None:
         logout()
     elif args.command == 'list':
         if args.list_command == 'tests':
-            list_test_submit_function = list_test_submit_factory()
-            list_test_polling_function = list_test_polling_factory()
+            list_test_submit_func = list_test_submit_factory()
+            list_test_polling_func = list_test_polling_factory()
 
-            cli_response = cli_run(list_test_submit_function, list_test_polling_function, json_out=args.json)
+            cli_response = cli_run(list_test_submit_func, list_test_polling_func, json_out=args.json)
             exit(cli_response.code())
         else:
             print_to_stderr('Provide a resource to list. Eg `list tests`.')
     elif args.command == 'sandbox':
-        submit_sandbox_submit_function = submit_sandbox_submit_factory(model_name=args.target)
-        submit_sandbox_polling_function = submit_sandbox_polling_factory(risk_threshold=int(args.risk_threshold))
+        submit_sandbox_submit_func = submit_sandbox_submit_factory(model_name=args.target)
+        submit_sandbox_polling_func = submit_sandbox_polling_factory(risk_threshold=int(args.risk_threshold))
 
-        cli_response = cli_run(submit_sandbox_submit_function, submit_sandbox_polling_function, json_out=args.json)
+        cli_response = cli_run(submit_sandbox_submit_func, submit_sandbox_polling_func, json_out=args.json)
         exit(cli_response.code())
 
     if args.command == "validate" or args.command == "test":
@@ -132,13 +132,13 @@ def main() -> None:
         if passed_preflight:
             if args.command == 'test':
                 # if args.model_type == "llm":
-                submit_func = run_local_llm_test_submit_factory(
+                submit_func = llm_test_submit_factory(
                     target=final_args["target"],
                     parallelism=int(final_args["parallelism"]),
                     system_prompt=final_args["system_prompt"],
                     model_wrapper=model_wrapper
                 )
-                poll_func = run_local_llm_test_polling_factory(risk_threshold=int(final_args["risk_threshold"]))
+                poll_func = llm_test_polling_factory(risk_threshold=int(final_args["risk_threshold"]))
                 # if args.model_type == "image":
                 #     submit_func = run_local_image_test_submit_factory()
                 #     poll_func = run_local_image_test_polling_factory(risk_threshold=int(final_args["risk_threshold"]))

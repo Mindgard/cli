@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from ..run_poll_display import type_submit_function, type_polling_function
+from ..run_poll_display import type_submit_func, type_polling_func
 
 from ..api_service import api_get
 from ..orchestrator import get_tests, get_test_by_id, OrchestratorTestResponse
@@ -8,7 +8,7 @@ from ..orchestrator import get_tests, get_test_by_id, OrchestratorTestResponse
 from ..utils import print_to_stderr
 
 
-def list_test_submit_factory(test_id: Optional[str] = None) -> type_submit_function:
+def list_test_submit_factory(test_id: Optional[str] = None) -> type_submit_func:
 
     def list_test_submit(access_token: str) -> List[OrchestratorTestResponse]:
         if test_id is None:
@@ -25,7 +25,7 @@ def list_test_submit_factory(test_id: Optional[str] = None) -> type_submit_funct
     return list_test_submit
 
 
-def list_test_polling_factory() -> type_polling_function:
+def list_test_polling_factory() -> type_polling_func:
     def list_test_polling(
         access_token: str, tests_response: List[OrchestratorTestResponse]
     ) -> int:
