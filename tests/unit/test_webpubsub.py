@@ -6,7 +6,7 @@ from src.mindgard.webpubsub import (
 )
 from pydantic import ValidationError
 
-from .mocks.webpubsub import ws_client, wait_and_call_factory
+from ..mocks.webpubsub import ws_client, wait_and_call_factory
 from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs
 
 import time

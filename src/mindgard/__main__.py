@@ -26,7 +26,7 @@ from rich.logging import RichHandler
 from rich.console import Console
 
 # commands
-from .commands.login import login, logout
+from .auth import login, logout
 
 
 # both validate and test need these same arguments, so have factored them out

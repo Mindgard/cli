@@ -3,7 +3,7 @@ from typing import List, Tuple
 import pytest
 
 from argparse import Namespace
-from ...src.mindgard.__main__ import parse_args
+from src.mindgard.__main__ import parse_args
 
 
 argparse_success_test_cases: List[Tuple[str, Namespace]] = [
