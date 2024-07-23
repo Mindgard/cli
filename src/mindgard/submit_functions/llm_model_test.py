@@ -1,4 +1,4 @@
-from ..run_poll_display import type_submit_function, type_polling_function
+from ..run_poll_display import type_submit_func, type_polling_func, type_ui_task_map
 
 from typing import Optional, Callable, Literal, List, Optional, Dict, Type
 
@@ -11,6 +11,8 @@ from ..orchestrator import (
     get_test_by_id,
 )
 
+from rich.progress import Progress
+
 import time
 
 import json
@@ -20,8 +22,6 @@ import logging
 # Networking
 from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCredential
 from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs
-
-from ..constants import API_RETRY_WAIT_BETWEEN_ATTEMPTS_SECONDS
 
 from ..wrappers import ModelWrapper, ContextManager
 
@@ -91,11 +91,11 @@ def _handle_visual_exception_callback(text: str) -> None:
     print_to_stderr(text)
 
 
-def run_local_llm_test_submit_factory(
+def llm_test_submit_factory(
     target: str, parallelism: int, model_wrapper: ModelWrapper, system_prompt: str
-) -> type_submit_function:
+) -> type_submit_func:
 
-    def run_local_llm_test_submit(access_token: str) -> OrchestratorTestResponse:
+    def llm_test_submit(access_token: str) -> OrchestratorTestResponse:
 
         request = OrchestratorSetupRequest(
             target=target,
@@ -197,18 +197,39 @@ def run_local_llm_test_submit_factory(
                 f"did not receive notification of test submitted within timeout ({max_attempts}s); failed to start test"
             )
 
-    return run_local_llm_test_submit
+    return llm_test_submit
 
 
-def run_local_llm_test_polling_factory(risk_threshold: int) -> type_polling_function:
-    def run_local_llm_test_polling(
-        access_token: str, test_res: OrchestratorTestResponse
-    ) -> int:
-        while not test_res.hasFinished:
-            test_res = get_test_by_id(access_token=access_token, test_id=test_res.id)
-            time.sleep(API_RETRY_WAIT_BETWEEN_ATTEMPTS_SECONDS)
+def llm_test_polling_factory(risk_threshold: int) -> type_polling_func:
+    def llm_test_polling(
+        access_token: str,
+        test_res: OrchestratorTestResponse,
+        ui_task_map: type_ui_task_map,
+        ui_progress: Progress,
+        json_out: bool,
+    ) -> Optional[int]:
+        test_res = get_test_by_id(access_token=access_token, test_id=test_res.id)
 
-        print_to_stderr(json.dumps(test_res.model_dump()))
-        return 1 if test_res.risk > risk_threshold else 0
+        if len(ui_task_map.keys()) == 0:
+            for attack in test_res.attacks:
+                ui_task_map[attack.id] = ui_progress.add_task(
+                    f"Attack {attack.attack}", total=1, status="[chartreuse1]queued"
+                )
 
-    return run_local_llm_test_polling
+        for attack in test_res.attacks:
+            task_id = ui_task_map[attack.id]
+            if attack.state == 2:
+                ui_progress.update(task_id, completed=1, status="[chartreuse3]success")
+            elif attack.state == -1:
+                ui_progress.update(task_id, completed=1, status="[red3]failed")
+            elif attack.state == 1:
+                ui_progress.update(task_id, status="[orange3]running")
+
+        if test_res.hasFinished is False:
+            return None
+        else:
+            if json_out:
+                print_to_stderr(json.dumps(test_res.model_dump()))
+            return 1 if test_res.risk > risk_threshold else 0
+
+    return llm_test_polling
