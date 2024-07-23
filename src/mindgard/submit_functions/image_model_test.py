@@ -14,9 +14,9 @@ def image_test_submit_factory() -> type_submit_func:
 
 
 def image_test_polling_factory(risk_threshold: int) -> type_polling_func:
-    def run_local_image_test_polling(
+    def image_test_polling(
         access_token: str, test_res: OrchestratorTestResponse
     ) -> int:
         return 0
 
-    return run_local_image_test_polling
+    return image_test_polling
