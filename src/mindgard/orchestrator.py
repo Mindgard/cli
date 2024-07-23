@@ -1,8 +1,14 @@
+import os
+import json
+
 # Types
 from pydantic import BaseModel, model_validator
 from typing import Optional, Any, Dict, Literal, cast, List
 
+# Constants
 from .constants import API_BASE, DASHBOARD_URL
+
+# Requests
 from .api_service import (
     type_post_request_function,
     type_get_request_function,
@@ -10,8 +16,7 @@ from .api_service import (
     api_post,
 )
 
-import os
-import json
+# Exceptions
 from requests.exceptions import HTTPError
 
 # Tells pydantic to stop worrying about model_type namespace collision

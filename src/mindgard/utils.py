@@ -1,12 +1,14 @@
 from argparse import Namespace
 import os
 import sys
-from typing import Any, Dict, Optional, Tuple
 import json
-
 import toml
-import requests
 
+# Types
+from typing import Any, Dict, Optional, Tuple
+from .orchestrator import OrchestratorTestResponse
+
+# Constants
 from .constants import (
     REPOSITORY_URL,
     VERSION,
@@ -14,10 +16,10 @@ from .constants import (
     API_RETRY_WAIT_BETWEEN_ATTEMPTS_SECONDS,
 )
 
+# Requests
+import requests
 from tenacity import retry, stop_after_attempt, wait_fixed
 
-
-from .orchestrator import OrchestratorTestResponse
 
 class CliResponse:
     def __init__(self, code: int):
@@ -27,7 +29,9 @@ class CliResponse:
         return self._code
 
 
-def test_to_cli_response(test: OrchestratorTestResponse, risk_threshold: int) -> CliResponse:
+def test_to_cli_response(
+    test: OrchestratorTestResponse, risk_threshold: int
+) -> CliResponse:
     if test.risk > risk_threshold:
         return CliResponse(1)
     else:

@@ -1,11 +1,11 @@
-from .auth import require_auth
-from .utils import CliResponse
-
-from typing import Callable, Any, Dict, Optional
-
-from dataclasses import dataclass
-
 import time
+
+# Auth
+from .auth import require_auth
+
+# Types
+from typing import Callable, Any, Dict, Optional
+from dataclasses import dataclass
 
 # UI
 from rich.progress import Progress, SpinnerColumn, TaskID, TextColumn
@@ -60,7 +60,7 @@ def cli_run(
         "{task.description}",
         SpinnerColumn(finished_text="done"),
         TextColumn("{task.fields[status]}"),
-        disable=json_out
+        disable=json_out,
     )
     ui_task_map: type_ui_task_map = {}
 
@@ -84,15 +84,17 @@ def cli_run(
         access_token, initial_result, ui_task_map, ui_task_progress
     )
     tasks_to_run = len(ui_task_progress.tasks)
-    overall_task_id = overall_task_progress.add_task("Progress", total=tasks_to_run)
+    # don't show progress bar if there is only one task
+    if tasks_to_run > 1: overall_task_id = overall_task_progress.add_task("Progress", total=tasks_to_run)
 
     with Live(progress_table, refresh_per_second=10):
         while polled_result is None:
             polled_result = polling_func(
                 access_token, initial_result, ui_task_map, ui_task_progress
             )
-            completed_tasks = sum(task.completed for task in ui_task_progress.tasks)
-            overall_task_progress.update(overall_task_id, completed=completed_tasks)
+            if tasks_to_run > 1: 
+                completed_tasks = sum(task.completed for task in ui_task_progress.tasks)
+                overall_task_progress.update(overall_task_id, completed=completed_tasks)
             time.sleep(1)
 
     output_table = output_func(polled_result, json_out)
