@@ -5,20 +5,17 @@ import json
 import toml
 
 # Types
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from .orchestrator import OrchestratorTestResponse
 
 # Constants
 from .constants import (
     REPOSITORY_URL,
     VERSION,
-    API_RETRY_ATTEMPTS,
-    API_RETRY_WAIT_BETWEEN_ATTEMPTS_SECONDS,
 )
 
 # Requests
 import requests
-from tenacity import retry, stop_after_attempt, wait_fixed
 
 
 class CliResponse:
@@ -89,3 +86,11 @@ def parse_toml_and_args_into_final_args(
     )
 
     return final_args
+
+def check_expected_args(args: Dict[str, Any], expected_args: List[str]) -> None:
+    missing_args: List[str] = []
+    for arg in expected_args:
+        if not args.get(arg):
+            missing_args.append(f"`--{arg.replace('_', '-')}`")
+    if missing_args:
+        raise ValueError(f"Missing required arguments: {', '.join(missing_args)}")

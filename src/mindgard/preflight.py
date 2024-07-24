@@ -2,7 +2,7 @@
 from .exceptions import Uncontactable, HTTPBaseError
 
 # Models
-from .wrappers import ModelWrapper
+from .wrappers.llm import LLMModelWrapper
 
 # UI
 from rich.console import Console
@@ -11,7 +11,7 @@ from rich.console import Console
 import logging
 
 
-def preflight(model_wrapper: ModelWrapper, console: Console, json_out: bool) -> bool:
+def preflight(model_wrapper: LLMModelWrapper, console: Console, json_out: bool) -> bool:
     """
     Makes requests to the LLM to validate basic connectivity before submitting
     test.

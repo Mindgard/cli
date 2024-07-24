@@ -1,12 +1,8 @@
 from ..run_poll_display import (
     type_submit_func,
-    type_output_func,
-    type_ui_task_map,
     type_ui_exception_map,
     ExceptionCountTuple,
 )
-
-from ..ui_prefabs import poll_and_display_test, output_test_table
 
 from typing import Optional, Callable, Literal, List, Optional, Dict, Type
 
@@ -29,9 +25,7 @@ import logging
 from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCredential
 from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs
 
-from ..wrappers import ModelWrapper, ContextManager
-
-from rich.table import Table
+from ..wrappers.llm import LLMModelWrapper, ContextManager
 
 # Exceptions
 from ..exceptions import (
@@ -96,7 +90,7 @@ def handle_exception_callback(
 
 
 def llm_test_submit_factory(
-    target: str, parallelism: int, model_wrapper: ModelWrapper, system_prompt: str
+    target: str, parallelism: int, model_wrapper: LLMModelWrapper, system_prompt: str
 ) -> type_submit_func:
 
     def llm_test_submit(
@@ -218,28 +212,3 @@ def llm_test_submit_factory(
             )
 
     return llm_test_submit
-
-
-def llm_test_polling(
-    access_token: str,
-    initial_test: OrchestratorTestResponse,
-    ui_task_map: type_ui_task_map,
-    ui_task_progress: Progress,
-) -> Optional[OrchestratorTestResponse]:
-    return poll_and_display_test(
-        access_token,
-        ui_task_map,
-        ui_task_progress,
-        initial_test,
-    )
-
-
-def llm_test_output_factory(risk_threshold: int) -> type_output_func:
-    def list_llm_test_output(
-        test: OrchestratorTestResponse, json_out: bool
-    ) -> Optional[Table]:
-        return output_test_table(
-            json_out=json_out, test=test, risk_threshold=risk_threshold
-        )
-
-    return list_llm_test_output

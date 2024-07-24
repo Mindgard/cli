@@ -4,16 +4,20 @@ import sys
 import traceback
 
 # Types
-from typing import List, Any
+from typing import List, Any, cast
 
 # Models
-from .wrappers import parse_args_into_model
 from .preflight import preflight
+from .wrappers.utils import parse_args_into_model
+from mindgard.wrappers.image import ImageModelWrapper
+from mindgard.wrappers.llm import LLMModelWrapper
 
 # Run functions
 from .run_functions.list_tests import list_test_submit, list_test_polling, list_test_output
 from .run_functions.sandbox_test import submit_sandbox_submit_factory, submit_sandbox_polling
-from .run_functions.llm_model_test import llm_test_submit_factory, llm_test_polling, llm_test_output_factory
+from .run_functions.llm_model_test import llm_test_submit_factory
+from .run_functions.utils import model_test_polling, model_test_output_factory
+from .run_functions.image_model_test import image_test_submit_factory
 from .run_poll_display import cli_run
 
 # Constants and Utils
@@ -28,7 +32,6 @@ from rich.console import Console
 # Auth
 from .auth import login, logout
 
-
 # both validate and test need these same arguments, so have factored them out
 def subparser_for_llm_contact(command_str: str, description_str: str, argparser: Any) -> ArgumentParser:
     parser: ArgumentParser = argparser.add_parser(command_str, help=description_str)
@@ -36,7 +39,7 @@ def subparser_for_llm_contact(command_str: str, description_str: str, argparser:
     parser.add_argument('--config-file', type=str, help='Path to mindgard.toml config file', default=None, required=False)
     parser.add_argument('--json', action="store_true", help='Output the info in JSON format.', required=False, default=False)
     parser.add_argument('--headers', type=str, help='The headers to use', required=False)
-    parser.add_argument('--preset', type=str, help='The preset to use', choices=['huggingface', 'openai', 'anthropic', 'azure-openai', 'azure-aistudio', 'custom_mistral', 'tester'], required=False)
+    parser.add_argument('--preset', type=str, help='The preset to use', choices=['huggingface', 'openai', 'anthropic', 'azure-openai', 'azure-aistudio', 'custom_mistral', 'tester', 'local'], required=False)
     parser.add_argument('--api-key', type=str, help='Specify the API key for the wrapper', required=False)
     parser.add_argument('--url', type=str, help='Specify the url for the wrapper', required=False)
     parser.add_argument('--model-name', type=str, help='Specify which model to run against (OpenAI and Anthropic)', required=False)
@@ -78,6 +81,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     test_parser = subparser_for_llm_contact("test", "Attacks command", subparsers)
     test_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=80)
     test_parser.add_argument('--parallelism', type=int, help='The maximum number of parallel requests that can be made to the API.', required=False, default=5)
+    test_parser.add_argument('--model-type', type=str, help='The modality of the model; image or llm', choices=['image', 'llm'], required=False, default='llm')
 
     validate_parser = subparser_for_llm_contact("validate", "Validates that we can communicate with your model", subparsers)
 
@@ -112,7 +116,7 @@ def main() -> None:
             print_to_stderr('Provide a resource to list. Eg `list tests`.')
     elif args.command == 'sandbox':
         submit_sandbox_submit = submit_sandbox_submit_factory(model_name=args.target)
-        submit_sandbox_output = llm_test_output_factory(risk_threshold=100)
+        submit_sandbox_output = model_test_output_factory(risk_threshold=100)
 
         cli_response = cli_run(submit_func=submit_sandbox_submit, polling_func=submit_sandbox_polling, output_func=submit_sandbox_output, json_out=args.json)
         exit(test_to_cli_response(test=cli_response, risk_threshold=100).code()) #type: ignore
@@ -120,23 +124,35 @@ def main() -> None:
     elif args.command == "validate" or args.command == "test":
         console = Console()
         final_args = parse_toml_and_args_into_final_args(args.config_file, args)
-        model_wrapper = parse_args_into_model(final_args)
-        passed_preflight: bool = preflight(model_wrapper, console=console, json_out=args.json)
+        model_wrapper = parse_args_into_model(args.model_type, final_args)
+        passed_preflight: bool = True
 
-        if not args.json:
-            console.print(f"{'[green bold]Model contactable!' if passed_preflight else '[red bold]Model not contactable!'}")
+        # TODO: add mechanism for preflight testing image models
+        if args.model_type == "llm":
+            passed_preflight = preflight(cast(LLMModelWrapper, model_wrapper), console=console, json_out=args.json)
+            if not args.json:
+                console.print(f"{'[green bold]Model contactable!' if passed_preflight else '[red bold]Model not contactable!'}")
+
 
         if passed_preflight:
             if args.command == 'test':
-                # if args.model_type == "llm":
-                submit = llm_test_submit_factory(
-                    target=final_args["target"],
-                    parallelism=int(final_args["parallelism"]),
-                    system_prompt=final_args["system_prompt"],
-                    model_wrapper=model_wrapper
-                )
-                output = llm_test_output_factory(risk_threshold=int(final_args["risk_threshold"]))
-                cli_response = cli_run(submit, llm_test_polling, output_func=output, json_out=args.json)
+                if args.model_type == "llm":
+                    submit = llm_test_submit_factory(
+                        target=final_args["target"],
+                        parallelism=int(final_args["parallelism"]),
+                        system_prompt=final_args["system_prompt"],
+                        model_wrapper=cast(LLMModelWrapper, model_wrapper)
+                    )
+                elif args.model_type == "image":
+                    submit = image_test_submit_factory(
+                        target=final_args["target"],
+                        parallelism=int(final_args["parallelism"]),
+                        dataset="placeholder",
+                        model_wrapper=cast(ImageModelWrapper, model_wrapper)
+                    )
+
+                output = model_test_output_factory(risk_threshold=int(final_args["risk_threshold"]))
+                cli_response = cli_run(submit, model_test_polling, output_func=output, json_out=args.json)
                 exit(test_to_cli_response(test=cli_response, risk_threshold=int(final_args["risk_threshold"])).code()) # type: ignore
 
         else:
