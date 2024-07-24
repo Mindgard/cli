@@ -1,9 +1,9 @@
-from ..run_poll_display import (
+from ..types import (
     type_ui_exception_map,
     ExceptionCountTuple,
 )
 
-from typing import Optional, Callable, Literal, List, Optional, Dict, Type, Any
+from typing import Optional, Callable, Literal, Optional, Dict, Type, Any
 
 from rich.progress import Progress
 

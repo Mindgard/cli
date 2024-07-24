@@ -4,14 +4,13 @@ import json
 # Types
 from pydantic import BaseModel, model_validator
 from typing import Optional, Any, Dict, Literal, cast, List
+from .types import type_post_request_function, type_get_request_function
 
 # Constants
 from .constants import API_BASE, DASHBOARD_URL
 
 # Requests
 from .api_service import (
-    type_post_request_function,
-    type_get_request_function,
     api_get,
     api_post,
 )
@@ -23,9 +22,8 @@ from requests.exceptions import HTTPError
 BaseModel.model_config["protected_namespaces"] = ()
 
 
-# Type definitions
-type_attack_pack = Literal["sandbox", "threat_intel"]
-type_source = Literal["threat_intel", "user", "mindgard"]
+# Type aliases
+from .types import type_orchestrator_attack_pack, type_orchestrator_source
 
 
 class OrchestratorSetupRequest(BaseModel):
@@ -33,7 +31,7 @@ class OrchestratorSetupRequest(BaseModel):
     modelType: str
     system_prompt: Optional[str] = None
     dataset: Optional[str] = None
-    attackPack: Optional[type_attack_pack] = None
+    attackPack: Optional[type_orchestrator_attack_pack] = None
     extraConfig: Optional[Dict[str, Any]] = None
     attackSource: str
     parallelism: int
@@ -80,7 +78,7 @@ class AttackModel(BaseModel):
 class OrchestratorTestResponse(BaseModel):
     id: str
     mindgardModelName: str
-    source: type_source
+    source: type_orchestrator_source
     createdAt: str
     attacks: List[AttackModel]
     isCompleted: bool
@@ -150,9 +148,9 @@ def get_extra_config_from_env() -> Dict[str, Any]:
     return cast(Dict[str, Any], json.loads(config_str)) if config_str else {}
 
 
-def get_attack_pack_from_env() -> type_attack_pack:
+def get_attack_pack_from_env() -> type_orchestrator_attack_pack:
     pack = os.environ.get("ATTACK_PACK", "sandbox")
-    return cast(type_attack_pack, pack)
+    return cast(type_orchestrator_attack_pack, pack)
 
 
 def setup_orchestrator_webpubsub_request(
@@ -172,5 +170,5 @@ def setup_orchestrator_webpubsub_request(
 
     except HTTPError as e:
         raise ValueError(
-            "Failed to get a response from orchestrator, response invalid!"
+            f"Failed to get a response from orchestrator, response invalid ({str(e)})!"
         )

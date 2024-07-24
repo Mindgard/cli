@@ -6,7 +6,7 @@ from ..orchestrator import (
     OrchestratorTestResponse,
     get_test_by_id,
 )
-from ..run_poll_display import (
+from ..types import (
     type_ui_task_map,
     type_output_func,
     type_submit_func,
@@ -44,6 +44,7 @@ def model_test_submit_factory(
         ui_exception_map: type_ui_exception_map,
         ui_exception_progress: Progress,
     ) -> OrchestratorTestResponse:
+        import logging
         response = setup_orchestrator_webpubsub_request(
             access_token=access_token, request=request
         )
