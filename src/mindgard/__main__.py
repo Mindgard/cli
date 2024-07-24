@@ -5,9 +5,10 @@ import traceback
 
 # Types
 from typing import List, Any, cast
+from .types import log_levels, model_types, valid_image_datasets
 
 # Models
-from .preflight import preflight
+from .preflight import preflight_image, preflight_llm
 from .wrappers.utils import parse_args_into_model
 from mindgard.wrappers.image import ImageModelWrapper
 from mindgard.wrappers.llm import LLMModelWrapper
@@ -15,9 +16,9 @@ from mindgard.wrappers.llm import LLMModelWrapper
 # Run functions
 from .run_functions.list_tests import list_test_submit, list_test_polling, list_test_output
 from .run_functions.sandbox_test import submit_sandbox_submit_factory, submit_sandbox_polling
-from .run_functions.utils import model_test_polling, model_test_output_factory, model_test_submit_factory
-from .run_functions.image_model_test import image_message_handler
-from .run_functions.llm_model_test import llm_message_handler
+from .run_functions.external_models import model_test_polling, model_test_output_factory, model_test_submit_factory
+from .external_model_handlers.image_model import image_message_handler
+from .external_model_handlers.llm_model import llm_message_handler
 from .run_poll_display import cli_run
 
 from .orchestrator import OrchestratorSetupRequest
@@ -56,7 +57,6 @@ def subparser_for_llm_contact(command_str: str, description_str: str, argparser:
 
 
 def parse_args(args: List[str]) -> argparse.Namespace:
-    log_levels = ['critical', 'fatal', 'error', 'warn', 'warning', 'info', 'debug', 'notset'] # [n.lower() for n in logging.getLevelNamesMapping().keys()]
     default_log_level = 'warn'
 
     parser = argparse.ArgumentParser(description='Securing AIs', prog='mindgard', usage='%(prog)s [command] [options]', epilog='Enjoy the program! :)', add_help=True)
@@ -83,9 +83,10 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     test_parser = subparser_for_llm_contact("test", "Attacks command", subparsers)
     test_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=80)
     test_parser.add_argument('--parallelism', type=int, help='The maximum number of parallel requests that can be made to the API.', required=False, default=5)
-    test_parser.add_argument('--model-type', type=str, help='The modality of the model; image or llm', choices=['image', 'llm'], required=False, default='llm')
+    test_parser.add_argument('--model-type', type=str, help='The modality of the model; image or llm', choices=model_types, required=False, default='llm')
+    test_parser.add_argument('--dataset', type=str, help='The dataset to use for image models', choices=valid_image_datasets, required=False)
 
-    validate_parser = subparser_for_llm_contact("validate", "Validates that we can communicate with your model", subparsers)
+    subparser_for_llm_contact("validate", "Validates that we can communicate with your model", subparsers)
 
 
     return parser.parse_args(args)
@@ -121,19 +122,20 @@ def main() -> None:
         submit_sandbox_output = model_test_output_factory(risk_threshold=100)
 
         cli_response = cli_run(submit_func=submit_sandbox_submit, polling_func=submit_sandbox_polling, output_func=submit_sandbox_output, json_out=args.json)
-        exit(test_to_cli_response(test=cli_response, risk_threshold=100).code()) #type: ignore
+        exit(test_to_cli_response(test=cli_response, risk_threshold=100).code())
 
     elif args.command == "validate" or args.command == "test":
         console = Console()
         final_args = parse_toml_and_args_into_final_args(args.config_file, args)
         model_wrapper = parse_args_into_model(args.model_type, final_args)
-        passed_preflight: bool = True
 
-        # TODO: add mechanism for preflight testing image models
         if args.model_type == "llm":
-            passed_preflight = preflight(cast(LLMModelWrapper, model_wrapper), console=console, json_out=args.json)
-            if not args.json:
-                console.print(f"{'[green bold]Model contactable!' if passed_preflight else '[red bold]Model not contactable!'}")
+            passed_preflight = preflight_llm(model_wrapper, console=console, json_out=args.json)
+        else:
+            passed_preflight = preflight_image(model_wrapper, console=console, json_out=args.json)
+
+        if not args.json:
+            console.print(f"{'[green bold]Model contactable!' if passed_preflight else '[red bold]Model not contactable!'}")
 
 
         if passed_preflight:
@@ -143,6 +145,7 @@ def main() -> None:
                         target=final_args["target"],
                         parallelism=int(final_args["parallelism"]),
                         system_prompt=final_args["system_prompt"],
+                        dataset=None,
                         modelType=args.model_type,
                         attackSource="user"
                     )
@@ -152,10 +155,12 @@ def main() -> None:
                         message_handler=llm_message_handler
                     )
                 elif args.model_type == "image":
+                    dataset = args.dataset or valid_image_datasets[0]
+
                     request = OrchestratorSetupRequest(
                         target=final_args["target"],
                         parallelism=int(final_args["parallelism"]),
-                        dataset="placeholder",
+                        dataset=dataset,
                         modelType=args.model_type,
                         attackSource="user"
                     )
