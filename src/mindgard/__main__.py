@@ -15,10 +15,12 @@ from mindgard.wrappers.llm import LLMModelWrapper
 # Run functions
 from .run_functions.list_tests import list_test_submit, list_test_polling, list_test_output
 from .run_functions.sandbox_test import submit_sandbox_submit_factory, submit_sandbox_polling
-from .run_functions.llm_model_test import llm_test_submit_factory
-from .run_functions.utils import model_test_polling, model_test_output_factory
-from .run_functions.image_model_test import image_test_submit_factory
+from .run_functions.utils import model_test_polling, model_test_output_factory, model_test_submit_factory
+from .run_functions.image_model_test import image_message_handler
+from .run_functions.llm_model_test import llm_message_handler
 from .run_poll_display import cli_run
+
+from .orchestrator import OrchestratorSetupRequest
 
 # Constants and Utils
 from .constants import VERSION
@@ -137,18 +139,30 @@ def main() -> None:
         if passed_preflight:
             if args.command == 'test':
                 if args.model_type == "llm":
-                    submit = llm_test_submit_factory(
+                    request = OrchestratorSetupRequest(
                         target=final_args["target"],
                         parallelism=int(final_args["parallelism"]),
                         system_prompt=final_args["system_prompt"],
-                        model_wrapper=cast(LLMModelWrapper, model_wrapper)
+                        modelType=args.model_type,
+                        attackSource="user"
+                    )
+                    submit = model_test_submit_factory(
+                        request=request,
+                        model_wrapper=cast(LLMModelWrapper, model_wrapper),
+                        message_handler=llm_message_handler
                     )
                 elif args.model_type == "image":
-                    submit = image_test_submit_factory(
+                    request = OrchestratorSetupRequest(
                         target=final_args["target"],
                         parallelism=int(final_args["parallelism"]),
                         dataset="placeholder",
-                        model_wrapper=cast(ImageModelWrapper, model_wrapper)
+                        modelType=args.model_type,
+                        attackSource="user"
+                    )
+                    submit = model_test_submit_factory(
+                        request=request,
+                        model_wrapper=cast(ImageModelWrapper, model_wrapper),
+                        message_handler=image_message_handler
                     )
 
                 output = model_test_output_factory(risk_threshold=int(final_args["risk_threshold"]))
