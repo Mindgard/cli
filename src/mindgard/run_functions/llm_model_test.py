@@ -107,7 +107,7 @@ def llm_test_submit_factory(
 
         request = OrchestratorSetupRequest(
             target=target,
-            model_type="llm",
+            modelType="llm",
             system_prompt=system_prompt,
             attackSource="user",
             parallelism=parallelism,

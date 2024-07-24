@@ -30,7 +30,7 @@ type_source = Literal["threat_intel", "user", "mindgard"]
 
 class OrchestratorSetupRequest(BaseModel):
     target: str
-    model_type: str
+    modelType: str
     system_prompt: Optional[str] = None
     dataset: Optional[str] = None
     attackPack: Optional[type_attack_pack] = None
