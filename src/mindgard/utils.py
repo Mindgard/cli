@@ -90,6 +90,11 @@ def parse_toml_and_args_into_final_args(
         "MODEL_API_KEY", None
     )
 
+    final_args["risk_threshold"] = final_args["risk_threshold"] or 50
+    final_args["parallelism"] = final_args["parallelism"] or 5
+    final_args["model_type"] = final_args["model_type"] or "llm"
+    final_args["json"] = False
+
     return final_args
 
 def check_expected_args(args: Dict[str, Any], expected_args: List[str]) -> None:
