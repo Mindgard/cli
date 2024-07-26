@@ -379,7 +379,7 @@ def get_model_wrapper(
     elif preset == 'openai':
         check_expected_args(locals(), ['api_key'])
         api_key = cast(str, api_key)
-        return OpenAIWrapper(api_key=api_key, model_name=model_name, system_prompt=system_prompt)
+        return OpenAIWrapper(api_key=api_key, model_name=model_name, system_prompt=system_prompt, api_url=url)
     elif preset == 'azure-openai':
         check_expected_args(locals(), ['api_key', 'model_name', 'az_api_version', 'url'])
         api_key, model_name, az_api_version, url = cast(Tuple[str, str, str, str], (api_key, model_name, az_api_version, url))
