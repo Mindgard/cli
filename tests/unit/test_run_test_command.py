@@ -9,10 +9,6 @@
 #     api_service: ApiService
 #     access_token: str
 #     model_name: str
-# class Fixture(NamedTuple):
-#     api_service: ApiService
-#     access_token: str
-#     model_name: str
 
 # def _helper_fixtures() -> Fixture:
 #     model_name = "mymodel"
