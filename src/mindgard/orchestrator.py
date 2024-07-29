@@ -166,10 +166,10 @@ def setup_orchestrator_webpubsub_request(
         url = data.json().get("url", None)
         groupId = data.json().get("groupId", None)
         if not url or not groupId:
-            raise ValueError("Invalid response from orchestrator.")
+            raise ValueError("Invalid response from orchestrator, missing websocket credentials.")
         return OrchestratorSetupResponse(url=url, group_id=groupId)
 
     except HTTPError as e:
         raise ValueError(
-            f"Failed to get a response from orchestrator, response invalid ({str(e)})!"
+            f"Failed to get a response from orchestrator ({str(e)})!"
         )

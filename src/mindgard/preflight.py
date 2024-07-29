@@ -69,7 +69,7 @@ def preflight_image(
         data = base64_test_image_as_bytes()   
         for i in range(5):
             response = model_wrapper.__call__(data)
-            nb_of_classes = len(response)
+            nb_classes = len(response)
         return True, nb_classes
     except Exception as e:
         if not json_out:
