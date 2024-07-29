@@ -1,4 +1,4 @@
-from src.mindgard.orchestrator import (
+from ...src.mindgard.orchestrator import (
     OrchestratorSetupRequest,
     setup_orchestrator_webpubsub_request,
     get_attack_pack_from_env,

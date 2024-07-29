@@ -1,9 +1,9 @@
 import pytest
 import requests_mock
 
-from src.mindgard.api_service import api_get
-from src.mindgard.orchestrator import get_test_by_id, get_tests, submit_sandbox_test
-from src.mindgard.constants import API_BASE
+from ...src.mindgard.api_service import api_get
+from ...src.mindgard.orchestrator import get_test_by_id, get_tests, submit_sandbox_test
+from ...src.mindgard.constants import API_BASE
 from unittest.mock import MagicMock
 
 from typing import Dict, Any
