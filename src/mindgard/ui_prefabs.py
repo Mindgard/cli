@@ -1,4 +1,5 @@
 # Typing
+import json
 from typing import Optional
 from .run_poll_display import type_ui_task_map
 
@@ -11,7 +12,6 @@ from .constants import DASHBOARD_URL
 # UI
 from rich.progress import Progress
 from rich.table import Table
-from .utils import print_to_stderr_as_json
 
 
 def poll_and_display_test(
@@ -48,7 +48,7 @@ def output_test_table(
     risk_threshold: int,
 ) -> Optional[Table]:
     if json_out:
-        print_to_stderr_as_json(test.model_dump())
+        print(test.model_dump_json())
         return None
     else:
         table = Table(title=f"Results - {DASHBOARD_URL}/r/test/{test.id}", width=80)

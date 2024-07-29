@@ -29,7 +29,7 @@ class CliResponse:
         return self._code
 
 
-def test_to_cli_response(
+def convert_test_to_cli_response(
     test: OrchestratorTestResponse, risk_threshold: int
 ) -> CliResponse:
     if test.risk > risk_threshold:

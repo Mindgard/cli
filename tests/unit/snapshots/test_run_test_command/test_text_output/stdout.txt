@@ -1,7 +1,8 @@
-submitting test [done]
-
-overall ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:00                   
-attack myattack [done]                                                                        Results - https://sandbox.mindgard.ai/r/test/test_id              
+Submitting...  Submitted!
+                                                                                
+Attack myattack done success                                                    
+                                                                                
+                                                                                              Results - https://sandbox.mindgard.ai/r/test/test_id              
 ┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┓
 ┃ Pass                ┃ Name                              ┃               Risk ┃
 ┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━┩

@@ -18,7 +18,7 @@ from .run_poll_display import cli_run
 
 # Constants and Utils
 from .constants import VERSION
-from .utils import is_version_outdated, print_to_stderr, parse_toml_and_args_into_final_args, test_to_cli_response, CliResponse
+from .utils import is_version_outdated, print_to_stderr, parse_toml_and_args_into_final_args, convert_test_to_cli_response, CliResponse
 
 # Logging
 import logging
@@ -115,7 +115,7 @@ def main() -> None:
         submit_sandbox_output = llm_test_output_factory(risk_threshold=100)
 
         cli_response = cli_run(submit_func=submit_sandbox_submit, polling_func=submit_sandbox_polling, output_func=submit_sandbox_output, json_out=args.json)
-        exit(test_to_cli_response(test=cli_response, risk_threshold=100).code()) #type: ignore
+        exit(convert_test_to_cli_response(test=cli_response, risk_threshold=100).code()) #type: ignore
 
     elif args.command == "validate" or args.command == "test":
         console = Console()
@@ -137,7 +137,7 @@ def main() -> None:
                 )
                 output = llm_test_output_factory(risk_threshold=int(final_args["risk_threshold"]))
                 cli_response = cli_run(submit, llm_test_polling, output_func=output, json_out=args.json)
-                exit(test_to_cli_response(test=cli_response, risk_threshold=int(final_args["risk_threshold"])).code()) # type: ignore
+                exit(convert_test_to_cli_response(test=cli_response, risk_threshold=int(final_args["risk_threshold"])).code()) # type: ignore
 
         else:
             exit(CliResponse(1).code())
