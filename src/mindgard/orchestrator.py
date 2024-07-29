@@ -30,6 +30,7 @@ class OrchestratorSetupRequest(BaseModel):
     target: str
     modelType: str
     system_prompt: Optional[str] = None
+    numberOfClasses: Optional[int] = None
     dataset: Optional[str] = None
     attackPack: Optional[type_orchestrator_attack_pack] = None
     extraConfig: Optional[Dict[str, Any]] = None

@@ -1,5 +1,5 @@
 # Exceptions
-from typing import cast
+from typing import Tuple
 from .exceptions import Uncontactable, HTTPBaseError
 
 # Models
@@ -12,8 +12,6 @@ from rich.console import Console
 # Logging
 import logging
 
-# Types
-from .types import type_model_types
 
 # Data
 from .utils import base64_test_image_as_bytes
@@ -64,15 +62,18 @@ def preflight_image(
     model_wrapper: ImageModelWrapper,
     console: Console,
     json_out: bool,
-) -> bool:
+) -> Tuple[bool, int]:
+    nb_classes = 0
+    
     try:
-        data = base64_test_image_as_bytes()
+        data = base64_test_image_as_bytes()   
         for i in range(5):
-            _ = model_wrapper.__call__(data)
-        return True
+            response = model_wrapper.__call__(data)
+            nb_of_classes = len(response)
+        return True, nb_classes
     except Exception as e:
         if not json_out:
             console.print(f"[red]Could not contact the model!")
         logging.error(e)
 
-    return False
+    return False, nb_classes
