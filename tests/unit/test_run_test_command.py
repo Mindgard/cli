@@ -65,8 +65,7 @@ def test_text_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot):
     assert res.code() == 0
     captured = capsys.readouterr()
     stdout = captured.out
-    # TODO because the dashboard url is now dynamic this assertion has to be fixed
-    # snapshot.assert_match(stdout, 'stdout.txt') # type: ignore
+    snapshot.assert_match(stdout, 'stdout.txt')
 
 def test_risk_threshold_pass():
     fixture = _helper_fixtures()
