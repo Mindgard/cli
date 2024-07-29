@@ -34,6 +34,14 @@ jobs:
           pip install poetry
           poetry install
 
+      - name: Create mindgard directory for token file
+        run: mkdir -p /home/runner/.mindgard
+
+      - name: Save token to file
+        run: echo ${{ secrets.MINDGARD_TOKEN }}  > /home/runner/.mindgard/token.txt
+
       - name: Run tests
         run: |
           poetry run pytest
+
+    
