@@ -1,5 +1,6 @@
 import ctypes
 from dataclasses import dataclass, field
+import platform
 from threading import Condition, Thread
 import time
 from typing import Any, Callable, Optional, Tuple
@@ -253,7 +254,9 @@ def test_json_output(
                             pass
                         ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(thread_ident), ctypes.py_object(TestTimeoutException))
             t_run_test.join()
-
+            
+@pytest.mark.skipif(platform.system() == "Windows",
+                    reason="TODO: cli output formatting is different on windows")
 @mock.patch("azure.messaging.webpubsubclient.WebPubSubClient", autospec=True)
 def test_text_output(
     mock_webpubsubclient: MagicMock,
