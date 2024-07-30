@@ -255,8 +255,6 @@ def test_json_output(
                         ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(thread_ident), ctypes.py_object(TestTimeoutException))
             t_run_test.join()
             
-@pytest.mark.skipif(platform.system() == "Windows",
-                    reason="TODO: cli output formatting is different on windows")
 @mock.patch("azure.messaging.webpubsubclient.WebPubSubClient", autospec=True)
 def test_text_output(
     mock_webpubsubclient: MagicMock,
@@ -335,7 +333,12 @@ def test_text_output(
             assert res.code() == 0
             captured = capsys.readouterr()
             stdout = captured.out
-            snapshot.assert_match(stdout, 'stdout.txt')
+            if platform.system() == "Windows":
+                # TODO: this is a basic check as Rich renders differently on windows
+                assert f"Results - https://sandbox.mindgard.ai/r/test/{fixture_test_id}" in stdout
+                assert "Attack myattack done success" in stdout
+            else:
+                snapshot.assert_match(stdout, 'stdout.txt')
 
         
 
