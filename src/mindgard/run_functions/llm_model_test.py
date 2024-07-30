@@ -27,7 +27,7 @@ import logging
 
 # Networking
 from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCredential
-from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs
+from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs, CallbackType
 
 from ..wrappers import ModelWrapper, ContextManager
 
@@ -187,7 +187,7 @@ def llm_test_submit_factory(
 
         ws_client.open()
 
-        ws_client.subscribe("group-message", recv_message_handler)  # type: ignore
+        ws_client.subscribe(CallbackType.GROUP_MESSAGE, recv_message_handler)
 
         payload = {
             "correlationId": "",
