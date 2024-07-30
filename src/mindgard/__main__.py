@@ -1,30 +1,32 @@
-
-
 import argparse
 from argparse import ArgumentParser
 import sys
 import traceback
-from typing import List, cast, Any
 
+# Types
+from typing import List, Any
+
+# Models
 from .wrappers import parse_args_into_model
-
-from .utils import CliResponse
-
-from .list_tests_command import ListTestsCommand
-from .run_test_command import RunTestCommand
-from .run_llm_local_command import RunLLMLocalCommand
-
 from .preflight import preflight
 
-from .api_service import ApiService
+# Run functions
+from .run_functions.list_tests import list_test_submit, list_test_polling, list_test_output
+from .run_functions.sandbox_test import submit_sandbox_submit_factory, submit_sandbox_polling
+from .run_functions.llm_model_test import llm_test_submit_factory, llm_test_polling, llm_test_output_factory
+from .run_poll_display import cli_run
 
-from .auth import login, logout
+# Constants and Utils
 from .constants import VERSION
-from .utils import is_version_outdated, print_to_stderr, parse_toml_and_args_into_final_args
+from .utils import is_version_outdated, print_to_stderr, parse_toml_and_args_into_final_args, convert_test_to_cli_response, CliResponse
 
+# Logging
 import logging
 from rich.logging import RichHandler
 from rich.console import Console
+
+# Auth
+from .auth import login, logout
 
 
 # both validate and test need these same arguments, so have factored them out
@@ -32,7 +34,7 @@ def subparser_for_llm_contact(command_str: str, description_str: str, argparser:
     parser: ArgumentParser = argparser.add_parser(command_str, help=description_str)
     parser.add_argument('target', nargs='?', type=str, help="This is your own model identifier.")
     parser.add_argument('--config-file', type=str, help='Path to mindgard.toml config file', default=None, required=False)
-    parser.add_argument('--json', action="store_true", help='Output the info in JSON format.', required=False)
+    parser.add_argument('--json', action="store_true", help='Output the info in JSON format.', required=False, default=False)
     parser.add_argument('--headers', type=str, help='The headers to use', required=False)
     parser.add_argument('--preset', type=str, help='The preset to use', choices=['huggingface', 'openai', 'anthropic', 'azure-openai', 'azure-aistudio', 'custom_mistral', 'tester'], required=False)
     parser.add_argument('--api-key', type=str, help='Specify the API key for the wrapper', required=False)
@@ -63,7 +65,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     subparsers.add_parser('logout', help='Logout of the Mindgard platform in the CLI')
 
     sandbox_test_parser = subparsers.add_parser('sandbox', help='Test a mindgard example model')
-    sandbox_test_parser.add_argument('target', nargs='?', type=str, choices=['cfp_faces', 'mistral'])
+    sandbox_test_parser.add_argument('target', nargs='?', type=str, choices=['cfp_faces', 'mistral'], default="cfp_faces")
     sandbox_test_parser.add_argument('--json', action="store_true", help='Return json output', required=False)
     sandbox_test_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=80)
 
@@ -104,44 +106,41 @@ def main() -> None:
         logout()
     elif args.command == 'list':
         if args.list_command == 'tests':
-            api_service = ApiService()
-            cmd = ListTestsCommand(api_service)
-            res = cmd.run(json_format=bool(args.json), test_id=args.id)
-            exit(res.code())
+            cli_run(submit_func=list_test_submit, polling_func=list_test_polling, output_func=list_test_output, json_out=args.json, submitting_text="Fetching tests...")
+            exit(CliResponse(0).code())
         else:
             print_to_stderr('Provide a resource to list. Eg `list tests`.')
     elif args.command == 'sandbox':
-        api_service = ApiService()
-        run_test_cmd = RunTestCommand(api_service)
-        run_test_res = run_test_cmd.run(model_name=args.target, json_format=bool(args.json), risk_threshold=int(args.risk_threshold))
-        exit(run_test_res.code())
-    if args.command == "validate" or args.command == "test":
+        submit_sandbox_submit = submit_sandbox_submit_factory(model_name=args.target)
+        submit_sandbox_output = llm_test_output_factory(risk_threshold=100)
+
+        cli_response = cli_run(submit_func=submit_sandbox_submit, polling_func=submit_sandbox_polling, output_func=submit_sandbox_output, json_out=args.json)
+        exit(convert_test_to_cli_response(test=cli_response, risk_threshold=100).code()) #type: ignore
+
+    elif args.command == "validate" or args.command == "test":
         console = Console()
         final_args = parse_toml_and_args_into_final_args(args.config_file, args)
         model_wrapper = parse_args_into_model(final_args)
-        passed:bool = preflight(model_wrapper, console=console)
-        response = CliResponse(passed)
+        passed_preflight: bool = preflight(model_wrapper, console=console, json_out=args.json)
 
-        console.print(f"{'[green bold]Model contactable!' if passed else '[red bold]Model not contactable!'}")
+        if not args.json:
+            console.print(f"{'[green bold]Model contactable!' if passed_preflight else '[red bold]Model not contactable!'}")
 
-        if passed:
+        if passed_preflight:
             if args.command == 'test':
-                # load args from file mindgard.toml
-                RunLLMLocalCommand.validate_args(final_args)
-                api_service = ApiService()
-                parallelism = int(cast(str, final_args["parallelism"]))
-                llm_test_cmd = RunLLMLocalCommand(api_service=api_service, model_wrapper=model_wrapper, parallelism=parallelism)
-                llm_test_res = llm_test_cmd.run(
-                    target=final_args["target"], 
-                    json_format=bool(final_args["json"]), 
-                    risk_threshold=int(cast(str, final_args["risk_threshold"])), 
+                # if args.model_type == "llm":
+                submit = llm_test_submit_factory(
+                    target=final_args["target"],
+                    parallelism=int(final_args["parallelism"]),
                     system_prompt=final_args["system_prompt"],
-                    console=console
+                    model_wrapper=model_wrapper
                 )
-                exit(llm_test_res.code())
+                output = llm_test_output_factory(risk_threshold=int(final_args["risk_threshold"]))
+                cli_response = cli_run(submit, llm_test_polling, output_func=output, json_out=args.json)
+                exit(convert_test_to_cli_response(test=cli_response, risk_threshold=int(final_args["risk_threshold"])).code()) # type: ignore
 
-        exit(response.code())
-        
+        else:
+            exit(CliResponse(1).code())
         
     else:
         print_to_stderr('Which command are you looking for? See: $ mindgard --help')

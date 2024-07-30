@@ -1,0 +1,12 @@
+Submitting...  Submitted!
+Progress                                            0% -:--:--                  
+Attack myattack done success                                                    
+Attack myattack done success                                                    
+                                                                                
+                                                                                            Results - https://sandbox.mindgard.ai/r/test/my-test-id             
+┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┓
+┃ Pass                ┃ Name                              ┃               Risk ┃
+┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━┩
+│ ✅️                  │ myattack                          │                 12 │
+│ ✅️                  │ myattack                          │                 12 │
+└─────────────────────┴───────────────────────────────────┴────────────────────┘

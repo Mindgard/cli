@@ -1,13 +1,13 @@
 import os
 from typing import TypedDict
 
-from ...src.mindgard.api_service import ApiService
 from pytest import Config
 
 from .utils import suppress_output
 
 from ...src.mindgard.config import get_token_file
 from ...src.mindgard.auth import load_access_token
+from ...src.mindgard.orchestrator import get_tests
 
 class ExampleIds(TypedDict):
     test_id: str
@@ -24,11 +24,10 @@ def pytest_configure(config: Config) -> None:
     try:
         with suppress_output():
             access_token = load_access_token()
-            api_service = ApiService()
-            tests = api_service.get_tests(str(access_token))
+            tests = get_tests(str(access_token))
 
-        test_id = tests[0]['id']
-        attack_id = tests[0]['attacks'][0]["id"]
+        test_id = tests[0].id
+        attack_id = tests[0].attacks[0].id
         global example_ids
         example_ids = {"test_id": test_id, "attack_id": attack_id}
 

@@ -1,57 +1,50 @@
-import json
-import os
-from typing import List, Dict, Any
-from .utils import api_get, api_post
-from .constants import API_BASE, DASHBOARD_URL
+# Types
+from typing import Callable, Dict, Any
 
-class ApiService():
-    def get_tests(self, access_token: str) ->  List[Dict[str, Any]]:
-        url = f"{API_BASE}/assessments?ungrouped=true"
+# Requests
+import requests
+from tenacity import retry, stop_after_attempt, wait_fixed
 
-        res = api_get(url, access_token)
-        
-        data: List[Dict[str, Any]] = res.json()
+# Constants
+from .constants import (
+    VERSION,
+    API_RETRY_ATTEMPTS,
+    API_RETRY_WAIT_BETWEEN_ATTEMPTS_SECONDS,
+)
 
-        # augment the output with the shortened url
-        for test in data:
-            test_id = test["id"]
-            test["url"] = f"{DASHBOARD_URL}/r/test/{test_id}"
-            for attack in test["attacks"]:
-                attack_id = attack["id"]
-                attack["url"] = f"{DASHBOARD_URL}/r/attack/{attack_id}"
 
-        return data
+# Type aliases
+type_post_request_function = Callable[[str, str, Dict[str, Any]], requests.Response]
+type_get_request_function = Callable[[str, str], requests.Response]
 
-    def get_test(self, access_token: str, test_id:str) -> Dict[str, Any]:
-        url = f"{API_BASE}/assessments/{test_id}"
-        res = api_get(url, access_token)
-        data: Dict[str, Any] = res.json()
 
-        data["url"] = f"{DASHBOARD_URL}/r/test/{test_id}"
-        for attack in data["attacks"]:
-            attack_id = attack["id"]
-            attack["url"] = f"{DASHBOARD_URL}/r/attack/{attack_id}"
+def _standard_headers(access_token: str) -> Dict[str, str]:
+    return {
+        "Authorization": f"Bearer {access_token}",
+        "User-Agent": f"mindgard-cli/{VERSION}",
+        "X-User-Agent": f"mindgard-cli/{VERSION}",
+    }
 
-        return data
 
-    def submit_test(self, access_token: str, target_name:str) -> Dict[str, Any]:
-        url = f"{API_BASE}/assessments"
-        post_body = {"mindgardModelName": target_name}
-        res = api_post(url, access_token, json=post_body)
-        data: Dict[str, Any] = res.json()
-        return data
-    
-    def get_orchestrator_websocket_connection_string(self, access_token: str, payload: Dict[str, Any]) -> Dict[str, Any]:
-        url = f"{API_BASE}/tests/cli_init"
+@retry(
+    stop=stop_after_attempt(API_RETRY_ATTEMPTS),
+    wait=wait_fixed(API_RETRY_WAIT_BETWEEN_ATTEMPTS_SECONDS),
+    reraise=True,
+)
+def api_post(url: str, access_token: str, payload: Dict[str, Any]) -> requests.Response:
+    response = requests.post(
+        url=url, json=payload, headers=_standard_headers(access_token)
+    )
+    response.raise_for_status()
+    return response
 
-        # Extra configuration only currently available to Mindgardians
-        extra_config = os.environ.get('MINDGARD_EXTRA_CONFIG', None)
-        if extra_config:
-            payload["extraConfig"] = json.loads(extra_config)
-        pack = os.environ.get('ATTACK_PACK', "sandbox")
-        payload["attackPack"] = pack
-        # End of Mindgard-only configuration
 
-        res = api_post(url, access_token, json=payload)
-        data: Dict[str, Any] = res.json()
-        return data
+@retry(
+    stop=stop_after_attempt(API_RETRY_ATTEMPTS),
+    wait=wait_fixed(API_RETRY_WAIT_BETWEEN_ATTEMPTS_SECONDS),
+    reraise=True,
+)
+def api_get(url: str, access_token: str) -> requests.Response:
+    response = requests.get(url=url, headers=_standard_headers(access_token))
+    response.raise_for_status()
+    return response
