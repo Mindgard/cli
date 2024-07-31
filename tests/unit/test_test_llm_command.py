@@ -106,305 +106,197 @@ fixture_test_finished_response = fixture_test_not_finished_response.copy()
 fixture_test_finished_response["hasFinished"] = True
 
 
-@mock.patch("azure.messaging.webpubsubclient.WebPubSubClient", autospec=True)
+def _test_inner(run_inner: Callable[[],None], requests_mock: requests_mock.Mocker) -> None:
+    """
+    Provides a mock test execution, simulating:
+     * webpubsub interactions
+     * message exchange (prompt -> response)
+     * test completion (!hasFinished -> hasFinished)
+
+    Args:
+        run_inner: The inner function that contains the test logic.
+        requests_mock: The mock object for making HTTP requests.
+    """
+    with mock.patch("azure.messaging.webpubsubclient.WebPubSubClient") as mock_webpubsubclient:
+        with patch.object(WebPubSubClient, "__new__", return_value=mock_webpubsubclient), patch.object(WebPubSubClientCredential, "__new__", return_value=None):
+            open_notifier = Condition()
+            subscribe_notifier = Condition()
+            client_message_notifier = Condition()
+            test_finished_notifier = Condition()
+            cli_finished = Condition()
+            test_context = _TestContext()
+
+            def subscribe(event:str, listener:Callable[[OnGroupDataMessageArgs], None]) -> None:
+                assert event == "group-message"
+                with subscribe_notifier:
+                    test_context.client_listener = listener
+                    test_context.have_set_listener = True
+                    subscribe_notifier.notify_all()
+
+            def send_to_group(group_name:str, content:dict[Any,Any], data_type:str) -> None:
+                with client_message_notifier:
+                    test_context.client_sent_messages.append((group_name, content, data_type))
+                    client_message_notifier.notify_all()
+
+            def open() -> None:
+                with open_notifier:
+                    test_context.have_called_open = True
+                    open_notifier.notify_all()
+
+            mock_webpubsubclient.open = MagicMock(side_effect=open)
+            mock_webpubsubclient.subscribe = MagicMock(side_effect=subscribe)
+            mock_webpubsubclient.send_to_group = MagicMock(side_effect=send_to_group)
+
+            requests_mock.post(
+                f"{API_BASE}/tests/cli_init",
+                json=fixture_cli_init_response,
+                status_code=200,
+            )
+
+            requests_mock.get(
+                f"{API_BASE}/assessments/{fixture_test_id}",
+                additional_matcher=lambda req: test_context.test_finished,
+                json=fixture_test_finished_response,
+                status_code=200,
+            )
+
+            requests_mock.get(
+                f"{API_BASE}/assessments/{fixture_test_id}",
+                #TODO: should switch finished after messages are exchanged additional_matcher= 
+                additional_matcher=lambda req: not test_context.test_finished,
+                json=fixture_test_not_finished_response,
+                status_code=200,
+            )
+
+            def run_test():
+                try:
+                    run_inner()
+                finally: # if the inner assertions fail, speed up the test completion
+                    with cli_finished:
+                        test_context.cli_completed = True
+                        cli_finished.notify_all()
+
+            t_run_test = PropagatingThread(target=run_test) # run the actual test target
+            t_run_test.start()
+            try:
+                # wait for open call
+                with open_notifier:
+                    if not test_context.have_called_open:
+                        assert open_notifier.wait(1) == True
+
+                # wait for subscribe call
+                with subscribe_notifier:
+                    if not test_context.have_set_listener:
+                        assert subscribe_notifier.wait(1) == True
+
+                # check we received the start test message
+                with client_message_notifier:
+                    if len(test_context.client_sent_messages) == 0:
+                        assert client_message_notifier.wait(1) == True
+                    
+                    assert len(test_context.client_sent_messages) == 1
+                    assert test_context.client_sent_messages[0] == ("orchestrator", {
+                        "correlationId": "",
+                        "messageType": "StartTest",
+                        "payload": {"groupId": fixture_group_id},
+                    }, "json")
+                
+                # TODO test_id is the ongoing assertion
+                test_context.client_listener(OnGroupDataMessageArgs(group="group id", data_type=WebPubSubDataType.JSON, data={"correlationId": "", "messageType": "StartedTest", "payload": {"testId": fixture_test_id}}))
+
+                # send some prompts
+                messages = [
+                    ("correl_id1", "world1"),
+                    ("correl_id2", "world2"),
+                ]
+                expect_messages = [(x[0], MockModelWrapper.mirror(x[1])) for x in messages]
+                for message in messages:
+                    test_context.client_listener(OnGroupDataMessageArgs(group="group id", data_type=WebPubSubDataType.JSON, data={"correlationId": message[0], "messageType": "Request", "payload": {"prompt": message[1]}}))
+
+                # expect some responses
+                with client_message_notifier:
+                    while len(test_context.client_sent_messages) != 1 + len(messages):
+                        assert client_message_notifier.wait(1) == True
+
+                    assert len(test_context.client_sent_messages) == 1 + len(messages)
+                    for idx, expect_response in enumerate(expect_messages):
+                        got = test_context.client_sent_messages[idx + 1]
+                        assert got[0] == "orchestrator"
+                        assert got[1]["correlationId"] == expect_response[0]
+                        assert got[1]["payload"]["response"] == expect_response[1]
+                            
+
+                # this allows the test to finish (i.e. simulate the polling completion)
+                with test_finished_notifier:
+                    test_context.test_finished = True
+                    test_finished_notifier.notify_all()
+
+            finally:
+                with cli_finished:
+                    if test_context.cli_completed == False:
+                        # wait for 20 seconds for the test to complete, then inject an exception to force it to exit
+                        if cli_finished.wait(6) == False:
+                            thread_ident = t_run_test.ident
+                            assert thread_ident is not None
+                            class TestTimeoutException(Exception):
+                                pass
+                            ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(thread_ident), ctypes.py_object(TestTimeoutException))
+                t_run_test.join()
+
+
 def test_json_output(
-    mock_webpubsubclient: MagicMock,
     capsys: pytest.CaptureFixture[str], 
     snapshot:Snapshot, 
     requests_mock: requests_mock.Mocker,
 ) -> None:
-    with patch.object(WebPubSubClient, "__new__", return_value=mock_webpubsubclient), patch.object(WebPubSubClientCredential, "__init__", return_value=None):
-        open_notifier = Condition()
-        subscribe_notifier = Condition()
-        client_message_notifier = Condition()
-        test_finished_notifier = Condition()
-        cli_finished = Condition()
-        test_context = _TestContext()
+    def run_test():
+        auth.load_access_token = MagicMock(return_value="atoken")
+        model_wrapper = MockModelWrapper()
 
-        def subscribe(event:str, listener:Callable[[OnGroupDataMessageArgs], None]) -> None:
-            assert event == "group-message"
-            with subscribe_notifier:
-                test_context.client_listener = listener
-                test_context.have_set_listener = True
-                subscribe_notifier.notify_all()
-
-        def send_to_group(group_name:str, content:dict[Any,Any], data_type:str) -> None:
-            with client_message_notifier:
-                test_context.client_sent_messages.append((group_name, content, data_type))
-                client_message_notifier.notify_all()
-
-        def open() -> None:
-            with open_notifier:
-                test_context.have_called_open = True
-                open_notifier.notify_all()
-
-        mock_webpubsubclient.open = MagicMock(side_effect=open)
-        mock_webpubsubclient.subscribe = MagicMock(side_effect=subscribe)
-        mock_webpubsubclient.send_to_group = MagicMock(side_effect=send_to_group)
-
-        requests_mock.post(
-            f"{API_BASE}/tests/cli_init",
-            json=fixture_cli_init_response,
-            status_code=200,
+        submit = llm_test_submit_factory(
+            target="mymodel",
+            parallelism=4,
+            system_prompt="my system prompt",
+            model_wrapper=model_wrapper
         )
+        output = llm_test_output_factory(risk_threshold=50)
+        cli_response = cli_run(submit, llm_test_polling, output_func=output, json_out=True)
+        res = convert_test_to_cli_response(test=cli_response, risk_threshold=50)
 
-        requests_mock.get(
-            f"{API_BASE}/assessments/{fixture_test_id}",
-            additional_matcher=lambda req: test_context.test_finished,
-            json=fixture_test_finished_response,
-            status_code=200,
-        )
+        assert res.code() == 0
+        captured = capsys.readouterr()
+        stdout = captured.out
+        snapshot.assert_match(stdout, 'stdout.json')
 
-        requests_mock.get(
-            f"{API_BASE}/assessments/{fixture_test_id}",
-            #TODO: should switch finished after messages are exchanged additional_matcher= 
-            additional_matcher=lambda req: not test_context.test_finished,
-            json=fixture_test_not_finished_response,
-            status_code=200,
-        )
-        
-        def run_test():
-            auth.load_access_token = MagicMock(return_value="atoken")
-            model_wrapper = MockModelWrapper()
+    _test_inner(run_test, requests_mock)
 
-            submit = llm_test_submit_factory(
-                target="mymodel",
-                parallelism=4,
-                system_prompt="my system prompt",
-                model_wrapper=model_wrapper
-            )
-            output = llm_test_output_factory(risk_threshold=50)
-            cli_response = cli_run(submit, llm_test_polling, output_func=output, json_out=True)
-            res = convert_test_to_cli_response(test=cli_response, risk_threshold=50)
-
-            with cli_finished:
-                test_context.cli_completed = True
-                cli_finished.notify_all()
-
-            assert res.code() == 0
-            captured = capsys.readouterr()
-            stdout = captured.out
-            snapshot.assert_match(stdout, 'stdout.json')
-
-        
-
-        t_run_test = PropagatingThread(target=run_test)
-        t_run_test.start()
-        try:
-            # wait for open call
-            with open_notifier:
-                if not test_context.have_called_open:
-                    assert open_notifier.wait(1) == True
-
-            # wait for subscribe call
-            with subscribe_notifier:
-                if not test_context.have_set_listener:
-                    assert subscribe_notifier.wait(1) == True
-
-            # check we received the start test message
-            with client_message_notifier:
-                if len(test_context.client_sent_messages) == 0:
-                    assert client_message_notifier.wait(1) == True
-                
-                assert len(test_context.client_sent_messages) == 1
-                assert test_context.client_sent_messages[0] == ("orchestrator", {
-                    "correlationId": "",
-                    "messageType": "StartTest",
-                    "payload": {"groupId": fixture_group_id},
-                }, "json")
-            
-            # TODO test_id is the ongoing assertion
-            test_context.client_listener(OnGroupDataMessageArgs(group="group id", data_type=WebPubSubDataType.JSON, data={"correlationId": "", "messageType": "StartedTest", "payload": {"testId": fixture_test_id}}))
-
-            # send some prompts
-            messages = [
-                ("correl_id1", "world1"),
-                ("correl_id2", "world2"),
-            ]
-            expect_messages = [(x[0], MockModelWrapper.mirror(x[1])) for x in messages]
-            for message in messages:
-                test_context.client_listener(OnGroupDataMessageArgs(group="group id", data_type=WebPubSubDataType.JSON, data={"correlationId": message[0], "messageType": "Request", "payload": {"prompt": message[1]}}))
-
-            # expect some responses
-            with client_message_notifier:
-                while len(test_context.client_sent_messages) != 1 + len(messages):
-                    assert client_message_notifier.wait(1) == True
-
-                assert len(test_context.client_sent_messages) == 1 + len(messages)
-                for idx, expect_response in enumerate(expect_messages):
-                    got = test_context.client_sent_messages[idx + 1]
-                    assert got[0] == "orchestrator"
-                    assert got[1]["correlationId"] == expect_response[0]
-                    assert got[1]["payload"]["response"] == expect_response[1]
-                        
-
-            # this allows the test to finish (i.e. simulate the polling completion)
-            with test_finished_notifier:
-                test_context.test_finished = True
-                test_finished_notifier.notify_all()
-
-        finally:
-            with cli_finished:
-                if test_context.cli_completed == False:
-                    # wait for 20 seconds for the test to complete, then inject an exception to force it to exit
-                    if cli_finished.wait(6) == False:
-                        thread_ident = t_run_test.ident
-                        assert thread_ident is not None
-                        class TestTimeoutException(Exception):
-                            pass
-                        ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(thread_ident), ctypes.py_object(TestTimeoutException))
-            t_run_test.join()
-            
-@mock.patch("azure.messaging.webpubsubclient.WebPubSubClient", autospec=True)
 def test_text_output(
-    mock_webpubsubclient: MagicMock,
     capsys: pytest.CaptureFixture[str], 
     snapshot:Snapshot, 
     requests_mock: requests_mock.Mocker,
 ) -> None:
-    with patch.object(WebPubSubClient, "__new__", return_value=mock_webpubsubclient), patch.object(WebPubSubClientCredential, "__init__", return_value=None):
-        open_notifier = Condition()
-        subscribe_notifier = Condition()
-        client_message_notifier = Condition()
-        test_finished_notifier = Condition()
-        cli_finished = Condition()
-        test_context = _TestContext()
+    def run_test():
+        auth.load_access_token = MagicMock(return_value="atoken")
+        model_wrapper = MockModelWrapper()
 
-        def subscribe(event:str, listener:Callable[[OnGroupDataMessageArgs], None]) -> None:
-            assert event == "group-message"
-            with subscribe_notifier:
-                test_context.client_listener = listener
-                test_context.have_set_listener = True
-                subscribe_notifier.notify_all()
-
-        def send_to_group(group_name:str, content:dict[Any,Any], data_type:str) -> None:
-            with client_message_notifier:
-                test_context.client_sent_messages.append((group_name, content, data_type))
-                client_message_notifier.notify_all()
-
-        def open() -> None:
-            with open_notifier:
-                test_context.have_called_open = True
-                open_notifier.notify_all()
-
-        mock_webpubsubclient.open = MagicMock(side_effect=open)
-        mock_webpubsubclient.subscribe = MagicMock(side_effect=subscribe)
-        mock_webpubsubclient.send_to_group = MagicMock(side_effect=send_to_group)
-
-        requests_mock.post(
-            f"{API_BASE}/tests/cli_init",
-            json=fixture_cli_init_response,
-            status_code=200,
+        submit = llm_test_submit_factory(
+            target="mymodel",
+            parallelism=4,
+            system_prompt="my system prompt",
+            model_wrapper=model_wrapper
         )
-
-        requests_mock.get(
-            f"{API_BASE}/assessments/{fixture_test_id}",
-            additional_matcher=lambda req: test_context.test_finished,
-            json=fixture_test_finished_response,
-            status_code=200,
-        )
-
-        requests_mock.get(
-            f"{API_BASE}/assessments/{fixture_test_id}",
-            #TODO: should switch finished after messages are exchanged additional_matcher= 
-            additional_matcher=lambda req: not test_context.test_finished,
-            json=fixture_test_not_finished_response,
-            status_code=200,
-        )
+        output = llm_test_output_factory(risk_threshold=50)
+        cli_response = cli_run(submit, llm_test_polling, output_func=output, json_out=False)
+        res = convert_test_to_cli_response(test=cli_response, risk_threshold=50)
         
-        def run_test():
-            auth.load_access_token = MagicMock(return_value="atoken")
-            model_wrapper = MockModelWrapper()
+        assert res.code() == 0
+        captured = capsys.readouterr()
+        stdout = captured.out
+        if platform.system() == "Windows":
+            # TODO: this is a basic check as Rich renders differently on windows
+            assert f"Results - https://sandbox.mindgard.ai/r/test/{fixture_test_id}" in stdout
+            assert "Attack myattack done success" in stdout
+        else:
+            snapshot.assert_match(stdout, 'stdout.txt')    
 
-            submit = llm_test_submit_factory(
-                target="mymodel",
-                parallelism=4,
-                system_prompt="my system prompt",
-                model_wrapper=model_wrapper
-            )
-            output = llm_test_output_factory(risk_threshold=50)
-            cli_response = cli_run(submit, llm_test_polling, output_func=output, json_out=False)
-            res = convert_test_to_cli_response(test=cli_response, risk_threshold=50)
-
-            with cli_finished:
-                test_context.cli_completed = True
-                cli_finished.notify_all()
-
-            assert res.code() == 0
-            captured = capsys.readouterr()
-            stdout = captured.out
-            if platform.system() == "Windows":
-                # TODO: this is a basic check as Rich renders differently on windows
-                assert f"Results - https://sandbox.mindgard.ai/r/test/{fixture_test_id}" in stdout
-                assert "Attack myattack done success" in stdout
-            else:
-                snapshot.assert_match(stdout, 'stdout.txt')
-
-        
-
-        t_run_test = PropagatingThread(target=run_test)
-        t_run_test.start()
-        try:
-            # wait for open call
-            with open_notifier:
-                if not test_context.have_called_open:
-                    assert open_notifier.wait(1) == True
-
-            # wait for subscribe call
-            with subscribe_notifier:
-                if not test_context.have_set_listener:
-                    assert subscribe_notifier.wait(1) == True
-
-            # check we received the start test message
-            with client_message_notifier:
-                if len(test_context.client_sent_messages) == 0:
-                    assert client_message_notifier.wait(1) == True
-                
-                assert len(test_context.client_sent_messages) == 1
-                assert test_context.client_sent_messages[0] == ("orchestrator", {
-                    "correlationId": "",
-                    "messageType": "StartTest",
-                    "payload": {"groupId": fixture_group_id},
-                }, "json")
-            
-            # TODO test_id is the ongoing assertion
-            test_context.client_listener(OnGroupDataMessageArgs(group="group id", data_type=WebPubSubDataType.JSON, data={"correlationId": "", "messageType": "StartedTest", "payload": {"testId": fixture_test_id}}))
-
-            # send some prompts
-            messages = [
-                ("correl_id1", "world1"),
-                ("correl_id2", "world2"),
-            ]
-            expect_messages = [(x[0], MockModelWrapper.mirror(x[1])) for x in messages]
-            for message in messages:
-                test_context.client_listener(OnGroupDataMessageArgs(group="group id", data_type=WebPubSubDataType.JSON, data={"correlationId": message[0], "messageType": "Request", "payload": {"prompt": message[1]}}))
-
-            # expect some responses
-            with client_message_notifier:
-                while len(test_context.client_sent_messages) != 1 + len(messages):
-                    assert client_message_notifier.wait(1) == True
-
-                assert len(test_context.client_sent_messages) == 1 + len(messages)
-                for idx, expect_response in enumerate(expect_messages):
-                    got = test_context.client_sent_messages[idx + 1]
-                    assert got[0] == "orchestrator"
-                    assert got[1]["correlationId"] == expect_response[0]
-                    assert got[1]["payload"]["response"] == expect_response[1]
-                        
-
-            # this allows the test to finish (i.e. simulate the polling completion)
-            with test_finished_notifier:
-                test_context.test_finished = True
-                test_finished_notifier.notify_all()
-
-        finally:
-            with cli_finished:
-                if test_context.cli_completed == False:
-                    # wait for 20 seconds for the test to complete, then inject an exception to force it to exit
-                    if cli_finished.wait(6) == False:
-                        thread_ident = t_run_test.ident
-                        assert thread_ident is not None
-                        class TestTimeoutException(Exception):
-                            pass
-                        ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(thread_ident), ctypes.py_object(TestTimeoutException))
-            t_run_test.join()
+    _test_inner(run_test, requests_mock)
