@@ -11,6 +11,8 @@ import jsonpath_ng
 
 # Exceptions
 from .exceptions import Uncontactable, status_code_to_exception, openai_exception_to_exception, EmptyResponse, NotImplemented
+from .responses import extract_reply, extract_replies
+
 
 @dataclass
 class PromptResponse:
@@ -143,24 +145,7 @@ class APIModelWrapper(ModelWrapper):
             # everything else
             raise e
 
-        response = response.json()
-
-        if self.selector:
-            jsonpath_expr = jsonpath_ng.parse(self.selector)
-            match = jsonpath_expr.find(response)
-            if match:
-                return str(match[0].value)
-            else:
-                raise Exception(f"Selector {self.selector} did not match any elements in the response. {response=}")
-
-        # disabled until we can support templating chat completions
-        # if with_context is not None:
-        #     with_context.add(PromptResponse(
-        #         prompt=content,
-        #         response=response
-        #     ))
-
-        return str(response)
+        return extract_replies(response, self.selector)
 
 
 class AzureAIStudioWrapper(APIModelWrapper):
