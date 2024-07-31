@@ -184,7 +184,7 @@ def _test_inner(run_inner: Callable[[],None], requests_mock: requests_mock.Mocke
                 status_code=200,
             )
 
-            def run_test():
+            def run_test() -> None:
                 try:
                     run_inner()
                 finally: # if the inner assertions fail, speed up the test completion
@@ -262,8 +262,8 @@ def _test_inner(run_inner: Callable[[],None], requests_mock: requests_mock.Mocke
                 assert submit_test_mock.last_request is not None
                 return submit_test_mock.last_request.json()
 
-def test_empty_attack_pack_config(requests_mock: requests_mock.Mocker):
-    def run_test():
+def test_empty_attack_pack_config(requests_mock: requests_mock.Mocker) -> None:
+    def run_test() -> None:
         with mock.patch.dict('os.environ'):
             if "ATTACK_PACK" in os.environ:
                 del os.environ["ATTACK_PACK"]
@@ -273,8 +273,8 @@ def test_empty_attack_pack_config(requests_mock: requests_mock.Mocker):
     assert submitted_test is not None
     assert submitted_test.get("attackPack") == "sandbox"
 
-def test_attack_pack_config(requests_mock: requests_mock.Mocker):
-    def run_test():
+def test_attack_pack_config(requests_mock: requests_mock.Mocker) -> None:
+    def run_test() -> None:
         with mock.patch.dict(os.environ, {"ATTACK_PACK": "my_attack_pack"}):
             _run_llm_test()
 
@@ -287,7 +287,7 @@ def test_json_output(
     snapshot:Snapshot, 
     requests_mock: requests_mock.Mocker,
 ) -> None:
-    def run_test():
+    def run_test() -> None:
         _run_llm_test()
         captured = capsys.readouterr()
         stdout = captured.out
@@ -300,7 +300,7 @@ def test_text_output(
     snapshot:Snapshot, 
     requests_mock: requests_mock.Mocker,
 ) -> None:
-    def run_test():
+    def run_test() -> None:
         _run_llm_test(json_out=False)
         
         captured = capsys.readouterr()

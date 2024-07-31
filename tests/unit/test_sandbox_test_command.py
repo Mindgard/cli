@@ -12,7 +12,7 @@ from ...src.mindgard.run_poll_display import cli_run
 from ...src.mindgard.utils import convert_test_to_cli_response
 import requests_mock # type: ignore
 
-def test_json_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot, requests_mock: requests_mock.Mocker):
+def test_json_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot, requests_mock: requests_mock.Mocker) -> None:
     # fixture = _helper_fixtures()
 
     auth.load_access_token = MagicMock(return_value="atoken")
@@ -67,7 +67,7 @@ def test_json_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot, requ
     stdout = captured.out
     snapshot.assert_match(stdout, 'stdout.json')
 
-def test_text_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot, requests_mock: requests_mock.Mocker):
+def test_text_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot, requests_mock: requests_mock.Mocker) -> None:
     auth.load_access_token = MagicMock(return_value="atoken")
 
     requests_mock.post(
@@ -118,7 +118,6 @@ def test_text_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot, requ
     assert res.code() == 0
     captured = capsys.readouterr()
     stdout = captured.out
-    snapshot.assert_match(stdout, 'stdout.txt')
 
     if platform.system() == "Windows":
         # TODO: this is a basic check as Rich renders differently on windows
@@ -128,7 +127,7 @@ def test_text_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot, requ
         snapshot.assert_match(stdout, 'stdout.txt')
 
 @pytest.mark.parametrize("risk_score,risk_threshold,exit_code", [(49, 50, 0), (50, 49, 1)])
-def test_risk_threshold(risk_score: int, risk_threshold: int, exit_code: int, requests_mock: requests_mock.Mocker):
+def test_risk_threshold(risk_score: int, risk_threshold: int, exit_code: int, requests_mock: requests_mock.Mocker) -> None:
     auth.load_access_token = MagicMock(return_value="atoken")
 
     requests_mock.post(
