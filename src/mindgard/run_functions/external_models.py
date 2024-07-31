@@ -44,7 +44,7 @@ def model_test_submit_factory(
         ui_exception_map: type_ui_exception_map,
         ui_exception_progress: Progress,
     ) -> OrchestratorTestResponse:
-        import logging
+        
         response = setup_orchestrator_webpubsub_request(
             access_token=access_token, request=request
         )

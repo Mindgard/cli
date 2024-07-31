@@ -155,6 +155,8 @@ def setup_orchestrator_webpubsub_request(
 ) -> OrchestratorSetupResponse:
     url = f"{API_BASE}/tests/cli_init"
 
+    request.attackPack = os.environ.get("ATTACK_PACK", "sandbox")
+
     try:
         payload = request.model_dump()
         extra_config = os.environ.get("MINDGARD_EXTRA_CONFIG", None)

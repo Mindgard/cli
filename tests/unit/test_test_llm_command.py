@@ -113,14 +113,21 @@ def _run_llm_test(json_out:bool = True) -> None:
     auth.load_access_token = MagicMock(return_value="atoken")
     model_wrapper = MockModelWrapper()
 
-    submit = llm_test_submit_factory(
+    request = OrchestratorSetupRequest(
         target="mymodel",
         parallelism=4,
         system_prompt="my system prompt",
-        model_wrapper=model_wrapper
+        dataset=None,
+        modelType="llm",
+        attackSource="user"
     )
-    output = llm_test_output_factory(risk_threshold=50)
-    cli_response = cli_run(submit, llm_test_polling, output_func=output, json_out=json_out)
+    submit = model_test_submit_factory(
+        request=request,
+        model_wrapper=model_wrapper,
+        message_handler=llm_message_handler
+    )
+    output = model_test_output_factory(risk_threshold=50)
+    cli_response = cli_run(submit, model_test_polling, output_func=output, json_out=json_out)
     res = convert_test_to_cli_response(test=cli_response, risk_threshold=50)
 
     assert res.code() == 0
