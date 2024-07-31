@@ -22,7 +22,7 @@ def extract_replies(response, selector=None):
             if len(line_value) < 10:
                 continue
             line_json = json.loads(line_value)
-            extracted = extract_reply(line_json,selector=selector, strict=False)
+            extracted = extract_reply(line_json,selector=selector, strict=False).strip()
             if (len(extracted) > 0):
                 reply.append(extracted)
 

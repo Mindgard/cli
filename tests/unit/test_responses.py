@@ -30,6 +30,20 @@ def test_extract_replies_should_extract_selector_match_with_text_stream() -> Non
 
     assert "hello world" == extract_replies(response, selector="$.message")
 
+def test_extract_replies_should_trim_extraneous_whitespace() -> None:
+    input = [
+        '''data: {"message": "hello "}'''.encode("utf-8"),
+        '''data: {"message": "  world"}'''.encode("utf-8")
+    ]
+    def iter_lines():
+        return input
+
+    response = Mock(spec=Response)
+    response.headers = {"Content-Type": "text/event-stream"}
+    response.iter_lines = iter_lines
+
+    assert "hello world" == extract_replies(response, selector="$.message")
+
 def test_extract_replies_should_ignore_empty_lines() -> None:
     input = [
         '''data: {"message": "hello"}'''.encode("utf-8"),
