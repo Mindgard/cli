@@ -12,14 +12,16 @@ from unittest.mock import MagicMock, patch
 from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCredential
 from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs, WebPubSubDataType
 
-from mindgard.wrappers import Context, ModelWrapper
+from ...src.mindgard.external_model_handlers.llm_model import llm_message_handler
+from ...src.mindgard.orchestrator import OrchestratorSetupRequest
+from ...src.mindgard.run_functions.external_models import model_test_output_factory, model_test_polling, model_test_submit_factory
+from ...src.mindgard.wrappers.llm import Context, LLMModelWrapper
 from ...src.mindgard import auth
 import pytest
 from pytest_snapshot.plugin import Snapshot
 # from typing import NamedTuple
 # from unittest.mock import MagicMock
 from ...src.mindgard.constants import API_BASE
-from ...src.mindgard.run_functions.llm_model_test import llm_test_output_factory, llm_test_polling, llm_test_submit_factory
 from ...src.mindgard.run_poll_display import cli_run
 from ...src.mindgard.utils import convert_test_to_cli_response
 import requests_mock # type: ignore
@@ -39,7 +41,7 @@ class PropagatingThread(Thread):
             raise self.exc
         return self.ret
 
-class MockModelWrapper(ModelWrapper):
+class MockModelWrapper(LLMModelWrapper):
     @classmethod
     def mirror(cls, input:str) -> str:
         time.sleep(0.1)

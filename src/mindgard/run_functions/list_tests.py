@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from ..run_poll_display import (
+from ..types import (
     type_ui_exception_map,
     type_ui_task_map,
 )

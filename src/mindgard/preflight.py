@@ -1,8 +1,10 @@
 # Exceptions
+from typing import Tuple
 from .exceptions import Uncontactable, HTTPBaseError
 
 # Models
-from .wrappers import ModelWrapper
+from .wrappers.llm import LLMModelWrapper
+from .wrappers.image import ImageModelWrapper
 
 # UI
 from rich.console import Console
@@ -11,7 +13,15 @@ from rich.console import Console
 import logging
 
 
-def preflight(model_wrapper: ModelWrapper, console: Console, json_out: bool) -> bool:
+# Data
+from .utils import base64_test_image_as_bytes
+
+
+def preflight_llm(
+    model_wrapper: LLMModelWrapper,
+    console: Console,
+    json_out: bool,
+) -> bool:
     """
     Makes requests to the LLM to validate basic connectivity before submitting
     test.
@@ -46,3 +56,24 @@ def preflight(model_wrapper: ModelWrapper, console: Console, json_out: bool) -> 
         raise e
 
     return False
+
+
+def preflight_image(
+    model_wrapper: ImageModelWrapper,
+    console: Console,
+    json_out: bool,
+) -> Tuple[bool, int]:
+    nb_classes = 0
+    
+    try:
+        data = base64_test_image_as_bytes()   
+        for i in range(5):
+            response = model_wrapper.__call__(data)
+            nb_classes = len(response)
+        return True, nb_classes
+    except Exception as e:
+        if not json_out:
+            console.print(f"[red]Could not contact the model!")
+        logging.error(e)
+
+    return False, nb_classes

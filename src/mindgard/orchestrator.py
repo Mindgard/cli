@@ -4,14 +4,13 @@ import json
 # Types
 from pydantic import BaseModel, model_validator
 from typing import Optional, Any, Dict, Literal, cast, List
+from .types import type_post_request_function, type_get_request_function
 
 # Constants
 from .constants import API_BASE, DASHBOARD_URL
 
 # Requests
 from .api_service import (
-    type_post_request_function,
-    type_get_request_function,
     api_get,
     api_post,
 )
@@ -23,14 +22,15 @@ from requests.exceptions import HTTPError
 BaseModel.model_config["protected_namespaces"] = ()
 
 
-# Type definitions
-type_source = Literal["threat_intel", "user", "mindgard"]
+# Type aliases
+from .types import type_orchestrator_attack_pack, type_orchestrator_source
 
 
 class OrchestratorSetupRequest(BaseModel):
     target: str
-    model_type: str
+    modelType: str
     system_prompt: Optional[str] = None
+    numberOfClasses: Optional[int] = None
     dataset: Optional[str] = None
     attackPack: Optional[str] = None
     attackSource: str
@@ -78,7 +78,7 @@ class AttackModel(BaseModel):
 class OrchestratorTestResponse(BaseModel):
     id: str
     mindgardModelName: str
-    source: type_source
+    source: type_orchestrator_source
     createdAt: str
     attacks: List[AttackModel]
     isCompleted: bool
@@ -164,10 +164,10 @@ def setup_orchestrator_webpubsub_request(
         url = data.json().get("url", None)
         groupId = data.json().get("groupId", None)
         if not url or not groupId:
-            raise ValueError("Invalid response from orchestrator.")
+            raise ValueError("Invalid response from orchestrator, missing websocket credentials.")
         return OrchestratorSetupResponse(url=url, group_id=groupId)
 
     except HTTPError as e:
         raise ValueError(
-            "Failed to get a response from orchestrator, response invalid!"
+            f"Failed to get a response from orchestrator ({str(e)})!"
         )
