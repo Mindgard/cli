@@ -1,6 +1,9 @@
 import jsonpath_ng
 import json
 
+# Filters to only LLM messages with content.
+MINIMUM_MESSAGE_SIZE = 10
+
 def extract_reply(json_response,selector=None, strict=True):
     if selector:
         jsonpath_expr = jsonpath_ng.parse(selector)
@@ -15,11 +18,12 @@ def extract_reply(json_response,selector=None, strict=True):
         return json.dumps(json_response)
 
 def extract_replies(response, selector=None):
+    # Example of spec: https://platform.openai.com/docs/api-reference/streaming
     if (response.headers.get('Content-Type','').lower() == 'text/event-stream'):
         reply = []
         for line in response.iter_lines():
-            line_value = line[6:].decode("utf-8")
-            if len(line_value) < 10:
+            line_value = line[len('data: '):].decode("utf-8")
+            if len(line_value) < MINIMUM_MESSAGE_SIZE:
                 continue
             line_json = json.loads(line_value)
             extracted = extract_reply(line_json,selector=selector, strict=False).strip()
@@ -28,4 +32,5 @@ def extract_replies(response, selector=None):
 
         return " ".join(reply)
     else:
+        # Simple RPC
         return extract_reply(response.json(), selector=selector)
