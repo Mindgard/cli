@@ -1,5 +1,6 @@
 import ctypes
 from dataclasses import dataclass, field
+import os
 import platform
 from threading import Condition, Thread
 import time
@@ -106,7 +107,7 @@ fixture_test_finished_response = fixture_test_not_finished_response.copy()
 fixture_test_finished_response["hasFinished"] = True
 
 
-def _test_inner(run_inner: Callable[[],None], requests_mock: requests_mock.Mocker) -> None:
+def _test_inner(run_inner: Callable[[],None], requests_mock: requests_mock.Mocker) -> Any:
     """
     Provides a mock test execution, simulating:
      * webpubsub interactions
@@ -147,7 +148,7 @@ def _test_inner(run_inner: Callable[[],None], requests_mock: requests_mock.Mocke
             mock_webpubsubclient.subscribe = MagicMock(side_effect=subscribe)
             mock_webpubsubclient.send_to_group = MagicMock(side_effect=send_to_group)
 
-            requests_mock.post(
+            submit_test_mock = requests_mock.post(
                 f"{API_BASE}/tests/cli_init",
                 json=fixture_cli_init_response,
                 status_code=200,
@@ -242,7 +243,31 @@ def _test_inner(run_inner: Callable[[],None], requests_mock: requests_mock.Mocke
                                 pass
                             ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(thread_ident), ctypes.py_object(TestTimeoutException))
                 t_run_test.join()
+                assert submit_test_mock.call_count == 1
+                assert submit_test_mock.last_request is not None
+                return submit_test_mock.last_request.json()
 
+def test_attack_pack_config(requests_mock: requests_mock.Mocker):
+    def run_test():
+        with mock.patch.dict(os.environ, {"ATTACK_PACK": "my_attack_pack"}):
+            auth.load_access_token = MagicMock(return_value="atoken")
+            model_wrapper = MockModelWrapper()
+
+            submit = llm_test_submit_factory(
+                target="mymodel",
+                parallelism=4,
+                system_prompt="my system prompt",
+                model_wrapper=model_wrapper
+            )
+            output = llm_test_output_factory(risk_threshold=50)
+            cli_response = cli_run(submit, llm_test_polling, output_func=output, json_out=True)
+            res = convert_test_to_cli_response(test=cli_response, risk_threshold=50)
+
+            assert res.code() == 0
+
+    submitted_test = _test_inner(run_test, requests_mock)
+    assert submitted_test is not None
+    assert submitted_test.get("attackPack") == "my_attack_pack"
 
 def test_json_output(
     capsys: pytest.CaptureFixture[str], 

@@ -24,7 +24,6 @@ BaseModel.model_config["protected_namespaces"] = ()
 
 
 # Type definitions
-type_attack_pack = Literal["sandbox", "threat_intel"]
 type_source = Literal["threat_intel", "user", "mindgard"]
 
 
@@ -33,7 +32,7 @@ class OrchestratorSetupRequest(BaseModel):
     model_type: str
     system_prompt: Optional[str] = None
     dataset: Optional[str] = None
-    attackPack: Optional[type_attack_pack] = None
+    attackPack: Optional[str] = None
     extraConfig: Optional[Dict[str, Any]] = None
     attackSource: str
     parallelism: int
@@ -148,11 +147,6 @@ def get_test_by_id(
 def get_extra_config_from_env() -> Dict[str, Any]:
     config_str = os.getenv("MINDGARD_EXTRA_CONFIG")
     return cast(Dict[str, Any], json.loads(config_str)) if config_str else {}
-
-
-def get_attack_pack_from_env() -> type_attack_pack:
-    pack = os.environ.get("ATTACK_PACK", "sandbox")
-    return cast(type_attack_pack, pack)
 
 
 def setup_orchestrator_webpubsub_request(

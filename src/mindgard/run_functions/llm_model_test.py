@@ -1,3 +1,4 @@
+import os
 from ..run_poll_display import (
     type_submit_func,
     type_output_func,
@@ -111,6 +112,7 @@ def llm_test_submit_factory(
             system_prompt=system_prompt,
             attackSource="user",
             parallelism=parallelism,
+            attackPack=os.getenv("ATTACK_PACK", None),
         )
 
         response = setup_orchestrator_webpubsub_request(

@@ -1,7 +1,6 @@
 from ...src.mindgard.orchestrator import (
     OrchestratorSetupRequest,
     setup_orchestrator_webpubsub_request,
-    get_attack_pack_from_env,
     get_extra_config_from_env,
 )
 
@@ -25,7 +24,7 @@ def get_orchestrator_setup_request(parallelism: int = 1) -> Dict[str, Any]:
         "model_type": "test",
         "attackSource": "test",
         "parallelism": parallelism,
-        "attackPack": get_attack_pack_from_env(),
+        "attackPack": "my_attack_pack",
         "extraConfig": get_extra_config_from_env(),
     }
 

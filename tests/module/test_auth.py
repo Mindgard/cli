@@ -4,8 +4,8 @@ import tempfile
 from unittest import mock
 import requests_mock
 
-from src.mindgard.auth import (clear_token, clear_instance, load_access_token, logout)
-from src.mindgard.config import get_config_directory, get_token_file, get_instance_file, instance_auth_config, load_auth_config, sandbox_auth_config
+from ...src.mindgard.auth import (clear_token, clear_instance, load_access_token, logout)
+from ...src.mindgard.config import get_config_directory, get_token_file, get_instance_file, instance_auth_config, load_auth_config, sandbox_auth_config
 
 def generate_instance_config() -> dict[str, str]:
      config = {
