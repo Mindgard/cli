@@ -106,6 +106,21 @@ fixture_test_not_finished_response = {
 fixture_test_finished_response = fixture_test_not_finished_response.copy()
 fixture_test_finished_response["hasFinished"] = True
 
+def _run_llm_test(json_out:bool = True) -> None:
+    auth.load_access_token = MagicMock(return_value="atoken")
+    model_wrapper = MockModelWrapper()
+
+    submit = llm_test_submit_factory(
+        target="mymodel",
+        parallelism=4,
+        system_prompt="my system prompt",
+        model_wrapper=model_wrapper
+    )
+    output = llm_test_output_factory(risk_threshold=50)
+    cli_response = cli_run(submit, llm_test_polling, output_func=output, json_out=json_out)
+    res = convert_test_to_cli_response(test=cli_response, risk_threshold=50)
+
+    assert res.code() == 0
 
 def _test_inner(run_inner: Callable[[],None], requests_mock: requests_mock.Mocker) -> Any:
     """
@@ -247,23 +262,11 @@ def _test_inner(run_inner: Callable[[],None], requests_mock: requests_mock.Mocke
                 assert submit_test_mock.last_request is not None
                 return submit_test_mock.last_request.json()
 
+
 def test_attack_pack_config(requests_mock: requests_mock.Mocker):
     def run_test():
         with mock.patch.dict(os.environ, {"ATTACK_PACK": "my_attack_pack"}):
-            auth.load_access_token = MagicMock(return_value="atoken")
-            model_wrapper = MockModelWrapper()
-
-            submit = llm_test_submit_factory(
-                target="mymodel",
-                parallelism=4,
-                system_prompt="my system prompt",
-                model_wrapper=model_wrapper
-            )
-            output = llm_test_output_factory(risk_threshold=50)
-            cli_response = cli_run(submit, llm_test_polling, output_func=output, json_out=True)
-            res = convert_test_to_cli_response(test=cli_response, risk_threshold=50)
-
-            assert res.code() == 0
+            _run_llm_test()
 
     submitted_test = _test_inner(run_test, requests_mock)
     assert submitted_test is not None
@@ -275,20 +278,7 @@ def test_json_output(
     requests_mock: requests_mock.Mocker,
 ) -> None:
     def run_test():
-        auth.load_access_token = MagicMock(return_value="atoken")
-        model_wrapper = MockModelWrapper()
-
-        submit = llm_test_submit_factory(
-            target="mymodel",
-            parallelism=4,
-            system_prompt="my system prompt",
-            model_wrapper=model_wrapper
-        )
-        output = llm_test_output_factory(risk_threshold=50)
-        cli_response = cli_run(submit, llm_test_polling, output_func=output, json_out=True)
-        res = convert_test_to_cli_response(test=cli_response, risk_threshold=50)
-
-        assert res.code() == 0
+        _run_llm_test()
         captured = capsys.readouterr()
         stdout = captured.out
         snapshot.assert_match(stdout, 'stdout.json')
@@ -301,20 +291,8 @@ def test_text_output(
     requests_mock: requests_mock.Mocker,
 ) -> None:
     def run_test():
-        auth.load_access_token = MagicMock(return_value="atoken")
-        model_wrapper = MockModelWrapper()
-
-        submit = llm_test_submit_factory(
-            target="mymodel",
-            parallelism=4,
-            system_prompt="my system prompt",
-            model_wrapper=model_wrapper
-        )
-        output = llm_test_output_factory(risk_threshold=50)
-        cli_response = cli_run(submit, llm_test_polling, output_func=output, json_out=False)
-        res = convert_test_to_cli_response(test=cli_response, risk_threshold=50)
+        _run_llm_test(json_out=False)
         
-        assert res.code() == 0
         captured = capsys.readouterr()
         stdout = captured.out
         if platform.system() == "Windows":
