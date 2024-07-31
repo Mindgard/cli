@@ -14,7 +14,7 @@ from ..types import (
 )
 from ..ui_prefabs import poll_and_display_test, output_test_table
 
-from typing import Optional, List, Callable
+from typing import Optional, List, Callable, Union
 from rich.progress import Progress
 from rich.table import Table
 
@@ -26,13 +26,13 @@ import time
 
 def model_test_submit_factory(
     request: OrchestratorSetupRequest,
-    model_wrapper: LLMModelWrapper | ImageModelWrapper,
+    model_wrapper: Union[LLMModelWrapper, ImageModelWrapper],
     message_handler: Callable[
         [
             type_ui_exception_map,
             Progress,
             Callable[[str], None],
-            ImageModelWrapper | LLMModelWrapper,
+            Union[LLMModelWrapper, ImageModelWrapper],
             WebPubSubClient,
         ],
         Callable[[OnGroupDataMessageArgs], None],
