@@ -33,7 +33,6 @@ class OrchestratorSetupRequest(BaseModel):
     system_prompt: Optional[str] = None
     dataset: Optional[str] = None
     attackPack: Optional[str] = None
-    extraConfig: Optional[Dict[str, Any]] = None
     attackSource: str
     parallelism: int
 
@@ -157,7 +156,11 @@ def setup_orchestrator_webpubsub_request(
     url = f"{API_BASE}/tests/cli_init"
 
     try:
-        data = request_function(url, access_token, request.model_dump())
+        payload = request.model_dump()
+        extra_config = os.environ.get("MINDGARD_EXTRA_CONFIG", None)
+        if extra_config is not None:
+            payload["extraConfig"] = json.loads(extra_config)
+        data = request_function(url, access_token, payload)
         url = data.json().get("url", None)
         groupId = data.json().get("groupId", None)
         if not url or not groupId:

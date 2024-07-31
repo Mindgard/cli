@@ -1,5 +1,6 @@
 import ctypes
 from dataclasses import dataclass, field
+import json
 import os
 import platform
 from threading import Condition, Thread
@@ -262,8 +263,31 @@ def _test_inner(run_inner: Callable[[],None], requests_mock: requests_mock.Mocke
                 assert submit_test_mock.last_request is not None
                 return submit_test_mock.last_request.json()
 
-def test_empty_attack_pack_config(requests_mock: requests_mock.Mocker) -> None:
-    def run_test() -> None:
+def test_empty_mindgard_extra_config(requests_mock: requests_mock.Mocker):
+    def run_test():
+        with mock.patch.dict('os.environ'):
+            if "MINDGARD_EXTRA_CONFIG" in os.environ:
+                del os.environ["MINDGARD_EXTRA_CONFIG"]
+            _run_llm_test()
+
+    submitted_test = _test_inner(run_test, requests_mock)
+    assert "extraConfig" not in submitted_test
+
+def test_mindgard_extra_config(requests_mock: requests_mock.Mocker):
+    config = {
+        "hello": "world",
+    }
+
+    def run_test():
+        with mock.patch.dict(os.environ, {"MINDGARD_EXTRA_CONFIG": json.dumps(config)}):
+            _run_llm_test()
+
+    submitted_test = _test_inner(run_test, requests_mock)
+    assert submitted_test is not None
+    assert submitted_test.get("extraConfig") == config
+
+def test_empty_attack_pack_config(requests_mock: requests_mock.Mocker):
+    def run_test():
         with mock.patch.dict('os.environ'):
             if "ATTACK_PACK" in os.environ:
                 del os.environ["ATTACK_PACK"]
