@@ -43,7 +43,7 @@ def test_api_model_wrapper_no_context_no_settings_no_system_prompt() -> None:
             url,
             json="eh up",
         )
-        assert wrapper(text) == "eh up"
+        assert wrapper(text) == '"eh up"'
         assert mock.last_request.json() == {"prompt":text}
 
 
@@ -61,7 +61,7 @@ def test_api_model_wrapper_no_context_no_settings() -> None:
             url,
             json="eh up",
         )
-        assert wrapper(text) == "eh up"
+        assert wrapper(text) == '"eh up"'
         assert mock.last_request.json() == {"prompt":f"{system_prompt} {text}"}
 
 def test_api_model_wrapper_no_context_with_template() -> None:
@@ -99,5 +99,5 @@ def test_api_model_wrapper_with_context_with_template() -> None:
             url,
             json="eh up",
         )
-        assert wrapper(text) == "eh up"
+        assert wrapper(text) == '"eh up"'
         assert mock.last_request.headers[header_key] == header_value
