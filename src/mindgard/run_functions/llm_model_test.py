@@ -112,7 +112,7 @@ def llm_test_submit_factory(
             system_prompt=system_prompt,
             attackSource="user",
             parallelism=parallelism,
-            attackPack=os.getenv("ATTACK_PACK", None),
+            attackPack=os.getenv("ATTACK_PACK", "sandbox"),
         )
 
         response = setup_orchestrator_webpubsub_request(
