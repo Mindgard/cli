@@ -1,0 +1,5 @@
+target = "my-image-model"
+api_key = "<token>"
+url = "<url>"
+model_type = "image"
+dataset = "beans"

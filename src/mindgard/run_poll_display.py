@@ -4,8 +4,7 @@ import time
 from .auth import require_auth
 
 # Types
-from typing import Callable, Any, Dict, Optional
-from dataclasses import dataclass
+from typing import Any
 
 # UI
 from rich.progress import Progress, SpinnerColumn, TaskID, TextColumn
@@ -13,25 +12,17 @@ from rich.table import Table
 from rich.live import Live
 from rich.console import Console
 
-
-@dataclass
-class ExceptionCountTuple:
-    task_id: TaskID
-    count: int
-
-
-# type alias
-type_ui_task_map = Dict[str, TaskID]
-type_ui_exception_map = Dict[str, ExceptionCountTuple]
-type_submit_func = Callable[[str, type_ui_exception_map, Progress], Any]
-type_polling_func = Callable[
-    [str, Any, type_ui_task_map, Progress],
-    Optional[Any],
-]
-type_output_func = Callable[[Any, bool], Optional[Table]]
+# Type aliases
+from .types import (
+    type_submit_func,
+    type_polling_func,
+    type_output_func,
+    type_ui_task_map,
+    type_ui_exception_map,
+)
 
 
-def placeholder(s: str, a: bool) -> None:
+def output_placeholder(_: str, __: bool) -> None:
     return None
 
 
@@ -43,7 +34,7 @@ def cli_run(
     access_token: str,
     json_out: bool,
     submitting_text: str = "Submitting...",
-    output_func: type_output_func = placeholder,
+    output_func: type_output_func = output_placeholder,
 ) -> Any:
 
     submit_progress = Progress(
@@ -85,14 +76,15 @@ def cli_run(
     )
     tasks_to_run = len(ui_task_progress.tasks)
     # don't show progress bar if there is only one task
-    if tasks_to_run > 1: overall_task_id = overall_task_progress.add_task("Progress", total=tasks_to_run)
+    if tasks_to_run > 1:
+        overall_task_id = overall_task_progress.add_task("Progress", total=tasks_to_run)
 
     with Live(progress_table, refresh_per_second=10):
         while polled_result is None:
             polled_result = polling_func(
                 access_token, initial_result, ui_task_map, ui_task_progress
             )
-            if tasks_to_run > 1: 
+            if tasks_to_run > 1:
                 completed_tasks = sum(task.completed for task in ui_task_progress.tasks)
                 overall_task_progress.update(overall_task_id, completed=completed_tasks)
             time.sleep(1)

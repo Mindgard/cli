@@ -12,14 +12,16 @@ from unittest.mock import MagicMock, patch
 from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCredential
 from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs, WebPubSubDataType
 
-from mindgard.wrappers import Context, ModelWrapper
+from ...src.mindgard.external_model_handlers.llm_model import llm_message_handler
+from ...src.mindgard.orchestrator import OrchestratorSetupRequest
+from ...src.mindgard.run_functions.external_models import model_test_output_factory, model_test_polling, model_test_submit_factory
+from ...src.mindgard.wrappers.llm import Context, LLMModelWrapper
 from ...src.mindgard import auth
 import pytest
 from pytest_snapshot.plugin import Snapshot
 # from typing import NamedTuple
 # from unittest.mock import MagicMock
 from ...src.mindgard.constants import API_BASE
-from ...src.mindgard.run_functions.llm_model_test import llm_test_output_factory, llm_test_polling, llm_test_submit_factory
 from ...src.mindgard.run_poll_display import cli_run
 from ...src.mindgard.utils import convert_test_to_cli_response
 import requests_mock # type: ignore
@@ -39,7 +41,7 @@ class PropagatingThread(Thread):
             raise self.exc
         return self.ret
 
-class MockModelWrapper(ModelWrapper):
+class MockModelWrapper(LLMModelWrapper):
     @classmethod
     def mirror(cls, input:str) -> str:
         time.sleep(0.1)
@@ -111,14 +113,21 @@ def _run_llm_test(json_out:bool = True) -> None:
     auth.load_access_token = MagicMock(return_value="atoken")
     model_wrapper = MockModelWrapper()
 
-    submit = llm_test_submit_factory(
+    request = OrchestratorSetupRequest(
         target="mymodel",
         parallelism=4,
         system_prompt="my system prompt",
-        model_wrapper=model_wrapper
+        dataset=None,
+        modelType="llm",
+        attackSource="user"
     )
-    output = llm_test_output_factory(risk_threshold=50)
-    cli_response = cli_run(submit, llm_test_polling, output_func=output, json_out=json_out)
+    submit = model_test_submit_factory(
+        request=request,
+        model_wrapper=model_wrapper,
+        message_handler=llm_message_handler
+    )
+    output = model_test_output_factory(risk_threshold=50)
+    cli_response = cli_run(submit, model_test_polling, output_func=output, json_out=json_out)
     res = convert_test_to_cli_response(test=cli_response, risk_threshold=50)
 
     assert res.code() == 0

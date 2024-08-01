@@ -1,12 +1,13 @@
 import platform
 from unittest.mock import MagicMock
+
+from ...src.mindgard.run_functions.external_models import model_test_output_factory
 from ...src.mindgard import auth
 import pytest
 from pytest_snapshot.plugin import Snapshot
 # from typing import NamedTuple
 # from unittest.mock import MagicMock
 from ...src.mindgard.constants import API_BASE
-from ...src.mindgard.run_functions.llm_model_test import llm_test_output_factory
 from ...src.mindgard.run_functions.sandbox_test import submit_sandbox_polling, submit_sandbox_submit_factory
 from ...src.mindgard.run_poll_display import cli_run
 from ...src.mindgard.utils import convert_test_to_cli_response
@@ -57,7 +58,7 @@ def test_json_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot, requ
     )
 
     submit_sandbox_submit = submit_sandbox_submit_factory(model_name="mistral")
-    submit_sandbox_output = llm_test_output_factory(risk_threshold=100)
+    submit_sandbox_output = model_test_output_factory(risk_threshold=100)
 
     cli_response = cli_run(submit_func=submit_sandbox_submit, polling_func=submit_sandbox_polling, output_func=submit_sandbox_output, json_out=True)
     res = convert_test_to_cli_response(test=cli_response, risk_threshold=100)
@@ -110,7 +111,7 @@ def test_text_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot, requ
     )
 
     submit_sandbox_submit = submit_sandbox_submit_factory(model_name="mistral")
-    submit_sandbox_output = llm_test_output_factory(risk_threshold=100)
+    submit_sandbox_output = model_test_output_factory(risk_threshold=100)
 
     cli_response = cli_run(submit_func=submit_sandbox_submit, polling_func=submit_sandbox_polling, output_func=submit_sandbox_output, json_out=False)
     res = convert_test_to_cli_response(test=cli_response, risk_threshold=100)
@@ -170,7 +171,7 @@ def test_risk_threshold(risk_score: int, risk_threshold: int, exit_code: int, re
     )
 
     submit_sandbox_submit = submit_sandbox_submit_factory(model_name="mistral")
-    submit_sandbox_output = llm_test_output_factory(risk_threshold=risk_threshold)
+    submit_sandbox_output = model_test_output_factory(risk_threshold=risk_threshold)
 
     cli_response = cli_run(submit_func=submit_sandbox_submit, polling_func=submit_sandbox_polling, output_func=submit_sandbox_output, json_out=False)
     res = convert_test_to_cli_response(test=cli_response, risk_threshold=risk_threshold)
