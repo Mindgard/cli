@@ -1,13 +1,31 @@
+import json
+from pathlib import Path
+
 import pytest
 
 from mindgard.wrappers.image import LabelConfidence
-from ...src.mindgard.wrappers.image_label_tensor_config import image_label_tensor_align
+from ...src.mindgard.wrappers.image_label_tensor_config import image_label_tensor_align, load_image_label_tensor_config
 
 image_tensor_align_config = {0: "0", 1: "1", 2: "2", 3: "3", 4: "4", 5: "5", 6: "6", 7: "7", 8: "8", 9: "9", }
 
 
-def test_load_tensor_align_config():
-    pass
+@pytest.fixture
+def make_and_teardown_valid_config():
+    p = Path("/tmp/_.json")
+    p.write_text(json.dumps(image_tensor_align_config))
+    p.touch(exist_ok=True)
+    yield
+    p.unlink()
+
+
+def test_load_image_label_tensor_config_file_does_not_exist():
+    with pytest.raises(FileNotFoundError):
+        _ = load_image_label_tensor_config("/tmp/_.json")
+
+
+@pytest.mark.usefixtures("make_and_teardown_valid_config")
+def test_load_image_label_tensor_config_file_exists():
+    assert load_image_label_tensor_config("/tmp/_.json") == image_tensor_align_config
 
 
 def test_image_label_tensor_align_config_model_returns_n_classes():
