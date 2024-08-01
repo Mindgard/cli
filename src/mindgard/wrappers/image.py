@@ -6,7 +6,7 @@ from typing import List, Optional, Literal
 import requests
 
 # Utils
-from ..utils import check_expected_args
+from ..utils import check_expected_args, print_to_stderr
 
 
 class LabelConfidence(BaseModel):
