@@ -1,10 +1,9 @@
 import argparse
-from argparse import ArgumentParser
 import sys
 import traceback
 
 # Types
-from typing import List, Any, cast
+from typing import List, cast
 from .types import log_levels, model_types, valid_image_datasets
 
 # Models
@@ -36,8 +35,7 @@ from rich.console import Console
 from .auth import login, logout
 
 # both validate and test need these same arguments, so have factored them out
-def subparser_for_model_contact(command_str: str, description_str: str, argparser: Any) -> ArgumentParser:
-    parser: ArgumentParser = argparser.add_parser(command_str, help=description_str)
+def shared_arguments(parser: argparse.ArgumentParser):
     parser.add_argument('target', nargs='?', type=str, help="This is your own model identifier.")
     parser.add_argument('--config-file', type=str, help='Path to mindgard.toml config file', default=None, required=False)
     parser.add_argument('--json', action="store_true", help='Output the info in JSON format.', required=False, default=False)
@@ -54,9 +52,6 @@ def subparser_for_model_contact(command_str: str, description_str: str, argparse
     parser.add_argument('--tokenizer', type=str, help='Choose a HuggingFace model to provide a tokeniser for prompt and chat completion templating.', required=False)
     parser.add_argument('--model-type', type=str, help='The modality of the model; image or llm', choices=model_types, required=False)
     parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False)
-
-    return parser
-
 
 def parse_args(args: List[str]) -> argparse.Namespace:
     default_log_level = 'warn'
@@ -82,12 +77,13 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     list_test_parser.add_argument('--json', action="store_true", help='Return json output', required=False)
     list_test_parser.add_argument('--id', type=str, help='Get the details of a specific test.', required=False)
 
-    test_parser = subparser_for_model_contact("test", "Attacks command", subparsers)
+    test_parser = subparsers.add_parser("test", help="Attacks command")
+    shared_arguments(test_parser)
     test_parser.add_argument('--parallelism', type=int, help='The maximum number of parallel requests that can be made to the API.', required=False)
     test_parser.add_argument('--dataset', type=str, help='The dataset to use for image models', choices=valid_image_datasets, required=False)
 
-    subparser_for_model_contact("validate", "Validates that we can communicate with your model", subparsers)
-
+    validate_parser = subparsers.add_parser("validate", help="Validates that we can communicate with your model")
+    shared_arguments(validate_parser)
 
     return parser.parse_args(args)
 
