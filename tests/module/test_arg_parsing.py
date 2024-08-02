@@ -49,7 +49,7 @@ def test_argparse_expected_failures(test_case: str) -> None:
     with pytest.raises(SystemExit):
         parse_args(test_case.split())
 
-def test_toml_and_args_parsing():
+def test_toml_and_args_parsing_model_type_llm():
     cli_command = "test --config-file=config.toml"
     namespace = Namespace(command='test',config_file='config.toml', log_level='warn', json=False, az_api_version=None, prompt=None, system_prompt=None, selector=None, request_template=None, tokenizer=None, model_type=None, parallelism=None, dataset=None, model_name=None, api_key=None, url=None, preset=None, headers=None, target=None, risk_threshold=None)
     parsed_args = parse_args(cast(List[str], cli_command.split()))
