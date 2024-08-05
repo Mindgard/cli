@@ -158,7 +158,24 @@ def test_toml_and_args_parsing_setting_risk_threshold():
         
         assert final_args["risk_threshold"] == 80
         
-        
+def test_toml_and_args_parsing_setting_risk_threshold_zero():
+    cli_command = "test --config-file=config.toml --risk-threshold=0"
+    namespace = Namespace(command='test',config_file='config.toml', log_level='warn', json=False, az_api_version=None, prompt=None, system_prompt=None, selector=None, request_template=None, tokenizer=None, model_type=None, parallelism=None, dataset=None, model_name=None, api_key=None, url=None, preset=None, headers=None, target=None, risk_threshold=0)
+    parsed_args = parse_args(cast(List[str], cli_command.split()))
+    
+    assert parsed_args == namespace 
+    
+    toml_content = """
+    api_key = "my-api-key"
+    target= "my_model"
+    model_type = "image"
+    system-prompt = "You are a helpful, respectful and honest assistant."
+    """
+    
+    with patch('builtins.open', mock_open(read_data=toml_content)):
+        final_args = parse_toml_and_args_into_final_args("config.toml", parsed_args)
+        print(f'final args: {final_args}')
+        assert final_args["risk_threshold"] == 0
         
 def test_toml_and_args_parsing_setting_json():
     cli_command = "test --config-file=config.toml --risk-threshold=80 --json"
