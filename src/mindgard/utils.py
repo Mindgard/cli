@@ -82,18 +82,18 @@ def parse_toml_and_args_into_final_args(
             )
 
     final_args = {
-        k: v or toml_args.get(k) or toml_args.get(k.replace("_", "-"))
+        k: v if v is not None else toml_args.get(k) or toml_args.get(k.replace("_", "-"))
         for k, v in vars(args).items()
     }
-
+    
     final_args["api_key"] = final_args["api_key"] or os.environ.get(
         "MODEL_API_KEY", None
     )
 
-    final_args["risk_threshold"] = final_args["risk_threshold"] or 50
-    final_args["parallelism"] = final_args["parallelism"] or 5
-    final_args["model_type"] = final_args["model_type"] or "llm"
-    final_args["json"] = False
+    final_args["risk_threshold"] = final_args.get("risk_threshold") if final_args.get("risk_threshold") is not None else 50
+    final_args["parallelism"] = final_args.get("parallelism") if final_args.get("parallelism") is not None else 5
+    final_args["model_type"] = final_args.get("model_type") if final_args.get("model_type") is not None else 'llm'
+    final_args["json"] = final_args.get("json") if final_args.get("json") is not None else False
 
     return final_args
 
