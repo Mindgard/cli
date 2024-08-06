@@ -45,7 +45,7 @@ Table of Contents
 * [🚦 Using in an ML-Ops pipeline](#MLops)
 
 <a id="Install"></a>
-### 🚀 Install Mindgard CLI
+## 🚀 Install Mindgard CLI
 
 `pip install mindgard`
 
@@ -72,7 +72,7 @@ The `.mindgard/` folder contains:
 * `instance.txt` (enterprise only): Custom instance configuration for your SaaS or private tenant.
 
 <a id="Tests"></a>
-### ✅ Test a mindgard hosted model
+## ✅ Test a mindgard hosted model
 
 ```
 mindgard sandbox mistral
@@ -81,6 +81,8 @@ mindgard sandbox cfp_faces
 
 <a id="TestCustom"></a>
 ## ✅ Test your own models
+
+Our testing infrastructure can be pointed at your models using the CLI.
 
 Testing an external model uses the `test` command and can target either LLMs or Image Classifiers
 
@@ -98,7 +100,7 @@ mindgard test my-model-name \
 
 ### Image Classifiers
 
-Image models require a few more parameters than LLMs so we recommend using the configuration file:
+Image models require a few more parameters than LLMs so we recommend using a configuration file:
 
 ```
 target = "my-custom-model"
@@ -112,45 +114,13 @@ labels='''{
             "2": "healthy"
         }'''
 ```
-Saved as `image-model-config.toml` can be used in the test command as follows:
+After saving as `image-model-config.toml`, it can be used in the test command as follows:
 
 ```mindgard test --config=image-model-config.toml```
 
-#### Image Classifier Datasets
+Click here for more on our [datasets](#datasets), [labels](#labels) and our supported [API](#icapi).
 
-We have a fixed set of datasets to chose from covering diverse domains such as facial recognition, medical imaging, satellite imagery, and handwritten digit recognition, allowing for a suite of different custom models to be tested.
-
-| CLI Dataset  | Domain                                                   | Source/Name                            |
-|--------------|----------------------------------------------------------|----------------------------------------|
-| mri          | Classification of Alzheimers based on MRI scans          | HuggingFace Alzheimer_MRI              |
-| xray         | Classification of Pneumonia based on chest x-rays        | HuggingFace chest-xray-classification  |
-| rvltest_mini | Classification of documents as letter, memo, etc         | HuggingFace rvlTest                    |
-| eurosat      | Classification of satellite images by terrain features   | HuggingFace eurosat-demo               |
-| mnist        | Classification of handwritten digits 0 - 9               | TorchVision MNIST                      |
-| beans        | Classification of leaves as either healthy or unhealthy. | HuggingFace beans                      |
-
-
-#### Labels
-
-We found that many image classifiers don't return probabilities for all classes, and that a config is required to make sure we're aware of all the class labels you're going to send us, and their relevant tensor index for our internal model.
-
-For a eurosat model, 
-```
-{
-  "0": "AnnualCrop",
-  "1": "Forest",
-  "2": "HerbaceousVegetation",
-  "3": "Highway",
-  "4": "Industrial",
-  "5": "Pasture",
-  "6": "PermanentCrop",
-  "7": "Residential",
-  "8": "River",
-  "9": "SeaLake"
-}
-```
-
-#### Validate model is online before launching tests
+### Validate model is online before launching tests
 
 A preflight check is run automatically when submitting a new test, but if you want to invoke it manually:
 
@@ -164,13 +134,13 @@ mindgard validate \
   --system-prompt 'respond with hello' # system prompt to test the model with
 ```
 
-#### 📋 Using a Configuration File
+### 📋 Using a Configuration File
 
 You can specify the settings for the `mindgard test` command in a TOML configuration file. This allows you to manage your settings in a more structured way and avoid passing them as command-line arguments.
 
 Then run: `mindgard test --config-file mymodel.toml`
 
-#### Examples
+### Examples
 
 There are <a href="https://github.com/Mindgard/cli/tree/main/examples">examples of what the configuration file (`mymodel.toml`) might look like here in the examples/ folder</a>
 
@@ -229,6 +199,83 @@ The `url` setting should point to an inference endpoint for your model under tes
 The `selector` setting is a JSON selector and specifies how to extract the model's response from the API response. 
 
 The `headers` setting allows you to specify a custom HTTP header to include with outgoing requests, for example to implement a custom authentication method.
+
+<a id="datasets"></a>
+#### Image Classifier Datasets
+
+We have a fixed set of datasets to chose from covering diverse domains such as facial recognition, medical imaging, satellite imagery, and handwritten digit recognition, allowing for a suite of different custom models to be tested.
+
+| CLI Dataset  | Domain                                                   | Source/Name                            |
+|--------------|----------------------------------------------------------|----------------------------------------|
+| mri          | Classification of Alzheimers based on MRI scans          | HuggingFace Alzheimer_MRI              |
+| xray         | Classification of Pneumonia based on chest x-rays        | HuggingFace chest-xray-classification  |
+| rvltest_mini | Classification of documents as letter, memo, etc         | HuggingFace rvlTest                    |
+| eurosat      | Classification of satellite images by terrain features   | HuggingFace eurosat-demo               |
+| mnist        | Classification of handwritten digits 0 - 9               | TorchVision MNIST                      |
+| beans        | Classification of leaves as either healthy or unhealthy. | HuggingFace beans                      |
+
+<a id="labels"></a>
+#### Labels
+
+We found that many image classifiers don't return probabilities for all classes, and that a config is required to make sure we're aware of all the labels and tensor indexes for the classes you're going to send us.
+
+For a eurosat model, 
+```
+{
+  "0": "AnnualCrop",
+  "1": "Forest",
+  "2": "HerbaceousVegetation",
+  "3": "Highway",
+  "4": "Industrial",
+  "5": "Pasture",
+  "6": "PermanentCrop",
+  "7": "Residential",
+  "8": "River",
+  "9": "SeaLake"
+}
+```
+
+The index of these mappings is for convenience when scanning through a config; as long as your model sends less than or as many labels as you provide us, we will use them.
+
+<a id="icapi"></a>
+#### Image Classifier API
+
+We have aligned with the API followed by HuggingFace's InferenceEndpoints for image classifiers, but any model compatible that follows the same API will work.
+
+```
+curl "https://address.com/model" \
+-X POST \
+--data-binary '@cats.jpg' \
+-H "Accept: application/json" \
+-H "Content-Type: image/jpeg"
+```
+
+The image in bytes will be sent in the data field of the POST request, and the model should return predictions in the form:
+
+```
+[
+  {
+    "label": "stretcher",
+    "score": 0.44380655884742737
+  },
+  {
+    "label": "basketball",
+    "score": 0.08756192773580551
+  },
+  {
+    "label": "prison, prison house",
+    "score": 0.06375777721405029
+  },
+  {
+    "label": "scoreboard",
+    "score": 0.043840788304805756
+  },
+  {
+    "label": "neck brace",
+    "score": 0.029874464496970177
+  }
+]
+```
 
 <a id="MLops"></a>
 ### 🚦 Using in an ML-Ops pipeline
