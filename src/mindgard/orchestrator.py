@@ -30,11 +30,11 @@ class OrchestratorSetupRequest(BaseModel):
     target: str
     modelType: str
     system_prompt: Optional[str] = None
-    numberOfClasses: Optional[int] = None
     dataset: Optional[str] = None
     attackPack: Optional[str] = None
     attackSource: str
     parallelism: int
+    labels: Optional[List[str]] = None
 
     @model_validator(mode="after")  # type: ignore
     def check_system_prompt_or_dataset(self):

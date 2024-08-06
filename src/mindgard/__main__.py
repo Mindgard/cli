@@ -128,7 +128,7 @@ def main() -> None:
         if final_args["model_type"] == "llm":
             passed_preflight = preflight_llm(model_wrapper, console=console, json_out=final_args["json"])
         else:
-            passed_preflight, nb_classes = preflight_image(model_wrapper, console=console, json_out=final_args["json"])
+            passed_preflight = preflight_image(model_wrapper, console=console, json_out=final_args["json"])
 
         if not final_args["json"]:
             console.print(f"{'[green bold]Model contactable!' if passed_preflight else '[red bold]Model not contactable!'}")
@@ -159,7 +159,7 @@ def main() -> None:
                         dataset=dataset,
                         modelType=final_args["model_type"],
                         attackSource="user",
-                        numberOfClasses=nb_classes
+                        labels=final_args["labels"]
                     )
                     submit = model_test_submit_factory(
                         request=request,
