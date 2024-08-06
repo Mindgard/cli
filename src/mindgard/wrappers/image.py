@@ -1,12 +1,13 @@
 # Typing
 from pydantic import BaseModel
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, Dict
+import time
 
 # Requests
 import requests
 
 # Utils
-from ..utils import check_expected_args, print_to_stderr
+from ..utils import check_expected_args
 
 
 class LabelConfidence(BaseModel):
@@ -15,9 +16,10 @@ class LabelConfidence(BaseModel):
 
 
 class ImageModelWrapper:
-    def __init__(self, url: str, api_key: Optional[str] = None) -> None:
+    def __init__(self, url: str, api_key: Optional[str] = None, labels: Optional[Dict[int, str]] = {}) -> None:
         self.url = url
         self.api_key = api_key
+        self.labels = labels
 
         # TODO: shape validation
         # self.shape = [3, 1, 224, 224]????
@@ -32,22 +34,44 @@ class ImageModelWrapper:
 
         res = requests.post(self.url, headers=headers, data=image)
 
-        return [
-            LabelConfidence(label=item.get("label"), score=item.get("score"))
-            for item in res.json()
-        ]
+        model_response = [LabelConfidence(label=item.get("label"), score=item.get("score")) for item in res.json()]
+
+        aligned_data = image_label_tensor_align(self.labels, model_response)
+
+        return aligned_data
+    
+def image_label_tensor_align(labels: List[str], model_data: List[LabelConfidence]) -> List[LabelConfidence]:
+    if len(labels) < len(model_data):
+        raise ValueError("Model returned more classes than the specified labels!")
+
+    aligned: List[LabelConfidence] = []
+
+    # make a list in the true order
+    for _true_index, true_label in enumerate(labels):
+        aligned.append(LabelConfidence(label=true_label, score=0.0))
+
+    # where we have predictions, replace the score with the actual score
+    for _index, label_confidence in enumerate(model_data):
+        for item in aligned:
+            if item.label == label_confidence.label:
+                item.score = label_confidence.score
+                break
+
+    return aligned
+
 
 
 def get_image_model_wrapper(
     preset: Literal["huggingface", "local"],
     api_key: Optional[str],
     url: str,
+    labels: Optional[List[str]] = None,
 ) -> ImageModelWrapper:
 
     # Isn't a concept of presets for image model wrapper as we just bind to HF
     if preset == "huggingface" or preset == None:
         check_expected_args(locals(), ["api_key", "url"])
-        return ImageModelWrapper(api_key=api_key, url=url)
+        return ImageModelWrapper(api_key=api_key, url=url, labels=labels)
     elif preset == "local":
         check_expected_args(locals(), ["url"])
-        return ImageModelWrapper(url=url)
+        return ImageModelWrapper(url=url, labels=labels)

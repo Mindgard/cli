@@ -22,5 +22,5 @@ def parse_args_into_model(
         )
     elif model_type == "image":
         return get_image_model_wrapper(
-            preset=args["preset"], api_key=args["api_key"], url=args["url"]
+            preset=args["preset"], api_key=args["api_key"], url=args["url"], labels=args["labels"]
         )

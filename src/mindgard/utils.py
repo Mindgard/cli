@@ -95,6 +95,15 @@ def parse_toml_and_args_into_final_args(
     final_args["model_type"] = final_args.get("model_type") if final_args.get("model_type") is not None else 'llm'
     final_args["json"] = final_args.get("json") if final_args.get("json") is not None else False
 
+    if (final_args["model_type"] == 'image'):
+        if (toml_args.get('labels') is not None):
+            labels_json = json.loads(toml_args.get('labels'))
+            final_args["labels"] = list(labels_json.values())
+        else:
+            raise ValueError(
+                    f"Labels are required for image model!"
+            )
+
     return final_args
 
 def check_expected_args(args: Dict[str, Any], expected_args: List[str]) -> None:

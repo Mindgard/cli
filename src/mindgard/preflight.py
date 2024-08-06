@@ -62,18 +62,16 @@ def preflight_image(
     model_wrapper: ImageModelWrapper,
     console: Console,
     json_out: bool,
-) -> Tuple[bool, int]:
-    nb_classes = 0
+) -> bool:
     
     try:
         data = base64_test_image_as_bytes()   
         for i in range(5):
-            response = model_wrapper.__call__(data)
-            nb_classes = len(response)
-        return True, nb_classes
+            _ = model_wrapper.__call__(data)
+        return True
     except Exception as e:
         if not json_out:
             console.print(f"[red]Could not contact the model!")
         logging.error(e)
 
-    return False, nb_classes
+    return False

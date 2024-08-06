@@ -108,6 +108,11 @@ def test_toml_and_args_parsing_model_type_image():
     target= "my_model"
     model_type = "image"
     system-prompt = "You are a helpful, respectful and honest assistant."
+    labels='''{
+        "0": "angular_leaf_spot",
+        "1": "bean_rust",
+        "2": "healthy"
+    }'''
     """
     
     with patch('builtins.open', mock_open(read_data=toml_content)):
@@ -119,6 +124,51 @@ def test_toml_and_args_parsing_model_type_image():
         assert final_args["config_file"] == namespace.config_file
         assert final_args["risk_threshold"] == 50 # default value
         assert final_args["parallelism"] == 5 # default value
+
+def test_toml_and_args_parsing_model_type_image_without_labels_set():
+    cli_command = "test --config-file=config.toml"
+    namespace = Namespace(command='test',config_file='config.toml', log_level='warn', json=False, az_api_version=None, prompt=None, system_prompt=None, selector=None, request_template=None, tokenizer=None, model_type=None, parallelism=None, dataset=None, model_name=None, api_key=None, url=None, preset=None, headers=None, target=None, risk_threshold=None)
+    parsed_args = parse_args(cast(List[str], cli_command.split()))
+    
+    assert parsed_args == namespace 
+    
+    toml_content = """
+    api_key = "my-api-key"
+    target= "my_model"
+    model_type = "image"
+    system-prompt = "You are a helpful, respectful and honest assistant."
+    """
+    
+    with pytest.raises(ValueError):
+        with patch('builtins.open', mock_open(read_data=toml_content)):
+            final_args = parse_toml_and_args_into_final_args("config.toml", parsed_args)
+            assert final_args["api_key"] == "my-api-key"
+            assert final_args["model_type"] == "image"
+
+def test_toml_and_args_parsing_model_type_image_with_labels_set():
+    cli_command = "test --config-file=config.toml"
+    namespace = Namespace(command='test',config_file='config.toml', log_level='warn', json=False, az_api_version=None, prompt=None, system_prompt=None, selector=None, request_template=None, tokenizer=None, model_type=None, parallelism=None, dataset=None, model_name=None, api_key=None, url=None, preset=None, headers=None, target=None, risk_threshold=None)
+    parsed_args = parse_args(cast(List[str], cli_command.split()))
+    
+    assert parsed_args == namespace 
+    
+    toml_content = """
+    api_key = "my-api-key"
+    target= "my_model"
+    model_type = "image"
+    system-prompt = "You are a helpful, respectful and honest assistant."
+    labels='''{
+        "0": "angular_leaf_spot",
+        "1": "bean_rust",
+        "2": "healthy"
+    }'''
+    """
+    
+    with patch('builtins.open', mock_open(read_data=toml_content)):
+        final_args = parse_toml_and_args_into_final_args("config.toml", parsed_args)
+        assert final_args["api_key"] == "my-api-key"
+        assert final_args["model_type"] == "image"
+        assert len(final_args["labels"]) == 3
 
 def test_toml_and_args_parsing_not_setting_risk_threshold():
     cli_command = "test --config-file=config.toml"
@@ -132,6 +182,11 @@ def test_toml_and_args_parsing_not_setting_risk_threshold():
     target= "my_model"
     model_type = "image"
     system-prompt = "You are a helpful, respectful and honest assistant."
+    labels='''{
+        "0": "angular_leaf_spot",
+        "1": "bean_rust",
+        "2": "healthy"
+    }'''
     """
     
     with patch('builtins.open', mock_open(read_data=toml_content)):
@@ -151,6 +206,11 @@ def test_toml_and_args_parsing_setting_risk_threshold():
     target= "my_model"
     model_type = "image"
     system-prompt = "You are a helpful, respectful and honest assistant."
+    labels='''{
+        "0": "angular_leaf_spot",
+        "1": "bean_rust",
+        "2": "healthy"
+    }'''
     """
     
     with patch('builtins.open', mock_open(read_data=toml_content)):
@@ -170,6 +230,11 @@ def test_toml_and_args_parsing_setting_risk_threshold_zero():
     target= "my_model"
     model_type = "image"
     system-prompt = "You are a helpful, respectful and honest assistant."
+    labels='''{
+        "0": "angular_leaf_spot",
+        "1": "bean_rust",
+        "2": "healthy"
+    }'''
     """
     
     with patch('builtins.open', mock_open(read_data=toml_content)):
@@ -189,6 +254,11 @@ def test_toml_and_args_parsing_setting_json():
     target= "my_model"
     model_type = "image"
     system-prompt = "You are a helpful, respectful and honest assistant."
+    labels='''{
+        "0": "angular_leaf_spot",
+        "1": "bean_rust",
+        "2": "healthy"
+    }'''
     """
     
     with patch('builtins.open', mock_open(read_data=toml_content)):
@@ -208,6 +278,11 @@ def test_toml_and_args_parsing_not_setting_json():
     target= "my_model"
     model_type = "image"
     system-prompt = "You are a helpful, respectful and honest assistant."
+    labels='''{
+        "0": "angular_leaf_spot",
+        "1": "bean_rust",
+        "2": "healthy"
+    }'''
     """
     
     with patch('builtins.open', mock_open(read_data=toml_content)):
