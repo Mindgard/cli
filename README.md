@@ -217,7 +217,7 @@ We have a fixed set of datasets to chose from covering diverse domains such as f
 <a id="labels"></a>
 #### Labels
 
-We found that many image classifiers don't return probabilities for all classes, and that a config is required to make sure we're aware of all the labels and tensor indexes for the classes you're going to send us.
+Many image classifiers don't return probabilities for all classes. A config is required to make sure we're aware of all the labels and tensor indexes for the classes you're going to send us.
 
 For a eurosat model, 
 ```
@@ -235,12 +235,10 @@ For a eurosat model,
 }
 ```
 
-The index of these mappings is for convenience when scanning through a config; as long as your model sends less than or as many labels as you provide us, we will use them.
-
 <a id="icapi"></a>
 #### Image Classifier API
 
-We have aligned with the API followed by HuggingFace's InferenceEndpoints for image classifiers, but any model compatible that follows the same API will work.
+Mindgard supports any image model compatible with an API compatible with HuggingFace's InferenceEndpoints for image classifiers.
 
 ```
 curl "https://address.com/model" \
@@ -250,7 +248,7 @@ curl "https://address.com/model" \
 -H "Content-Type: image/jpeg"
 ```
 
-The image in bytes will be sent in the data field of the POST request, and the model should return predictions in the form:
+The image in bytes will be sent in the data field of the POST request, and the HTTP response body should include predictions in the form:
 
 ```
 [
