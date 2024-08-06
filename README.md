@@ -80,11 +80,13 @@ mindgard sandbox cfp_faces
 ```
 
 <a id="TestCustom"></a>
-### ✅ Test your own models
+## ✅ Test your own models
+
+Testing an external model uses the `test` command and can target either LLMs or Image Classifiers
 
 `mindgard test <name> --url <url> <other settings>`
 
-e.g.
+### LLMs
 
 ```
 mindgard test my-model-name \
@@ -94,7 +96,64 @@ mindgard test my-model-name \
   --system-prompt 'respond with hello' # system prompt to test the model with
 ```
 
-### Validate model is online before launching tests
+### Image Classifiers
+
+Image models require a few more parameters than LLMs so we recommend using the configuration file:
+
+```
+target = "my-custom-model"
+model-type = "image"
+api_key = "hf_###"
+url = "https://####.@@@@.aws.endpoints.huggingface.cloud"
+dataset = "beans"
+labels='''{
+            "0": "angular_leaf_spot",
+            "1": "bean_rust",
+            "2": "healthy"
+        }'''
+```
+Saved as `image-model-config.toml` can be used in the test command as follows:
+
+```mindgard test --config=image-model-config.toml```
+
+#### Image Classifier Datasets
+
+We have a fixed set of datasets to chose from covering diverse domains such as facial recognition, medical imaging, satellite imagery, and handwritten digit recognition, allowing for a suite of different custom models to be tested.
+
+| CLI Dataset  | Domain                                                   | Source/Name                            |
+|--------------|----------------------------------------------------------|----------------------------------------|
+| mri          | Classification of Alzheimers based on MRI scans          | HuggingFace Alzheimer_MRI              |
+| xray         | Classification of Pneumonia based on chest x-rays        | HuggingFace chest-xray-classification  |
+| rvltest_mini | Classification of documents as letter, memo, etc         | HuggingFace rvlTest                    |
+| eurosat      | Classification of satellite images by terrain features   | HuggingFace eurosat-demo               |
+| mnist        | Classification of handwritten digits 0 - 9               | TorchVision MNIST                      |
+| beans        | Classification of leaves as either healthy or unhealthy. | HuggingFace beans                      |
+
+
+#### Labels
+
+We found that many image classifiers don't return probabilities for all classes, and that a config is required to make sure we're aware of all the class labels you're going to send us, and their relevant tensor index for our internal model.
+
+For a eurosat model, 
+```
+{
+  "0": "AnnualCrop",
+  "1": "Forest",
+  "2": "HerbaceousVegetation",
+  "3": "Highway",
+  "4": "Industrial",
+  "5": "Pasture",
+  "6": "PermanentCrop",
+  "7": "Residential",
+  "8": "River",
+  "9": "SeaLake"
+}
+```
+
+#### Validate model is online before launching tests
+
+A preflight check is run automatically when submitting a new test, but if you want to invoke it manually:
+
 `mindgard validate --url <url> <other settings>`
 
 ```
@@ -105,8 +164,7 @@ mindgard validate \
   --system-prompt 'respond with hello' # system prompt to test the model with
 ```
 
-
-### 📋 Using a Configuration File
+#### 📋 Using a Configuration File
 
 You can specify the settings for the `mindgard test` command in a TOML configuration file. This allows you to manage your settings in a more structured way and avoid passing them as command-line arguments.
 
