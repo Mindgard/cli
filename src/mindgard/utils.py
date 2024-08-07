@@ -96,12 +96,17 @@ def parse_toml_and_args_into_final_args(
     final_args["json"] = final_args.get("json") if final_args.get("json") is not None else False
 
     if (final_args["model_type"] == 'image'):
-        if (toml_args.get('labels') is not None):
-            labels_json = json.loads(toml_args.get('labels'))
-            final_args["labels"] = list(labels_json.values())
-        else:
+        if (toml_args.get('labels') is None):
             raise ValueError(
                     f"Labels are required for image model!"
+            )
+        
+        try:
+            labels_json = json.loads(toml_args.get('labels'))
+            final_args["labels"] = list(labels_json.values())
+        except json.JSONDecodeError as e:
+            raise ValueError(
+                f"Labels in config file are not in a valid JSON format! - {e}"
             )
 
     return final_args
