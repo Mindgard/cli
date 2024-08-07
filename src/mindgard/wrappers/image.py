@@ -16,7 +16,7 @@ class LabelConfidence(BaseModel):
 
 
 class ImageModelWrapper:
-    def __init__(self, url: str, api_key: Optional[str] = None, labels: Optional[Dict[int, str]] = {}) -> None:
+    def __init__(self, url: str, labels: List[str], api_key: Optional[str] = None) -> None:
         self.url = url
         self.api_key = api_key
         self.labels = labels
@@ -45,18 +45,20 @@ def image_label_tensor_align(labels: List[str], model_data: List[LabelConfidence
         raise ValueError("Model returned more classes than the specified labels!")
 
     aligned: List[LabelConfidence] = []
-
     # make a list in the true order
-    for _true_index, true_label in enumerate(labels):
+    for true_label in labels:
         aligned.append(LabelConfidence(label=true_label, score=0.0))
-
+    
+    for label_confidence in model_data:
+        if label_confidence.label not in labels:
+            raise ValueError(f"Model returned an unknown class! ({label_confidence.label}) Doesn't match provided labels!")
+    
     # where we have predictions, replace the score with the actual score
-    for _index, label_confidence in enumerate(model_data):
+    for _, label_confidence in enumerate(model_data):
         for item in aligned:
             if item.label == label_confidence.label:
                 item.score = label_confidence.score
                 break
-
     return aligned
 
 
@@ -65,7 +67,7 @@ def get_image_model_wrapper(
     preset: Literal["huggingface", "local"],
     api_key: Optional[str],
     url: str,
-    labels: Optional[List[str]] = None,
+    labels: List[str],
 ) -> ImageModelWrapper:
 
     # Isn't a concept of presets for image model wrapper as we just bind to HF
