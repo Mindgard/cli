@@ -23,7 +23,7 @@
   <img src="https://github.com/Mindgard/public-resources/blob/main/cliimagemodels/login.gif?raw=true"/>
 </h2>
 
-5. We define our target model configuration using a `toml` file. We’ve used the URL from our hosted HuggingFace model from step 1, and the API key generated within step 2. We set model type as ‘image’, testing dataset to ‘mnist’, and configure the image labels to expect from our model. We have a suite of additional datasets available to use, so pick one best suited to your model's task! More about labels and datasets are available on our GitHub.
+5. We define our target model configuration using a `toml` file. We’ve used the URL from our hosted HuggingFace model from step 1, and the API key generated within step 2. We set model type as ‘image’, testing dataset to ‘mnist’, and configure the image labels to expect from our model. We have a suite of additional datasets available to use, so pick one best suited to your model's task! More about labels and datasets are available on our GitHub. If you're hosting your image model on HuggingFace, the labels for many models can be copied from the [config.json 'id2label' field](https://huggingface.co/nateraw/vit-base-beans/blob/main/config.json).
 
 <h2 align="center">
   <img src="https://github.com/Mindgard/public-resources/blob/main/cliimagemodels/config.gif?raw=true"/>
