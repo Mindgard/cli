@@ -34,7 +34,7 @@ Mindgard CLI is fully integrated with Mindgard's platform to help you identify a
   <img src="https://github.com/Mindgard/public-resources/blob/main/videos/cli/clijuly.mid.gif?raw=true"/>
 </h2>
 
-Test continuously in your ML-Ops pipeline to identify model posture changes from customisation activities including prompt engineering, RAG, fine-tuning, and pre-training.
+Test continuously in your MLOps pipeline to identify model posture changes from customisation activities including prompt engineering, RAG, fine-tuning, and pre-training.
 
 Table of Contents
 -----------------
@@ -42,7 +42,7 @@ Table of Contents
 * [🚀 Install](#Install)
 * [✅ Testing demo models](#Tests)
 * [✅ Testing your models](#TestCustom)
-* [🚦 Using in an ML-Ops pipeline](#MLops)
+* [🚦 Using in an MLOps pipeline](#MLops)
 
 <a id="Install"></a>
 ## 🚀 Install Mindgard CLI
