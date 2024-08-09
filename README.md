@@ -276,7 +276,7 @@ The image in bytes will be sent in the data field of the POST request, and the H
 ```
 
 <a id="MLops"></a>
-### 🚦 Using in an ML-Ops pipeline
+### 🚦 Using in an MLOps pipeline
 
 The exit code of a test will be non-zero if the test identifies risks above your risk threshold. To override the default risk-threshold pass `--risk-threshold 50`. This will cause the CLI to exit with an non-zero exit status if any test results in a risk score over 50.
 
