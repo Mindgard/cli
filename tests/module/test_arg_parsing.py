@@ -3,6 +3,7 @@ import os
 from typing import List, Tuple, cast
 from unittest.mock import mock_open, patch
 from ...src.mindgard.utils import parse_toml_and_args_into_final_args
+from ...src.mindgard.types import valid_image_datasets
 import pytest
 
 from argparse import Namespace
@@ -107,6 +108,7 @@ def test_toml_and_args_parsing_model_type_image():
     api_key = "my-api-key"
     target= "my_model"
     model_type = "image"
+    dataset="beans"
     system-prompt = "You are a helpful, respectful and honest assistant."
     labels='''{
         "0": "angular_leaf_spot",
@@ -136,6 +138,7 @@ def test_toml_and_args_parsing_model_type_image_without_labels_set():
     api_key = "my-api-key"
     target= "my_model"
     model_type = "image"
+    dataset="beans"
     system-prompt = "You are a helpful, respectful and honest assistant."
     """
     
@@ -156,6 +159,7 @@ def test_toml_and_args_parsing_model_type_image_with_labels_set():
     api_key = "my-api-key"
     target= "my_model"
     model_type = "image"
+    dataset="beans"
     system-prompt = "You are a helpful, respectful and honest assistant."
     labels='''{
         "0": "angular_leaf_spot",
@@ -181,6 +185,7 @@ def test_toml_and_args_parsing_not_setting_risk_threshold():
     api_key = "my-api-key"
     target= "my_model"
     model_type = "image"
+    dataset="beans"
     system-prompt = "You are a helpful, respectful and honest assistant."
     labels='''{
         "0": "angular_leaf_spot",
@@ -205,6 +210,7 @@ def test_toml_and_args_parsing_setting_risk_threshold():
     api_key = "my-api-key"
     target= "my_model"
     model_type = "image"
+    dataset="beans"
     system-prompt = "You are a helpful, respectful and honest assistant."
     labels='''{
         "0": "angular_leaf_spot",
@@ -229,6 +235,7 @@ def test_toml_and_args_parsing_setting_risk_threshold_zero():
     api_key = "my-api-key"
     target= "my_model"
     model_type = "image"
+    dataset="beans"
     system-prompt = "You are a helpful, respectful and honest assistant."
     labels='''{
         "0": "angular_leaf_spot",
@@ -253,6 +260,7 @@ def test_toml_and_args_parsing_setting_json():
     api_key = "my-api-key"
     target= "my_model"
     model_type = "image"
+    dataset="beans"
     system-prompt = "You are a helpful, respectful and honest assistant."
     labels='''{
         "0": "angular_leaf_spot",
@@ -277,6 +285,7 @@ def test_toml_and_args_parsing_not_setting_json():
     api_key = "my-api-key"
     target= "my_model"
     model_type = "image"
+    dataset="beans"
     system-prompt = "You are a helpful, respectful and honest assistant."
     labels='''{
         "0": "angular_leaf_spot",
@@ -289,3 +298,30 @@ def test_toml_and_args_parsing_not_setting_json():
         final_args = parse_toml_and_args_into_final_args("config.toml", parsed_args)
         
         assert final_args["json"] == False
+
+def test_pass_random_dataset_not_in_approved_choices() -> None:
+    cli_command = "test --config-file=config.toml --risk-threshold=80"
+    namespace = Namespace(command='test',config_file='config.toml', log_level='warn', json=False, az_api_version=None, prompt=None, system_prompt=None, selector=None, request_template=None, tokenizer=None, model_type=None, parallelism=None, dataset=None, model_name=None, api_key=None, url=None, preset=None, headers=None, target=None, risk_threshold=80)
+    parsed_args = parse_args(cast(List[str], cli_command.split()))
+    
+    assert parsed_args == namespace
+    
+    toml_content = """
+    api_key = "my-api-key"
+    target= "my_model"
+    model_type = "image"
+    dataset = "Immadeup,notreal"
+    labels='''{
+        "0": "angular_leaf_spot",
+        "1": "bean_rust",
+        "2": "healthy"
+    }'''
+    """
+    
+    with patch('builtins.open', mock_open(read_data=toml_content)):
+        expected = f"Dataset set in config file (Immadeup,notreal) was invalid! (choices: {[x for x in valid_image_datasets]})"
+        with pytest.raises(ValueError) as exc_info:
+            parse_toml_and_args_into_final_args("config.toml", parsed_args)
+
+        assert exc_info.type is ValueError
+        assert str(exc_info.value) == expected

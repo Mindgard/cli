@@ -6,6 +6,7 @@ import toml
 
 # Types
 from typing import Any, Dict, List, Optional, Tuple
+from .types import valid_image_datasets
 
 # Data models
 from .orchestrator import OrchestratorTestResponse
@@ -90,10 +91,15 @@ def parse_toml_and_args_into_final_args(
         "MODEL_API_KEY", None
     )
 
+
     final_args["risk_threshold"] = final_args.get("risk_threshold") if final_args.get("risk_threshold") is not None else 50
     final_args["parallelism"] = final_args.get("parallelism") if final_args.get("parallelism") is not None else 5
     final_args["model_type"] = final_args.get("model_type") if final_args.get("model_type") is not None else 'llm'
     final_args["json"] = final_args.get("json") if final_args.get("json") is not None else False
+
+    if final_args["model_type"] == "image":
+        if final_args.get("dataset", "unknown") not in valid_image_datasets:
+            raise ValueError(f"Dataset set in config file ({final_args['dataset']}) was invalid! (choices: {[x for x in valid_image_datasets]})")
 
     if (final_args["model_type"] == 'image'):
         if (toml_args.get('labels') is None):
