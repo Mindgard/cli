@@ -58,7 +58,7 @@ strict = true
 mypy_path = ["stubs"]
 
 [tool.isort]
-known_virtualenvs = ["venv", ".venv", ".test_env", "src/cli/.test_env"]
+known_virtualenvs = ["venv", ".venv", ".test_env"]
 
 
 

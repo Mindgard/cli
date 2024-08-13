@@ -1,16 +1,16 @@
 import platform
 from unittest.mock import MagicMock
 
-from ...src.mindgard.run_functions.external_models import model_test_output_factory
-from ...src.mindgard import auth
+from mindgard.run_functions.external_models import model_test_output_factory
+from mindgard import auth
 import pytest
 from pytest_snapshot.plugin import Snapshot
 # from typing import NamedTuple
 # from unittest.mock import MagicMock
-from ...src.mindgard.constants import API_BASE
-from ...src.mindgard.run_functions.sandbox_test import submit_sandbox_polling, submit_sandbox_submit_factory
-from ...src.mindgard.run_poll_display import cli_run
-from ...src.mindgard.utils import convert_test_to_cli_response
+from mindgard.constants import API_BASE
+from mindgard.run_functions.sandbox_test import submit_sandbox_polling, submit_sandbox_submit_factory
+from mindgard.run_poll_display import cli_run
+from mindgard.utils import convert_test_to_cli_response
 import requests_mock # type: ignore
 
 def test_json_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot, requests_mock: requests_mock.Mocker) -> None:
