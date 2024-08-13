@@ -1,6 +1,6 @@
 import pytest
 
-from ...src.mindgard.api_service import api_post, api_get
+from mindgard.api_service import api_post, api_get
 
 from typing import Dict, Any
 

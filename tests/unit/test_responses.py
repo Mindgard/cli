@@ -1,6 +1,6 @@
 import requests_mock
 import json
-from ...src.mindgard.responses import extract_reply, extract_replies
+from mindgard.responses import extract_reply, extract_replies
 from pytest import fail
 from unittest.mock import Mock
 from requests import Response

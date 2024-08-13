@@ -2,7 +2,7 @@
 import pytest
 
 from mindgard.wrappers.image import LabelConfidence
-from ...src.mindgard.wrappers.image import image_label_tensor_align
+from mindgard.wrappers.image import image_label_tensor_align
 
 image_tensor_align_config = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9",]
 

@@ -12,18 +12,18 @@ from unittest.mock import MagicMock, patch
 from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCredential
 from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs, WebPubSubDataType
 
-from ...src.mindgard.external_model_handlers.llm_model import llm_message_handler
-from ...src.mindgard.orchestrator import OrchestratorSetupRequest
-from ...src.mindgard.run_functions.external_models import model_test_output_factory, model_test_polling, model_test_submit_factory
-from ...src.mindgard.wrappers.llm import Context, LLMModelWrapper
-from ...src.mindgard import auth
+from mindgard.external_model_handlers.llm_model import llm_message_handler
+from mindgard.orchestrator import OrchestratorSetupRequest
+from mindgard.run_functions.external_models import model_test_output_factory, model_test_polling, model_test_submit_factory
+from mindgard.wrappers.llm import Context, LLMModelWrapper
+from mindgard import auth
 import pytest
 from pytest_snapshot.plugin import Snapshot
 # from typing import NamedTuple
 # from unittest.mock import MagicMock
-from ...src.mindgard.constants import API_BASE
-from ...src.mindgard.run_poll_display import cli_run
-from ...src.mindgard.utils import convert_test_to_cli_response
+from mindgard.constants import API_BASE
+from mindgard.run_poll_display import cli_run
+from mindgard.utils import convert_test_to_cli_response
 import requests_mock # type: ignore
 
 # allow us to make assertions and capture test issues in background threads

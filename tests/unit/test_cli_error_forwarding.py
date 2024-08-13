@@ -1,9 +1,9 @@
 from typing import List
 from unittest.mock import Mock
-from ...src.mindgard.external_model_handlers.llm_model import exceptions_to_cli_status_codes, handle_exception_callback
+from mindgard.external_model_handlers.llm_model import exceptions_to_cli_status_codes, handle_exception_callback
 from requests import HTTPError, Response
 
-from ...src.mindgard.exceptions import NotImplemented
+from mindgard.exceptions import NotImplemented
 
 
 def generate_mock_http_responses() -> List[Response]:

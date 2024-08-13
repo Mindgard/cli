@@ -1,4 +1,4 @@
-from ...src.mindgard.orchestrator import (
+from mindgard.orchestrator import (
     OrchestratorSetupRequest,
     setup_orchestrator_webpubsub_request,
     get_extra_config_from_env,

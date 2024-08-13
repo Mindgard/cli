@@ -2,12 +2,12 @@
 import os
 from typing import List, Tuple, cast
 from unittest.mock import mock_open, patch
-from ...src.mindgard.utils import parse_toml_and_args_into_final_args
-from ...src.mindgard.types import valid_image_datasets
+from mindgard.utils import parse_toml_and_args_into_final_args
+from mindgard.types import valid_image_datasets
 import pytest
 
 from argparse import Namespace
-from ...src.mindgard.__main__ import parse_args
+from mindgard.__main__ import parse_args
 
 
 argparse_success_test_cases: List[Tuple[str, Namespace]] = [

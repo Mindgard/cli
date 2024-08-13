@@ -1,5 +1,5 @@
 import requests_mock
-from ...src.mindgard.wrappers.llm import TestStaticResponder, ContextManager, APIModelWrapper
+from mindgard.wrappers.llm import TestStaticResponder, ContextManager, APIModelWrapper
 
 def test_static_responder_no_context() -> None:
     wrapper = TestStaticResponder(

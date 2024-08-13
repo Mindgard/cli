@@ -1,6 +1,6 @@
 import pytest
 
-from ...src.mindgard.webpubsub import (
+from mindgard.webpubsub import (
     WebPubSubMessage,
     wps_network_message_to_mg_message,
 )

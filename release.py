@@ -37,9 +37,9 @@ if __name__ == "__main__":
                 line = line.replace(version, incremented_version)
             f.write(line)
 
-    with open("src/mindgard/constants.py", "r") as f:
+    with open("mindgard/constants.py", "r") as f:
         lines = f.readlines()
-    with open("src/mindgard/constants.py", "w") as f:
+    with open("mindgard/constants.py", "w") as f:
         for line in lines:
             if "VERSION: str = " in line:
                 version = line.split("= ")[1].strip().replace('"', "")
