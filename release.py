@@ -26,18 +26,6 @@ if __name__ == "__main__":
 
     stored_version_numbers: Set[str] = set()
 
-    # increment version numbers  in setup.py and pyproject.toml
-    with open("setup.py", "r") as f:
-        lines = f.readlines()
-    with open("setup.py", "w") as f:
-        for line in lines:
-            if "version=\"" in line:
-                version = line.split("=\"")[1].strip().replace('",', "")
-                incremented_version = increment_version(version, which)
-                stored_version_numbers.add(incremented_version)
-                line = line.replace(version, incremented_version)
-            f.write(line)
-
     with open("pyproject.toml", "r") as f:
         lines = f.readlines()
     with open("pyproject.toml", "w") as f:
@@ -65,7 +53,7 @@ if __name__ == "__main__":
         shutil.rmtree("dist/")
 
     if len(stored_version_numbers) > 1:
-        raise ValueError("Different version numbers detected between setup.py, pyproject.toml, and __main__.py")
+        raise ValueError("Different version numbers detected between, pyproject.toml, and __main__.py")
 
     # This needs to be the only print statement in the script for makefile purposes
     print(stored_version_numbers.pop())
