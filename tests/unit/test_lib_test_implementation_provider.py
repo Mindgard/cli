@@ -7,6 +7,7 @@ from typing import Any, Callable, Dict, List, Literal, Optional
 from unittest import mock
 
 import requests_mock
+from mindgard.version import VERSION
 from mindgard.test import TestConfig, TestImplementationProvider
 from mindgard.wrappers.llm import Context, LLMModelWrapper
 
@@ -71,10 +72,12 @@ def test_init_test(requests_mock: requests_mock.Mocker):
     assert cli_init_requests.call_count == 1
     assert cli_init_requests.last_request is not None
     assert cli_init_requests.last_request.headers.get("Authorization") == f"Bearer {test_access_token}", "should set authorization header"
+    assert cli_init_requests.last_request.headers.get("X-User-Agent") == f"mindgard-cli/{VERSION}", "should set user agent"
+    assert cli_init_requests.last_request.headers.get("User-Agent") == f"mindgard-cli/{VERSION}", "should set user agent"
     assert cli_init_requests.last_request.json() == {
         "target": config.target,
         "modelType": config.model_type,
-        "systemPrompt": config.system_prompt,
+        "system_prompt": config.system_prompt,
         "attackPack": config.attack_pack,
         "parallelism": config.parallelism,
         "attackSource": config.attack_source,

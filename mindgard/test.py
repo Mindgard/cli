@@ -1,6 +1,7 @@
 
 
 from dataclasses import dataclass
+import logging
 from threading import Condition
 import time
 from typing import Tuple
@@ -8,6 +9,7 @@ from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCred
 from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs, CallbackType, WebPubSubDataType
 import requests
 
+from mindgard.version import VERSION
 from mindgard.wrappers.llm import LLMModelWrapper
 
 @dataclass
@@ -37,13 +39,14 @@ class TestImplementationProvider():
         response = requests.post(
             url=url, 
             headers={
-                "Authorization": f"Bearer {config.api_access_token}"
-                # TODO: user agent etc
+                "Authorization": f"Bearer {config.api_access_token}",
+                "User-Agent": f"mindgard-cli/{VERSION}",
+                "X-User-Agent": f"mindgard-cli/{VERSION}",
             },
             json={
                 "target": config.target,
                 "modelType": config.model_type,
-                "systemPrompt": config.system_prompt,
+                "system_prompt": config.system_prompt,
                 "attackPack": config.attack_pack,
                 "parallelism": config.parallelism,
                 "attackSource": config.attack_source
@@ -88,9 +91,11 @@ class TestImplementationProvider():
         client.subscribe(CallbackType.GROUP_MESSAGE, callback)
 
     def start_test(self, client:WebPubSubClient, group_id:str):
+        logging.error(f"Starting test {group_id}")
         started_condition = Condition()
         test_ids: list[str] = []
         def handler(msg:OnGroupDataMessageArgs) -> None:
+            logging.error(f"received message {msg.data}")
             if msg.data["messageType"] == "StartedTest":
                 with started_condition:
                     test_ids.append(msg.data["payload"]["testId"])
@@ -104,6 +109,7 @@ class TestImplementationProvider():
         }
         client.send_to_group(group_name="orchestrator", content=payload, data_type=WebPubSubDataType.JSON)
         
+        logging.error("waiting for test to start")
         with started_condition:
             started_condition.wait_for(lambda: len(test_ids) > 0)
             return test_ids[0]
@@ -135,7 +141,6 @@ class TestImplementationProvider():
 class Test:
     def __init__(self, config:TestConfig, provider:TestImplementationProvider = TestImplementationProvider()):
         self._config = config
-        # self._state = TestState()
         self._provider = provider
 
     def run(self): 
