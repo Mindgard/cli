@@ -48,6 +48,17 @@ if __name__ == "__main__":
                 line = line.replace(version, incremented_version)
             f.write(line)
 
+    with open("mindgard/version.py", "r") as f:
+        lines = f.readlines()
+    with open("mindgard/version.py", "w") as f:
+        for line in lines:
+            if "VERSION: str = " in line:
+                version = line.split("= ")[1].strip().replace('"', "")
+                incremented_version = increment_version(version, which)
+                stored_version_numbers.add(incremented_version)
+                line = line.replace(version, incremented_version)
+            f.write(line)
+
     # delete dist/ directory if it exists
     if os.path.exists("dist/"):
         shutil.rmtree("dist/")
