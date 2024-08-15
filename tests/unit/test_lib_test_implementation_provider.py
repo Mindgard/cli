@@ -3,6 +3,7 @@
 # primarily interact with external services. As such we will have
 # test doubles to simulate those interactions.
 
+from curses import wrapper
 from typing import Any, Callable, Dict, List, Literal, Optional
 from unittest import mock
 
@@ -101,7 +102,27 @@ def test_connect_websocket(mock_wps_client: mock.MagicMock, mock_wps_client_cred
     mock_client.open.assert_called_once()
     assert client == mock_client
 
-def test_register_wrapper():
+def test_register_handler():
+    wrapper = MockModelWrapper()
+    handler = TestImplementationProvider().wrapper_to_handler(wrapper)
+    request_payload = {"prompt": "world"}
+
+    response_payload = handler(request_payload)
+    assert response_payload == {
+        "response": "hello world",
+    }
+
+def test_register_handler_with_context():
+    wrapper = MockModelWrapper()
+    handler = TestImplementationProvider().wrapper_to_handler(wrapper)
+    request_payload = {"prompt": "world"}
+
+    response_payload = handler(request_payload)
+    assert response_payload == {
+        "response": "hello world",
+    }
+
+def test_register_handler():
     has_handler: List[Callable[[OnGroupDataMessageArgs], None]] = []
     has_sent_to_group: List[Dict[str, Any]] = []
     def subscribe(group_name:str, handler:Callable[[OnGroupDataMessageArgs], None]) -> None:
@@ -123,10 +144,13 @@ def test_register_wrapper():
     mock_wps_client.send_to_group = mock_send_to_group
 
     group_id = "test_group_id"
-    config = _helper_default_config()
+    def mock_handler(payload: Any) -> Any:
+        return {
+            "response": f"hello {payload['prompt']}"
+        }
     provider = TestImplementationProvider()
 
-    provider.register_wrapper(config, mock_wps_client, group_id)
+    provider.register_handler(mock_handler, mock_wps_client, group_id)
 
     assert has_handler[0] is not None
     handler = has_handler[0]
@@ -142,7 +166,6 @@ def test_register_wrapper():
         "status": "ok",
         "payload": {
             "response": "hello world",
-            "error": None
         }
     }
 
@@ -257,3 +280,4 @@ def test_poll_test_continues_on_bad_response(requests_mock: requests_mock.Mocker
     provider.poll_test(config, test_id, period_seconds=0)
 
     assert get_request.call_count == len(responses), "should have not returned until hasFinished is true"
+

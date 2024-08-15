@@ -1,3 +1,4 @@
+from typing import Any
 from unittest.mock import Mock
 
 from azure.messaging.webpubsubclient import WebPubSubClient
@@ -15,6 +16,10 @@ def test_lib_runs_test_complete():
     test_wps_url = "my test wps url"
     test_id = "my test id"
 
+    def mock_handler(payload: Any) -> Any:
+        return {
+            "response": f"hello {payload['prompt']}"
+        }
     config = TestConfig(
         api_base="your_api_base",
         api_access_token="your_api_access_token",
@@ -29,6 +34,7 @@ def test_lib_runs_test_complete():
     mock_provider = Mock(spec=TestImplementationProvider)
     mock_provider.init_test.return_value = (test_wps_url, test_group_id)
     mock_provider.connect_websocket.return_value = Mock(spec=WebPubSubClient)
+    mock_provider.wrapper_to_handler.return_value = mock_handler
     mock_provider.start_test.return_value = test_id
 
     test = Test(config, provider=mock_provider)
@@ -36,7 +42,7 @@ def test_lib_runs_test_complete():
 
     mock_provider.init_test.assert_called_once_with(config)
     mock_provider.connect_websocket.assert_called_once_with(test_wps_url)
-    mock_provider.register_wrapper.assert_called_once_with(config, mock_provider.connect_websocket.return_value, test_group_id)
+    mock_provider.register_handler.assert_called_once_with(mock_handler, mock_provider.connect_websocket.return_value, test_group_id)
     mock_provider.start_test.assert_called_once_with(mock_provider.connect_websocket.return_value, test_group_id)
     mock_provider.poll_test.assert_called_once_with(config, test_id) # assert that the default period is used
 
