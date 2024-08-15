@@ -22,13 +22,17 @@ TestImplementationProvider.__test__ = False # type: ignore
 # TODO: move to test utils
 class MockModelWrapper(LLMModelWrapper):
     """
-    A mock model wrapper that mirrors the input prepending with 'hello '
+    A mock model wrapper that mirrors the input prepending with 'hello {input}'
+    
+    If a context is provided, it will also append the number of turns in the context: 'hello {input} {n}'
     """
     @classmethod
     def mirror(cls, input:str) -> str:
         return "hello " + input
     
     def __call__(self, content:str, with_context:Optional[Context] = None) -> str:
+        if with_context:
+            return self.mirror(content) + " " + str(len(with_context.turns))
         return self.mirror(content) # mirror the input for later assertions
 
 def _helper_default_config() -> TestConfig:
@@ -114,12 +118,17 @@ def test_wrapper_to_handler():
 def test_wrapper_to_handler_with_context():
     wrapper = MockModelWrapper()
     handler = TestImplementationProvider().wrapper_to_handler(wrapper)
-    request_payload = {"prompt": "world"}
+    request_payload = {"prompt": "world", "context_id": "mycontext"}
 
-    response_payload = handler(request_payload)
-    assert response_payload == {
-        "response": "hello world",
+    response_payload_0 = handler(request_payload)
+    assert response_payload_0 == {
+        "response": "hello world 0",
     }
+
+    # response_payload_1 = handler(request_payload)
+    # assert response_payload_1 == {
+    #     "response": "hello world 1",
+    # }
 
 def test_register_handler():
     has_handler: List[Callable[[OnGroupDataMessageArgs], None]] = []
