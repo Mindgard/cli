@@ -9,7 +9,7 @@ from unittest import mock
 import requests_mock
 from mindgard.version import VERSION
 from mindgard.test import TestConfig, TestImplementationProvider
-from mindgard.wrappers.llm import Context, LLMModelWrapper
+from mindgard.wrappers.llm import Context, LLMModelWrapper, PromptResponse
 
 from azure.messaging.webpubsubclient import WebPubSubClient
 from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs, CallbackType, WebPubSubDataType
@@ -32,8 +32,10 @@ class MockModelWrapper(LLMModelWrapper):
     
     def __call__(self, content:str, with_context:Optional[Context] = None) -> str:
         if with_context:
-            return self.mirror(content) + " " + str(len(with_context.turns))
-        return self.mirror(content) # mirror the input for later assertions
+            res = self.mirror(content) + " " + str(len(with_context.turns))
+            with_context.add(PromptResponse(prompt=content, response=res))
+            return res
+        return self.mirror(content)
 
 def _helper_default_config() -> TestConfig:
     return TestConfig(
@@ -125,10 +127,10 @@ def test_wrapper_to_handler_with_context():
         "response": "hello world 0",
     }
 
-    # response_payload_1 = handler(request_payload)
-    # assert response_payload_1 == {
-    #     "response": "hello world 1",
-    # }
+    response_payload_1 = handler(request_payload)
+    assert response_payload_1 == {
+        "response": "hello world 1",
+    }
 
 def test_register_handler():
     has_handler: List[Callable[[OnGroupDataMessageArgs], None]] = []
