@@ -4,13 +4,19 @@ from dataclasses import dataclass
 import logging
 from threading import Condition
 import time
-from typing import Tuple
+from typing import Any, Protocol, Tuple
 from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCredential
 from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs, CallbackType, WebPubSubDataType
 import requests
 
 from mindgard.version import VERSION
 from mindgard.wrappers.llm import LLMModelWrapper
+
+class RequestHandler(Protocol):
+    """
+    Protocol for converting a Request paylod to a Response payload
+    """
+    def __call__(self, payload: Any) -> Any: ...
 
 @dataclass
 class TestConfig:
@@ -66,13 +72,20 @@ class TestImplementationProvider():
         client =  WebPubSubClient(credential=credentials)
         client.open()
         return client
-        
-    def register_wrapper(self, config:TestConfig, client:WebPubSubClient, group_id:str) -> None:
+    
+    def wrapper_to_handler(self, wrapper:LLMModelWrapper) -> RequestHandler:
+        def handler(payload: Any) -> Any:
+            return {
+                "response": wrapper(payload["prompt"])
+            }
+        return handler
+    
+    def register_handler(self, handler:RequestHandler, client:WebPubSubClient, group_id:str) -> None:
         def callback(msg:OnGroupDataMessageArgs) -> None:
             if msg.data["messageType"] != "Request":
                 return
             
-            res = config.wrapper.__call__(content=msg.data["payload"]["prompt"])
+            payload = handler(payload=msg.data["payload"])
 
             client.send_to_group(
                 "orchestrator",
@@ -80,10 +93,7 @@ class TestImplementationProvider():
                     "correlationId": msg.data["correlationId"],
                     "messageType": "Response",
                     "status": "ok",
-                    "payload": {
-                        "response": res,
-                        "error": None
-                    }
+                    "payload": payload
                 },
                 data_type=WebPubSubDataType.JSON
             )
@@ -136,8 +146,6 @@ class TestImplementationProvider():
                 
             time.sleep(period_seconds)
             
-
-
 class Test:
     def __init__(self, config:TestConfig, provider:TestImplementationProvider = TestImplementationProvider()):
         self._config = config
@@ -147,6 +155,7 @@ class Test:
         p = self._provider
         wps_url, group_id = p.init_test(self._config)
         wps_client = p.connect_websocket(wps_url)
-        p.register_wrapper(self._config, wps_client, group_id)
+        handler = p.wrapper_to_handler(self._config.wrapper)
+        p.register_handler(handler, wps_client, group_id)
         test_id = p.start_test(wps_client, group_id)
         p.poll_test(self._config, test_id)
