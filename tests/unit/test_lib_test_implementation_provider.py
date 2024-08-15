@@ -3,7 +3,6 @@
 # primarily interact with external services. As such we will have
 # test doubles to simulate those interactions.
 
-from curses import wrapper
 from typing import Any, Callable, Dict, List, Literal, Optional
 from unittest import mock
 
@@ -102,7 +101,7 @@ def test_connect_websocket(mock_wps_client: mock.MagicMock, mock_wps_client_cred
     mock_client.open.assert_called_once()
     assert client == mock_client
 
-def test_register_handler():
+def test_wrapper_to_handler():
     wrapper = MockModelWrapper()
     handler = TestImplementationProvider().wrapper_to_handler(wrapper)
     request_payload = {"prompt": "world"}
@@ -112,7 +111,7 @@ def test_register_handler():
         "response": "hello world",
     }
 
-def test_register_handler_with_context():
+def test_wrapper_to_handler_with_context():
     wrapper = MockModelWrapper()
     handler = TestImplementationProvider().wrapper_to_handler(wrapper)
     request_payload = {"prompt": "world"}
