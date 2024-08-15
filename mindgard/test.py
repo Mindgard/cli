@@ -8,9 +8,8 @@ from typing import Any, Protocol, Tuple
 from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCredential
 from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs, CallbackType, WebPubSubDataType
 import requests
-
 from mindgard.version import VERSION
-from mindgard.wrappers.llm import LLMModelWrapper
+from mindgard.wrappers.llm import ContextManager, LLMModelWrapper
 
 class RequestHandler(Protocol):
     """
@@ -74,9 +73,11 @@ class TestImplementationProvider():
         return client
     
     def wrapper_to_handler(self, wrapper:LLMModelWrapper) -> RequestHandler:
+        context_manager = ContextManager()
         def handler(payload: Any) -> Any:
+            context = context_manager.get_context_or_none(payload.get("context_id"))
             return {
-                "response": wrapper(payload["prompt"])
+                "response": wrapper(payload["prompt"], context)
             }
         return handler
     
