@@ -1,4 +1,8 @@
+"""
+Status: Pre-Alpha -- implementation incomplete and interfaces are likely to change
 
+Provides headless execution of mindgard tests.
+"""
 
 from dataclasses import dataclass
 import logging
