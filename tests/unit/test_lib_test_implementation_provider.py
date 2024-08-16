@@ -291,3 +291,8 @@ def test_poll_test_continues_on_bad_response(requests_mock: requests_mock.Mocker
 
     assert get_request.call_count == len(responses), "should have not returned until hasFinished is true"
 
+def test_close():
+    wps_client = mock.MagicMock(spec=WebPubSubClient)
+    provider = TestImplementationProvider()
+    provider.close(wps_client)
+    wps_client.close.assert_called_once()

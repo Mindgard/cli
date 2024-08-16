@@ -146,6 +146,9 @@ class TestImplementationProvider():
                 pass
                 
             time.sleep(period_seconds)
+
+    def close(self, client:WebPubSubClient):
+        client.close()
             
 class Test:
     def __init__(self, config:TestConfig, provider:TestImplementationProvider = TestImplementationProvider()):
@@ -160,3 +163,4 @@ class Test:
         p.register_handler(handler, wps_client, group_id)
         test_id = p.start_test(wps_client, group_id)
         p.poll_test(self._config, test_id)
+        p.close(wps_client)

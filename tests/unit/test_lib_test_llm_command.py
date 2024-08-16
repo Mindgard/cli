@@ -15,7 +15,6 @@ def test_lib_runs_test_complete():
     test_group_id = "my test group id"
     test_wps_url = "my test wps url"
     test_id = "my test id"
-
     def mock_handler(payload: Any) -> Any:
         return {
             "response": f"hello {payload['prompt']}"
@@ -30,20 +29,21 @@ def test_lib_runs_test_complete():
         parallelism=1,
         wrapper=TestStaticResponder(system_prompt="test"),
     )
-
+    mock_wps_client = Mock(spec=WebPubSubClient)
     mock_provider = Mock(spec=TestImplementationProvider)
     mock_provider.init_test.return_value = (test_wps_url, test_group_id)
-    mock_provider.connect_websocket.return_value = Mock(spec=WebPubSubClient)
+    mock_provider.connect_websocket.return_value = mock_wps_client
     mock_provider.wrapper_to_handler.return_value = mock_handler
     mock_provider.start_test.return_value = test_id
+
 
     test = Test(config, provider=mock_provider)
     test.run()
 
     mock_provider.init_test.assert_called_once_with(config)
     mock_provider.connect_websocket.assert_called_once_with(test_wps_url)
-    mock_provider.register_handler.assert_called_once_with(mock_handler, mock_provider.connect_websocket.return_value, test_group_id)
-    mock_provider.start_test.assert_called_once_with(mock_provider.connect_websocket.return_value, test_group_id)
-    mock_provider.poll_test.assert_called_once_with(config, test_id) # assert that the default period is used
-
+    mock_provider.register_handler.assert_called_once_with(mock_handler, mock_wps_client, test_group_id)
+    mock_provider.start_test.assert_called_once_with(mock_wps_client, test_group_id)
+    mock_provider.poll_test.assert_called_once_with(config, test_id) # assert that the default period parameter is used
+    mock_provider.close.assert_called_once_with(mock_wps_client)
 
