@@ -92,20 +92,27 @@ def test_init_test(requests_mock: requests_mock.Mocker):
 
 @mock.patch("mindgard.test.WebPubSubClientCredential", autospec=True)
 @mock.patch("mindgard.test.WebPubSubClient", autospec=True)
-def test_connect_websocket(mock_wps_client: mock.MagicMock, mock_wps_client_credential: mock.MagicMock):
+def test_create_websocket_client(mock_wps_client: mock.MagicMock, mock_wps_client_credential: mock.MagicMock):
     mock_wps_client_credential.return_value = {"something":"a"} # don't care what for now
     
     mock_client = mock.MagicMock(spec=WebPubSubClient)
     mock_wps_client.return_value = mock_client
 
     test_connection_url = "test_connection_url"
-
     provider = TestImplementationProvider()
-    client = provider.connect_websocket(test_connection_url)
+    client = provider.create_client(test_connection_url)
 
     mock_wps_client_credential.assert_called_once_with(client_access_url_provider=test_connection_url)
-    mock_client.open.assert_called_once()
+    mock_wps_client.assert_called_once_with(credential=mock_wps_client_credential.return_value)
     assert client == mock_client
+
+def test_connect_websocket():    
+    mock_client = mock.MagicMock(spec=WebPubSubClient)
+
+    provider = TestImplementationProvider()
+    provider.connect_websocket(mock_client)
+
+    mock_client.open.assert_called_once()
 
 def test_wrapper_to_handler():
     wrapper = MockModelWrapper()
@@ -291,3 +298,8 @@ def test_poll_test_continues_on_bad_response(requests_mock: requests_mock.Mocker
 
     assert get_request.call_count == len(responses), "should have not returned until hasFinished is true"
 
+def test_close():
+    wps_client = mock.MagicMock(spec=WebPubSubClient)
+    provider = TestImplementationProvider()
+    provider.close(wps_client)
+    wps_client.close.assert_called_once()
