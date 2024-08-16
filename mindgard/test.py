@@ -4,7 +4,7 @@ from dataclasses import dataclass
 import logging
 from threading import Condition
 import time
-from typing import Any, Protocol, Tuple
+from typing import Any, Optional, Protocol, Tuple
 from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCredential
 from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs, CallbackType, WebPubSubDataType
 import requests
@@ -65,12 +65,12 @@ class TestImplementationProvider():
             raise ValueError("Invalid response from orchestrator, missing websocket credentials.")
 
         return url, group_id
-    
-    def connect_websocket(self, connection_url:str) -> WebPubSubClient:
+    def create_client(self, connection_url:str) -> WebPubSubClient:
         credentials = WebPubSubClientCredential(client_access_url_provider=connection_url)
-        client =  WebPubSubClient(credential=credentials)
+        return WebPubSubClient(credential=credentials)
+
+    def connect_websocket(self, client:WebPubSubClient) -> None:
         client.open()
-        return client
     
     def wrapper_to_handler(self, wrapper:LLMModelWrapper) -> RequestHandler:
         context_manager = ContextManager()
@@ -147,20 +147,25 @@ class TestImplementationProvider():
                 
             time.sleep(period_seconds)
 
-    def close(self, client:WebPubSubClient):
-        client.close()
+    def close(self, client:Optional[WebPubSubClient]):
+        if client:
+            client.close()
             
 class Test:
     def __init__(self, config:TestConfig, provider:TestImplementationProvider = TestImplementationProvider()):
         self._config = config
         self._provider = provider
 
-    def run(self): 
+    def run(self):
         p = self._provider
-        wps_url, group_id = p.init_test(self._config)
-        wps_client = p.connect_websocket(wps_url)
-        handler = p.wrapper_to_handler(self._config.wrapper)
-        p.register_handler(handler, wps_client, group_id)
-        test_id = p.start_test(wps_client, group_id)
-        p.poll_test(self._config, test_id)
-        p.close(wps_client)
+        wps_client = None
+        try:
+            wps_url, group_id = p.init_test(self._config)
+            wps_client = p.create_client(wps_url)
+            p.connect_websocket(wps_client)
+            handler = p.wrapper_to_handler(self._config.wrapper)
+            p.register_handler(handler, wps_client, group_id)
+            test_id = p.start_test(wps_client, group_id)
+            p.poll_test(self._config, test_id)
+        finally:
+            p.close(wps_client)
