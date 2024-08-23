@@ -8,7 +8,7 @@ from unittest import mock
 
 import requests_mock
 from mindgard.version import VERSION
-from mindgard.test import TestConfig, TestImplementationProvider
+from mindgard.test import LLMTestConfig, TestImplementationProvider
 from mindgard.wrappers.llm import Context, LLMModelWrapper, PromptResponse
 
 from azure.messaging.webpubsubclient import WebPubSubClient
@@ -16,7 +16,7 @@ from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs, Callb
 
 
 # Please there must be a better way to get pytest to ignore these
-TestConfig.__test__ = False # type: ignore
+LLMTestConfig.__test__ = False # type: ignore
 TestImplementationProvider.__test__ = False # type: ignore
 
 # TODO: move to test utils
@@ -37,8 +37,8 @@ class MockModelWrapper(LLMModelWrapper):
             return res
         return self.mirror(content)
 
-def _helper_default_config() -> TestConfig:
-    return TestConfig(
+def _helper_default_config() -> LLMTestConfig:
+    return LLMTestConfig(
         api_base="https://test.internal",
         api_access_token="my access token",
         wrapper=MockModelWrapper(),
@@ -116,7 +116,7 @@ def test_connect_websocket():
 
 def test_wrapper_to_handler():
     wrapper = MockModelWrapper()
-    handler = TestImplementationProvider().wrapper_to_handler(wrapper)
+    handler = wrapper.to_handler()
     request_payload = {"prompt": "world"}
 
     response_payload = handler(request_payload)
@@ -126,7 +126,7 @@ def test_wrapper_to_handler():
 
 def test_wrapper_to_handler_with_context():
     wrapper = MockModelWrapper()
-    handler = TestImplementationProvider().wrapper_to_handler(wrapper)
+    handler = wrapper.to_handler()
     request_payload = {"prompt": "world", "context_id": "mycontext"}
 
     response_payload_0 = handler(request_payload)

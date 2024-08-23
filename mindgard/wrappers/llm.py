@@ -52,6 +52,15 @@ class ContextManager:
 
 
 class LLMModelWrapper(ABC):
+    def to_handler(self):
+        context_manager = ContextManager()
+        def handler(payload: Any) -> Any:
+            context = context_manager.get_context_or_none(payload.get("context_id"))
+            return {
+                "response": self(payload["prompt"], context)
+            }
+        return handler
+
     @abstractmethod
     def __call__(self, content: str, with_context: Optional[Context] = None) -> str:
         pass
@@ -62,10 +71,17 @@ class TestStaticResponder(LLMModelWrapper):
     This is only for testing
     """
 
-    def __init__(self, system_prompt: str):
+    def __init__(self, system_prompt: str, handler: Any = None):
         self.context_manager = ContextManager()
         self._system_prompt = system_prompt
+        self._handler = handler
         pass
+
+    def to_handler(self):
+        if self._handler is not None:
+            return self._handler
+        else:
+            return super().to_handler(self)
 
     def __call__(self, content: str, with_context: Optional[Context] = None) -> str:
         request = f"[start]sys: {self._system_prompt};"
