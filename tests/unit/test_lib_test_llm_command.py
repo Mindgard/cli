@@ -3,7 +3,7 @@ from unittest.mock import Mock
 
 from azure.messaging.webpubsubclient import WebPubSubClient
 import pytest
-from mindgard.test import Test, TestConfig, TestImplementationProvider, LLMTestConfig
+from mindgard.test import Test, TestConfig, TestImplementationProvider, LLMModelConfig
 from mindgard.wrappers.llm import TestStaticResponder
 
 # Please there must be a better way to get pytest to ignore these
@@ -38,15 +38,17 @@ def mock_provider():
 
 @pytest.fixture
 def config():
-    return LLMTestConfig(
+    return TestConfig(
         api_base="your_api_base",
         api_access_token="your_api_access_token",
         target="your_target",
-        model_type="your_model_type",
-        system_prompt="your_system_prompt",
         attack_source="your_attack_source",
         parallelism=1,
-        wrapper=TestStaticResponder(system_prompt="test",handler=mock_handler),
+        model=LLMModelConfig(
+            wrapper=TestStaticResponder(system_prompt="test",handler=mock_handler),
+            system_prompt="your_system_prompt",
+            model_type="your_model_type"
+        )
     )
 
 def test_lib_runs_test_complete(mock_provider:MockProviderFixture, config:TestConfig):

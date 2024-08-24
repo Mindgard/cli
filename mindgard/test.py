@@ -23,55 +23,57 @@ class RequestHandler(Protocol):
     """
     def __call__(self, payload: Any) -> Any: ...
 
-@dataclass(kw_only=True)
+@dataclass
+class ModelConfig:
+    def to_orchestrator(self):
+        return {}
+
+
+@dataclass
+class ImageModelConfig(ModelConfig):
+    wrapper: ImageModelWrapper
+    dataset: str
+    labels: list[str]
+    model_type: str = "image"
+
+    def to_orchestrator(self):
+        return {
+            "modelType": self.model_type,
+            "dataset": self.dataset,
+            "labels": self.labels,
+        }
+
+@dataclass
+class LLMModelConfig(ModelConfig):
+    wrapper: LLMModelWrapper
+    system_prompt: str
+    model_type: str = "llm"
+
+    def to_orchestrator(self):
+        return {
+            "modelType": self.model_type,
+            "system_prompt": self.system_prompt,
+        }
+
+@dataclass
 class TestConfig:
     api_base: str
     api_access_token: str
     target: str
-    model_type: str
     attack_source: str
     parallelism: int
+    model: ModelConfig
     attack_pack: str = "sandbox"
-    wrapper: Union[LLMModelWrapper, ImageModelWrapper]
-
     def to_orchestrator(self):
-        pass
-
-    def handler(self) -> RequestHandler:
-        return self.wrapper.to_handler()
-
-@dataclass(kw_only=True)
-class ImageTestConfig(TestConfig):
-    wrapper: ImageModelWrapper
-    dataset: str
-    labels: list[str]
-
-    def to_orchestrator(self):
-        return {
+        return {**{
             "target": self.target,
-            "modelType": self.model_type,
-            "dataset": self.dataset,
-            "labels": self.labels,
             "attackPack": self.attack_pack,
             "parallelism": self.parallelism,
             "attackSource": self.attack_source
-        }
+        }, **self.model.to_orchestrator()}
 
-
-@dataclass(kw_only=True)
-class LLMTestConfig(TestConfig):
-    wrapper: LLMModelWrapper
-    system_prompt: str
-
-    def to_orchestrator(self):
-        return {
-            "target": self.target,
-            "modelType": self.model_type,
-            "system_prompt": self.system_prompt,
-            "attackPack": self.attack_pack,
-            "parallelism": self.parallelism,
-            "attackSource": self.attack_source
-        }
+    def handler(self):
+        return self.model.wrapper.to_handler()
 
 
 class TestImplementationProvider():

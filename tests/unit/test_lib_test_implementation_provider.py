@@ -8,7 +8,7 @@ from unittest import mock
 
 import requests_mock
 from mindgard.version import VERSION
-from mindgard.test import LLMTestConfig, TestImplementationProvider
+from mindgard.test import TestConfig, TestImplementationProvider, LLMModelConfig
 from mindgard.wrappers.llm import Context, LLMModelWrapper, PromptResponse
 
 from azure.messaging.webpubsubclient import WebPubSubClient
@@ -16,7 +16,7 @@ from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs, Callb
 
 
 # Please there must be a better way to get pytest to ignore these
-LLMTestConfig.__test__ = False # type: ignore
+TestConfig.__test__ = False # type: ignore
 TestImplementationProvider.__test__ = False # type: ignore
 
 # TODO: move to test utils
@@ -37,17 +37,18 @@ class MockModelWrapper(LLMModelWrapper):
             return res
         return self.mirror(content)
 
-def _helper_default_config() -> LLMTestConfig:
-    return LLMTestConfig(
+def _helper_default_config() -> TestConfig:
+    return TestConfig(
         api_base="https://test.internal",
         api_access_token="my access token",
-        wrapper=MockModelWrapper(),
         target = "my target",
-        model_type = "llm",
-        system_prompt = "my system prompt",
         attack_pack = "my attack pack",
         attack_source = "my attack source",
-        parallelism = 3
+        parallelism = 3,
+        model = LLMModelConfig(
+            wrapper=MockModelWrapper(),
+            system_prompt = "my system prompt"
+        )
     )
 
 def test_init_test(requests_mock: requests_mock.Mocker):
@@ -82,8 +83,8 @@ def test_init_test(requests_mock: requests_mock.Mocker):
     assert cli_init_requests.last_request.headers.get("User-Agent") == f"mindgard-cli/{VERSION}", "should set user agent"
     assert cli_init_requests.last_request.json() == {
         "target": config.target,
-        "modelType": config.model_type,
-        "system_prompt": config.system_prompt,
+        "modelType": config.model.model_type,
+        "system_prompt": config.model.system_prompt,
         "attackPack": config.attack_pack,
         "parallelism": config.parallelism,
         "attackSource": config.attack_source,
