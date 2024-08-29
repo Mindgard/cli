@@ -1,6 +1,6 @@
 from .config import load_auth_config
  
-VERSION: str = "0.43.0"
+VERSION: str = "0.44.0"
 REPOSITORY_URL: str = f"https://pypi.org/pypi/mindgard/json"
 
 ALGORITHMS = ['RS256']
