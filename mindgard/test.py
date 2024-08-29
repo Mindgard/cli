@@ -8,14 +8,14 @@ from dataclasses import dataclass
 import logging
 from threading import Condition
 import time
-from typing import Any, Optional, Protocol, Tuple, Callable, Union
+from typing import Any, Optional, Protocol, Tuple
 from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCredential
 from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs, CallbackType, WebPubSubDataType
 import requests
 from mindgard.wrappers.image import ImageModelWrapper
 
 from mindgard.version import VERSION
-from mindgard.wrappers.llm import ContextManager, LLMModelWrapper
+from mindgard.wrappers.llm import LLMModelWrapper
 
 class RequestHandler(Protocol):
     """
@@ -25,7 +25,7 @@ class RequestHandler(Protocol):
 
 @dataclass
 class ModelConfig:
-    def to_orchestrator(self):
+    def to_orchestrator_init_params(self):
         return {}
 
 
@@ -36,7 +36,7 @@ class ImageModelConfig(ModelConfig):
     labels: list[str]
     model_type: str = "image"
 
-    def to_orchestrator(self):
+    def to_orchestrator_init_params(self):
         return {
             "modelType": self.model_type,
             "dataset": self.dataset,
@@ -49,7 +49,7 @@ class LLMModelConfig(ModelConfig):
     system_prompt: str
     model_type: str = "llm"
 
-    def to_orchestrator(self):
+    def to_orchestrator_init_params(self):
         return {
             "modelType": self.model_type,
             "system_prompt": self.system_prompt,
@@ -64,13 +64,16 @@ class TestConfig:
     parallelism: int
     model: ModelConfig
     attack_pack: str = "sandbox"
-    def to_orchestrator(self):
+    def to_orchestrator_init_params(self):
+        """
+        Get parameters for the init test request to orchestrator
+        """
         return {**{
             "target": self.target,
             "attackPack": self.attack_pack,
             "parallelism": self.parallelism,
             "attackSource": self.attack_source
-        }, **self.model.to_orchestrator()}
+        }, **self.model.to_orchestrator_init_params()}
 
     def handler(self):
         return self.model.wrapper.to_handler()
@@ -91,7 +94,7 @@ class TestImplementationProvider():
                 "User-Agent": f"mindgard-cli/{VERSION}",
                 "X-User-Agent": f"mindgard-cli/{VERSION}",
             },
-            json=config.to_orchestrator()
+            json=config.to_orchestrator_init_params()
         )
         response.raise_for_status()
 
