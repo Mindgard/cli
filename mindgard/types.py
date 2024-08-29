@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Literal, Optional
+from typing import Any, Callable, Dict, Literal, Optional, Tuple, get_args
 from rich.progress import TaskID, Progress
 from rich.table import Table
 from dataclasses import dataclass
@@ -32,6 +32,8 @@ type_orchestrator_attack_pack = Literal["sandbox", "threat_intel"]
 type_orchestrator_source = Literal["threat_intel", "user", "mindgard"]
 model_types = ["image", "llm"]
 type_model_types = Literal["image", "llm"]
+type_model_presets = Literal['huggingface-openai', 'huggingface', 'openai', 'azure-openai', 'azure-aistudio', 'anthropic', 'tester', 'local']
+type_model_presets_list: Tuple[type_model_presets, ...] = get_args(type_model_presets)
 
 # Types for dependency injecting get/post request functions into over api_post and api_get in orchestrator
 type_post_request_function = Callable[[str, str, Dict[str, Any]], requests.Response]

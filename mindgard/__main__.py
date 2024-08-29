@@ -4,7 +4,7 @@ import traceback
 
 # Types
 from typing import List, cast
-from .types import log_levels, model_types, valid_image_datasets
+from .types import log_levels, model_types, valid_image_datasets, type_model_presets_list
 
 # Models
 from .preflight import preflight_image, preflight_llm
@@ -40,7 +40,7 @@ def shared_arguments(parser: argparse.ArgumentParser):
     parser.add_argument('--config-file', type=str, help='Path to mindgard.toml config file', default=None, required=False)
     parser.add_argument('--json', action="store_true", help='Output the info in JSON format.', required=False, default=False)
     parser.add_argument('--headers', type=str, help='The headers to use', required=False)
-    parser.add_argument('--preset', type=str, help='The preset to use', choices=['huggingface', 'openai', 'anthropic', 'azure-openai', 'azure-aistudio', 'custom_mistral', 'tester', 'local'], required=False)
+    parser.add_argument('--preset', type=str, help='The preset to use', choices=type_model_presets_list, required=False)
     parser.add_argument('--api-key', type=str, help='Specify the API key for the wrapper', required=False)
     parser.add_argument('--url', type=str, help='Specify the url for the wrapper', required=False)
     parser.add_argument('--model-name', type=str, help='Specify which model to run against (OpenAI and Anthropic)', required=False)

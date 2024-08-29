@@ -12,6 +12,7 @@ import jsonpath_ng
 # Exceptions
 from .exceptions import Uncontactable, status_code_to_exception, openai_exception_to_exception, EmptyResponse, NotImplemented
 from .responses import extract_reply, extract_replies
+from .types import type_model_presets
 
 
 @dataclass
@@ -335,7 +336,7 @@ def check_expected_args(args: Dict[str, Any], expected_args: List[str]) -> None:
 
 def get_model_wrapper(
     headers_string: Optional[str],
-    preset: Optional[Literal['huggingface-openai', 'huggingface', 'openai', 'azure-openai', 'azure-aistudio', 'anthropic', 'tester']] = None,
+    preset: Optional[type_model_presets] = None,
     api_key: Optional[str] = None,
     url: Optional[str] = None,
     model_name: Optional[str] = None,

@@ -12,6 +12,7 @@ import jsonpath_ng
 # Utils
 from ..utils import check_expected_args
 from ..responses import extract_replies
+from ..types import type_model_presets
 
 # Exceptions
 from ..exceptions import (
@@ -447,15 +448,7 @@ class AnthropicWrapper(LLMModelWrapper):
 def get_llm_model_wrapper(
     headers_string: Optional[str],
     preset: Optional[
-        Literal[
-            "huggingface-openai",
-            "huggingface",
-            "openai",
-            "azure-openai",
-            "azure-aistudio",
-            "anthropic",
-            "tester",
-        ]
+        type_model_presets
     ] = None,
     api_key: Optional[str] = None,
     url: Optional[str] = None,
