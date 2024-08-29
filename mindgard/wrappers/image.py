@@ -1,11 +1,11 @@
 # Typing
 from pydantic import BaseModel
-from typing import List, Optional, Literal, Dict
+from typing import List, Optional, Literal, Dict, Any
 import time
-
+import logging
 # Requests
 import requests
-
+import base64
 # Utils
 from ..utils import check_expected_args
 
@@ -23,6 +23,17 @@ class ImageModelWrapper:
 
         # TODO: shape validation
         # self.shape = [3, 1, 224, 224]????
+
+
+    def to_handler(self):
+        def handler(payload: Any) -> Any:
+            logging.debug(f"received request {payload}")
+            image_bytes = base64.b64decode(payload["image"])
+            response = self(image=image_bytes)
+            return {
+                "response": [t.model_dump() for t in response]
+            }
+        return handler
 
     def __call__(self, image: bytes) -> List[LabelConfidence]:
         headers = {

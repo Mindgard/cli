@@ -8,7 +8,7 @@ from unittest import mock
 
 import requests_mock
 from mindgard.version import VERSION
-from mindgard.test import TestConfig, TestImplementationProvider
+from mindgard.test import TestConfig, TestImplementationProvider, LLMModelConfig
 from mindgard.wrappers.llm import Context, LLMModelWrapper, PromptResponse
 
 from azure.messaging.webpubsubclient import WebPubSubClient
@@ -41,13 +41,14 @@ def _helper_default_config() -> TestConfig:
     return TestConfig(
         api_base="https://test.internal",
         api_access_token="my access token",
-        wrapper=MockModelWrapper(),
         target = "my target",
-        model_type = "llm",
-        system_prompt = "my system prompt",
         attack_pack = "my attack pack",
         attack_source = "my attack source",
-        parallelism = 3
+        parallelism = 3,
+        model = LLMModelConfig(
+            wrapper=MockModelWrapper(),
+            system_prompt = "my system prompt"
+        )
     )
 
 def test_init_test(requests_mock: requests_mock.Mocker):
@@ -82,8 +83,8 @@ def test_init_test(requests_mock: requests_mock.Mocker):
     assert cli_init_requests.last_request.headers.get("User-Agent") == f"mindgard-cli/{VERSION}", "should set user agent"
     assert cli_init_requests.last_request.json() == {
         "target": config.target,
-        "modelType": config.model_type,
-        "system_prompt": config.system_prompt,
+        "modelType": config.model.model_type,
+        "system_prompt": config.model.system_prompt,
         "attackPack": config.attack_pack,
         "parallelism": config.parallelism,
         "attackSource": config.attack_source,
@@ -116,7 +117,7 @@ def test_connect_websocket():
 
 def test_wrapper_to_handler():
     wrapper = MockModelWrapper()
-    handler = TestImplementationProvider().wrapper_to_handler(wrapper)
+    handler = wrapper.to_handler()
     request_payload = {"prompt": "world"}
 
     response_payload = handler(request_payload)
@@ -126,7 +127,7 @@ def test_wrapper_to_handler():
 
 def test_wrapper_to_handler_with_context():
     wrapper = MockModelWrapper()
-    handler = TestImplementationProvider().wrapper_to_handler(wrapper)
+    handler = wrapper.to_handler()
     request_payload = {"prompt": "world", "context_id": "mycontext"}
 
     response_payload_0 = handler(request_payload)

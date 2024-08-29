@@ -8,10 +8,12 @@ from dataclasses import dataclass
 import logging
 from threading import Condition
 import time
-from typing import Any, Optional, Protocol, Tuple
+from typing import Any, Optional, Protocol, Tuple, Callable, Union
 from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCredential
 from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs, CallbackType, WebPubSubDataType
 import requests
+from mindgard.wrappers.image import ImageModelWrapper
+
 from mindgard.version import VERSION
 from mindgard.wrappers.llm import ContextManager, LLMModelWrapper
 
@@ -22,20 +24,57 @@ class RequestHandler(Protocol):
     def __call__(self, payload: Any) -> Any: ...
 
 @dataclass
+class ModelConfig:
+    def to_orchestrator(self):
+        return {}
+
+
+@dataclass
+class ImageModelConfig(ModelConfig):
+    wrapper: ImageModelWrapper
+    dataset: str
+    labels: list[str]
+    model_type: str = "image"
+
+    def to_orchestrator(self):
+        return {
+            "modelType": self.model_type,
+            "dataset": self.dataset,
+            "labels": self.labels,
+        }
+
+@dataclass
+class LLMModelConfig(ModelConfig):
+    wrapper: LLMModelWrapper
+    system_prompt: str
+    model_type: str = "llm"
+
+    def to_orchestrator(self):
+        return {
+            "modelType": self.model_type,
+            "system_prompt": self.system_prompt,
+        }
+
+@dataclass
 class TestConfig:
     api_base: str
     api_access_token: str
-
-    wrapper: LLMModelWrapper
     target: str
-
-    target: str
-    model_type: str
-    system_prompt: str
     attack_source: str
     parallelism: int
-
+    model: ModelConfig
     attack_pack: str = "sandbox"
+    def to_orchestrator(self):
+        return {**{
+            "target": self.target,
+            "attackPack": self.attack_pack,
+            "parallelism": self.parallelism,
+            "attackSource": self.attack_source
+        }, **self.model.to_orchestrator()}
+
+    def handler(self):
+        return self.model.wrapper.to_handler()
+
 
 class TestImplementationProvider():
 
@@ -52,14 +91,7 @@ class TestImplementationProvider():
                 "User-Agent": f"mindgard-cli/{VERSION}",
                 "X-User-Agent": f"mindgard-cli/{VERSION}",
             },
-            json={
-                "target": config.target,
-                "modelType": config.model_type,
-                "system_prompt": config.system_prompt,
-                "attackPack": config.attack_pack,
-                "parallelism": config.parallelism,
-                "attackSource": config.attack_source
-            }
+            json=config.to_orchestrator()
         )
         response.raise_for_status()
 
@@ -75,16 +107,7 @@ class TestImplementationProvider():
 
     def connect_websocket(self, client:WebPubSubClient) -> None:
         client.open()
-    
-    def wrapper_to_handler(self, wrapper:LLMModelWrapper) -> RequestHandler:
-        context_manager = ContextManager()
-        def handler(payload: Any) -> Any:
-            context = context_manager.get_context_or_none(payload.get("context_id"))
-            return {
-                "response": wrapper(payload["prompt"], context)
-            }
-        return handler
-    
+
     def register_handler(self, handler:RequestHandler, client:WebPubSubClient, group_id:str) -> None:
         def callback(msg:OnGroupDataMessageArgs) -> None:
             if msg.data["messageType"] != "Request":
@@ -167,7 +190,7 @@ class Test:
             wps_url, group_id = p.init_test(self._config)
             wps_client = p.create_client(wps_url)
             p.connect_websocket(wps_client)
-            handler = p.wrapper_to_handler(self._config.wrapper)
+            handler = self._config.handler()
             p.register_handler(handler, wps_client, group_id)
             test_id = p.start_test(wps_client, group_id)
             p.poll_test(self._config, test_id)

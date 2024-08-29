@@ -1,4 +1,8 @@
 import requests_mock
+import base64
+import pytest
+
+from mindgard.wrappers.image import ImageModelWrapper, LabelConfidence
 from mindgard.wrappers.llm import TestStaticResponder, ContextManager, APIModelWrapper
 
 def test_static_responder_no_context() -> None:
@@ -101,3 +105,45 @@ def test_api_model_wrapper_with_context_with_template() -> None:
         )
         assert wrapper(text) == '"eh up"'
         assert mock.last_request.headers[header_key] == header_value
+
+
+def test_image_model_wrapper_aligns_responses() -> None:
+    url = "https://example.com/somewhere"
+    wrapper = ImageModelWrapper(
+        url=url,
+        labels=["0","1"],
+        api_key="test api key"
+    )
+
+    with requests_mock.mock() as m:
+        image=base64.b64encode("hello world".encode("utf-8"))
+        mock = m.post(
+            url,
+            json=[{"label":"1","score":"0.2"},{"label":"0","score":"0.1"}],
+        )
+        assert wrapper(image) == [LabelConfidence(label="0",score="0.1"),LabelConfidence(label="1",score="0.2")]
+        assert mock.last_request.headers["Accept"] == "application/json"
+        assert mock.last_request.headers["Content-Type"] == "image/jpeg"
+        assert mock.last_request.headers["Authorization"] == "Bearer test api key"
+        assert mock.last_request.text == image.decode("utf-8")
+
+def test_image_model_wrapper_missing_labels_raises_valueerror() -> None:
+    url = "https://example.com/somewhere"
+    wrapper = ImageModelWrapper(
+        url=url,
+        labels=["0"],
+        api_key="test api key"
+    )
+
+    with requests_mock.mock() as m:
+        image=base64.b64encode("hello world".encode("utf-8"))
+        mock = m.post(
+            url,
+            json=[{"label":"1","score":"0.2"},{"label":"0","score":"0.1"}],
+        )
+        with pytest.raises(ValueError):
+            wrapper(image)
+        assert mock.last_request.text == image.decode("utf-8")
+        assert mock.last_request.headers["Accept"] == "application/json"
+        assert mock.last_request.headers["Content-Type"] == "image/jpeg"
+        assert mock.last_request.headers["Authorization"] == "Bearer test api key"
