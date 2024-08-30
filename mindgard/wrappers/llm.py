@@ -82,7 +82,7 @@ class TestStaticResponder(LLMModelWrapper):
         if self._handler is not None:
             return self._handler
         else:
-            return super().to_handler(self)
+            return super().to_handler()
 
     def __call__(self, content: str, with_context: Optional[Context] = None) -> str:
         request = f"[start]sys: {self._system_prompt};"
