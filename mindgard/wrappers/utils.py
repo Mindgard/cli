@@ -1,4 +1,6 @@
 from typing import Any, Dict, Literal
+
+from mindgard.headers import parse_headers
 from mindgard.wrappers.image import ImageModelWrapper, get_image_model_wrapper
 from mindgard.wrappers.llm import LLMModelWrapper, get_llm_model_wrapper
 
@@ -10,7 +12,7 @@ def parse_args_into_model(
     if model_type == "llm":
         return get_llm_model_wrapper(
             preset=args["preset"],
-            headers_string=args["headers"],
+            headers=parse_headers(headers_comma_separated=args["headers"], headers_list=args["header"]),
             api_key=args["api_key"],
             url=args["url"],
             selector=args["selector"],

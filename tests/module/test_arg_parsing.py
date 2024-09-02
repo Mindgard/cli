@@ -52,7 +52,7 @@ def test_argparse_expected_failures(test_case: str) -> None:
 
 def test_toml_and_args_parsing_model_type_llm():
     cli_command = "test --config-file=config.toml"
-    namespace = Namespace(command='test',config_file='config.toml', log_level='warn', json=False, az_api_version=None, prompt=None, system_prompt=None, selector=None, request_template=None, tokenizer=None, model_type=None, parallelism=None, dataset=None, model_name=None, api_key=None, url=None, preset=None, headers=None, target=None, risk_threshold=None)
+    namespace = Namespace(command='test',config_file='config.toml', log_level='warn', json=False, az_api_version=None, prompt=None, system_prompt=None, selector=None, request_template=None, tokenizer=None, model_type=None, parallelism=None, dataset=None, model_name=None, api_key=None, url=None, preset=None, headers=None, header=None, target=None, risk_threshold=None)
     parsed_args = parse_args(cast(List[str], cli_command.split()))
     
     assert parsed_args == namespace 
@@ -75,7 +75,7 @@ def test_toml_and_args_parsing_model_type_llm():
         
 def test_toml_and_args_parsing_model_type_empty():
     cli_command = "test --config-file=config.toml"
-    namespace = Namespace(command='test',config_file='config.toml', log_level='warn', json=False, az_api_version=None, prompt=None, system_prompt=None, selector=None, request_template=None, tokenizer=None, model_type=None, parallelism=None, dataset=None, model_name=None, api_key=None, url=None, preset=None, headers=None, target=None, risk_threshold=None)
+    namespace = Namespace(command='test',config_file='config.toml', log_level='warn', json=False, az_api_version=None, prompt=None, system_prompt=None, selector=None, request_template=None, tokenizer=None, model_type=None, parallelism=None, dataset=None, model_name=None, api_key=None, url=None, preset=None, headers=None, header=None, target=None, risk_threshold=None)
     parsed_args = parse_args(cast(List[str], cli_command.split()))
     
     assert parsed_args == namespace 
@@ -99,7 +99,7 @@ def test_toml_and_args_parsing_model_type_empty():
             
 def test_toml_and_args_parsing_model_type_image():
     cli_command = "test --config-file=config.toml"
-    namespace = Namespace(command='test',config_file='config.toml', log_level='warn', json=False, az_api_version=None, prompt=None, system_prompt=None, selector=None, request_template=None, tokenizer=None, model_type=None, parallelism=None, dataset=None, model_name=None, api_key=None, url=None, preset=None, headers=None, target=None, risk_threshold=None)
+    namespace = Namespace(command='test',config_file='config.toml', log_level='warn', json=False, az_api_version=None, prompt=None, system_prompt=None, selector=None, request_template=None, tokenizer=None, model_type=None, parallelism=None, dataset=None, model_name=None, api_key=None, url=None, preset=None, headers=None, header=None, target=None, risk_threshold=None)
     parsed_args = parse_args(cast(List[str], cli_command.split()))
     
     assert parsed_args == namespace 
@@ -129,7 +129,7 @@ def test_toml_and_args_parsing_model_type_image():
 
 def test_toml_and_args_parsing_model_type_image_without_labels_set():
     cli_command = "test --config-file=config.toml"
-    namespace = Namespace(command='test',config_file='config.toml', log_level='warn', json=False, az_api_version=None, prompt=None, system_prompt=None, selector=None, request_template=None, tokenizer=None, model_type=None, parallelism=None, dataset=None, model_name=None, api_key=None, url=None, preset=None, headers=None, target=None, risk_threshold=None)
+    namespace = Namespace(command='test',config_file='config.toml', log_level='warn', json=False, az_api_version=None, prompt=None, system_prompt=None, selector=None, request_template=None, tokenizer=None, model_type=None, parallelism=None, dataset=None, model_name=None, api_key=None, url=None, preset=None, headers=None, header=None, target=None, risk_threshold=None)
     parsed_args = parse_args(cast(List[str], cli_command.split()))
     
     assert parsed_args == namespace 
@@ -150,7 +150,7 @@ def test_toml_and_args_parsing_model_type_image_without_labels_set():
 
 def test_toml_and_args_parsing_model_type_image_with_labels_set():
     cli_command = "test --config-file=config.toml"
-    namespace = Namespace(command='test',config_file='config.toml', log_level='warn', json=False, az_api_version=None, prompt=None, system_prompt=None, selector=None, request_template=None, tokenizer=None, model_type=None, parallelism=None, dataset=None, model_name=None, api_key=None, url=None, preset=None, headers=None, target=None, risk_threshold=None)
+    namespace = Namespace(command='test',config_file='config.toml', log_level='warn', json=False, az_api_version=None, prompt=None, system_prompt=None, selector=None, request_template=None, tokenizer=None, model_type=None, parallelism=None, dataset=None, model_name=None, api_key=None, url=None, preset=None, headers=None, header=None, target=None, risk_threshold=None)
     parsed_args = parse_args(cast(List[str], cli_command.split()))
     
     assert parsed_args == namespace 
@@ -176,7 +176,7 @@ def test_toml_and_args_parsing_model_type_image_with_labels_set():
 
 def test_toml_and_args_parsing_not_setting_risk_threshold():
     cli_command = "test --config-file=config.toml"
-    namespace = Namespace(command='test',config_file='config.toml', log_level='warn', json=False, az_api_version=None, prompt=None, system_prompt=None, selector=None, request_template=None, tokenizer=None, model_type=None, parallelism=None, dataset=None, model_name=None, api_key=None, url=None, preset=None, headers=None, target=None, risk_threshold=None)
+    namespace = Namespace(command='test',config_file='config.toml', log_level='warn', json=False, az_api_version=None, prompt=None, system_prompt=None, selector=None, request_template=None, tokenizer=None, model_type=None, parallelism=None, dataset=None, model_name=None, api_key=None, url=None, preset=None, headers=None, header=None, target=None, risk_threshold=None)
     parsed_args = parse_args(cast(List[str], cli_command.split()))
     
     assert parsed_args == namespace 
@@ -201,7 +201,7 @@ def test_toml_and_args_parsing_not_setting_risk_threshold():
 
 def test_toml_and_args_parsing_setting_risk_threshold():
     cli_command = "test --config-file=config.toml --risk-threshold=80"
-    namespace = Namespace(command='test',config_file='config.toml', log_level='warn', json=False, az_api_version=None, prompt=None, system_prompt=None, selector=None, request_template=None, tokenizer=None, model_type=None, parallelism=None, dataset=None, model_name=None, api_key=None, url=None, preset=None, headers=None, target=None, risk_threshold=80)
+    namespace = Namespace(command='test',config_file='config.toml', log_level='warn', json=False, az_api_version=None, prompt=None, system_prompt=None, selector=None, request_template=None, tokenizer=None, model_type=None, parallelism=None, dataset=None, model_name=None, api_key=None, url=None, preset=None, headers=None, header=None, target=None, risk_threshold=80)
     parsed_args = parse_args(cast(List[str], cli_command.split()))
     
     assert parsed_args == namespace 
@@ -226,7 +226,7 @@ def test_toml_and_args_parsing_setting_risk_threshold():
         
 def test_toml_and_args_parsing_setting_risk_threshold_zero():
     cli_command = "test --config-file=config.toml --risk-threshold=0"
-    namespace = Namespace(command='test',config_file='config.toml', log_level='warn', json=False, az_api_version=None, prompt=None, system_prompt=None, selector=None, request_template=None, tokenizer=None, model_type=None, parallelism=None, dataset=None, model_name=None, api_key=None, url=None, preset=None, headers=None, target=None, risk_threshold=0)
+    namespace = Namespace(command='test',config_file='config.toml', log_level='warn', json=False, az_api_version=None, prompt=None, system_prompt=None, selector=None, request_template=None, tokenizer=None, model_type=None, parallelism=None, dataset=None, model_name=None, api_key=None, url=None, preset=None, headers=None, header=None, target=None, risk_threshold=0)
     parsed_args = parse_args(cast(List[str], cli_command.split()))
     
     assert parsed_args == namespace 
@@ -251,7 +251,7 @@ def test_toml_and_args_parsing_setting_risk_threshold_zero():
         
 def test_toml_and_args_parsing_setting_json():
     cli_command = "test --config-file=config.toml --risk-threshold=80 --json"
-    namespace = Namespace(command='test',config_file='config.toml', log_level='warn', json=True, az_api_version=None, prompt=None, system_prompt=None, selector=None, request_template=None, tokenizer=None, model_type=None, parallelism=None, dataset=None, model_name=None, api_key=None, url=None, preset=None, headers=None, target=None, risk_threshold=80)
+    namespace = Namespace(command='test',config_file='config.toml', log_level='warn', json=True, az_api_version=None, prompt=None, system_prompt=None, selector=None, request_template=None, tokenizer=None, model_type=None, parallelism=None, dataset=None, model_name=None, api_key=None, url=None, preset=None, headers=None, header=None, target=None, risk_threshold=80)
     parsed_args = parse_args(cast(List[str], cli_command.split()))
     
     assert parsed_args == namespace 
@@ -276,7 +276,7 @@ def test_toml_and_args_parsing_setting_json():
     
 def test_toml_and_args_parsing_not_setting_json():
     cli_command = "test --config-file=config.toml --risk-threshold=80"
-    namespace = Namespace(command='test',config_file='config.toml', log_level='warn', json=False, az_api_version=None, prompt=None, system_prompt=None, selector=None, request_template=None, tokenizer=None, model_type=None, parallelism=None, dataset=None, model_name=None, api_key=None, url=None, preset=None, headers=None, target=None, risk_threshold=80)
+    namespace = Namespace(command='test',config_file='config.toml', log_level='warn', json=False, az_api_version=None, prompt=None, system_prompt=None, selector=None, request_template=None, tokenizer=None, model_type=None, parallelism=None, dataset=None, model_name=None, api_key=None, url=None, preset=None, headers=None, header=None, target=None, risk_threshold=80)
     parsed_args = parse_args(cast(List[str], cli_command.split()))
     
     assert parsed_args == namespace 
@@ -301,7 +301,7 @@ def test_toml_and_args_parsing_not_setting_json():
 
 def test_pass_random_dataset_not_in_approved_choices() -> None:
     cli_command = "test --config-file=config.toml --risk-threshold=80"
-    namespace = Namespace(command='test',config_file='config.toml', log_level='warn', json=False, az_api_version=None, prompt=None, system_prompt=None, selector=None, request_template=None, tokenizer=None, model_type=None, parallelism=None, dataset=None, model_name=None, api_key=None, url=None, preset=None, headers=None, target=None, risk_threshold=80)
+    namespace = Namespace(command='test',config_file='config.toml', log_level='warn', json=False, az_api_version=None, prompt=None, system_prompt=None, selector=None, request_template=None, tokenizer=None, model_type=None, parallelism=None, dataset=None, model_name=None, api_key=None, url=None, preset=None, headers=None, header=None, target=None, risk_threshold=80)
     parsed_args = parse_args(cast(List[str], cli_command.split()))
     
     assert parsed_args == namespace
