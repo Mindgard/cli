@@ -11,6 +11,7 @@ import jsonpath_ng
 
 # Exceptions
 from .exceptions import Uncontactable, status_code_to_exception, openai_exception_to_exception, EmptyResponse, NotImplemented
+from .headers import parse_headers
 from .responses import extract_reply, extract_replies
 from .types import type_model_presets
 
@@ -335,7 +336,7 @@ def check_expected_args(args: Dict[str, Any], expected_args: List[str]) -> None:
 
 
 def get_model_wrapper(
-    headers_string: Optional[str],
+    headers: Dict[str,str],
     preset: Optional[type_model_presets] = None,
     api_key: Optional[str] = None,
     url: Optional[str] = None,
@@ -382,11 +383,7 @@ def get_model_wrapper(
         if not url:
             raise ValueError("`--url` argument is required when not using a preset configuration.")
         # Convert headers string to dictionary
-        if headers_string:
-            headers: Dict[str, str] = {}
-            for key_and_value_str in headers_string.split(","):
-                key, value = key_and_value_str.strip().split(":")
-                headers[key.strip()] = value.strip()
+        if headers:
             return APIModelWrapper(api_url=url, selector=selector, request_template=request_template, system_prompt=system_prompt, tokenizer=tokenizer, headers=headers)
         else:
             return APIModelWrapper(api_url=url, selector=selector, request_template=request_template, system_prompt=system_prompt, tokenizer=tokenizer)
@@ -395,7 +392,7 @@ def get_model_wrapper(
 def parse_args_into_model(args: Dict[str, Any]) -> ModelWrapper:
     return get_model_wrapper(
         preset=args["preset"],
-        headers_string=args["headers"],
+        headers=parse_headers(headers_comma_separated=args["headers"], headers_list=args["header"]),
         api_key=args["api_key"],
         url=args["url"],
         selector=args["selector"],

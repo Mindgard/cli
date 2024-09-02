@@ -9,6 +9,7 @@ import requests
 from openai import AzureOpenAI, OpenAI, OpenAIError
 import jsonpath_ng
 
+from ..headers import parse_headers
 # Utils
 from ..utils import check_expected_args
 from ..responses import extract_replies
@@ -446,7 +447,7 @@ class AnthropicWrapper(LLMModelWrapper):
 
 
 def get_llm_model_wrapper(
-    headers_string: Optional[str],
+    headers: Dict[str, str],
     preset: Optional[
         type_model_presets
     ] = None,
@@ -531,11 +532,7 @@ def get_llm_model_wrapper(
                 "`--url` argument is required when not using a preset configuration."
             )
         # Convert headers string to dictionary
-        if headers_string:
-            headers: Dict[str, str] = {}
-            for key_and_value_str in headers_string.split(","):
-                key, value = key_and_value_str.strip().split(":")
-                headers[key.strip()] = value.strip()
+        if headers:
             return APIModelWrapper(
                 api_url=url,
                 selector=selector,
