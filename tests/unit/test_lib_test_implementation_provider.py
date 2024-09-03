@@ -101,7 +101,7 @@ def test_init_test(requests_mock: requests_mock.Mocker) -> None:
 
 @mock.patch("mindgard.test.WebPubSubClientCredential", autospec=True)
 @mock.patch("mindgard.test.WebPubSubClient", autospec=True)
-def test_create_websocket_client(mock_wps_client: mock.MagicMock, mock_wps_client_credential: mock.MagicMock):
+def test_create_websocket_client(mock_wps_client: mock.MagicMock, mock_wps_client_credential: mock.MagicMock) -> None:
     mock_wps_client_credential.return_value = {"something":"a"} # don't care what for now
     
     mock_client = mock.MagicMock(spec=WebPubSubClient)
@@ -115,7 +115,7 @@ def test_create_websocket_client(mock_wps_client: mock.MagicMock, mock_wps_clien
     mock_wps_client.assert_called_once_with(credential=mock_wps_client_credential.return_value)
     assert client == mock_client
 
-def test_connect_websocket():    
+def test_connect_websocket() -> None:    
     mock_client = mock.MagicMock(spec=WebPubSubClient)
 
     provider = TestImplementationProvider()
@@ -123,7 +123,7 @@ def test_connect_websocket():
 
     mock_client.open.assert_called_once()
 
-def test_wrapper_to_handler():
+def test_wrapper_to_handler() -> None:
     wrapper = MockModelWrapper()
     handler = wrapper.to_handler()
     request_payload = {"prompt": "world"}
@@ -133,7 +133,7 @@ def test_wrapper_to_handler():
         "response": "hello world",
     }
 
-def test_wrapper_to_handler_with_context():
+def test_wrapper_to_handler_with_context() -> None:
     wrapper = MockModelWrapper()
     handler = wrapper.to_handler()
     request_payload = {"prompt": "world", "context_id": "mycontext"}
@@ -148,7 +148,7 @@ def test_wrapper_to_handler_with_context():
         "response": "hello world 1",
     }
 
-def test_register_handler():
+def test_register_handler() -> None:
     has_handler: List[Callable[[OnGroupDataMessageArgs], None]] = []
     has_sent_to_group: List[Dict[str, Any]] = []
     def subscribe(group_name:str, handler:Callable[[OnGroupDataMessageArgs], None]) -> None:
@@ -201,7 +201,7 @@ def test_register_handler():
 
     assert len(has_sent_to_group) == 1, "Non Request messages should be ignored"
 
-def test_start_test():
+def test_start_test() -> None:
     want_group_id = "my group id"
     want_test_id = "my test id"
     
@@ -245,7 +245,7 @@ def test_start_test():
 
     assert test_id == want_test_id, "should return the correct test id"
 
-def test_poll_test_returns(requests_mock: requests_mock.Mocker):
+def test_poll_test_returns(requests_mock: requests_mock.Mocker) -> None:
     config = _helper_default_config()
     test_api_base = "https://test.internal"
     test_id = "my test id"
@@ -273,7 +273,7 @@ def test_poll_test_returns(requests_mock: requests_mock.Mocker):
 
     assert get_request.call_count == len(responses), "should have not returned until hasFinished is true"
 
-def test_poll_test_continues_on_bad_response(requests_mock: requests_mock.Mocker):
+def test_poll_test_continues_on_bad_response(requests_mock: requests_mock.Mocker) -> None:
     """
     This represents protections against unexpected responses from the server which could
     result in a test bailing. This is not a common issue but the cost of exiting early
@@ -307,7 +307,7 @@ def test_poll_test_continues_on_bad_response(requests_mock: requests_mock.Mocker
 
     assert get_request.call_count == len(responses), "should have not returned until hasFinished is true"
 
-def test_close():
+def test_close() -> None:
     wps_client = mock.MagicMock(spec=WebPubSubClient)
     provider = TestImplementationProvider()
     provider.close(wps_client)

@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import logging
 from threading import Condition
 import time
-from typing import Any, Optional, Protocol, Tuple
+from typing import Any, Dict, Optional, Protocol, Tuple
 from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCredential
 from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs, CallbackType, WebPubSubDataType
 import requests
@@ -25,7 +25,7 @@ class RequestHandler(Protocol):
 
 @dataclass
 class ModelConfig:
-    def to_orchestrator_init_params(self):
+    def to_orchestrator_init_params(self) -> Dict[str, Any]:
         return {}
 
 
@@ -36,7 +36,7 @@ class ImageModelConfig(ModelConfig):
     labels: list[str]
     model_type: str = "image"
 
-    def to_orchestrator_init_params(self):
+    def to_orchestrator_init_params(self) -> Dict[str, Any]:
         return {
             "modelType": self.model_type,
             "dataset": self.dataset,
@@ -49,7 +49,7 @@ class LLMModelConfig(ModelConfig):
     system_prompt: str
     model_type: str = "llm"
 
-    def to_orchestrator_init_params(self):
+    def to_orchestrator_init_params(self) -> Dict[str, Any]:
         return {
             "modelType": self.model_type,
             "system_prompt": self.system_prompt,
@@ -65,6 +65,7 @@ class TestConfig:
     model: ModelConfig
     attack_pack: str = "sandbox"
     additional_headers: Optional[Dict[str, str]] = None
+    def to_orchestrator_init_params(self) -> Dict[str, Any]:
         """
         Get parameters for the init test request to orchestrator
         """
@@ -75,8 +76,8 @@ class TestConfig:
             "attackSource": self.attack_source
         }, **self.model.to_orchestrator_init_params()}
 
-    def handler(self):
-        return self.model.wrapper.to_handler()
+    def handler(self) -> Any:
+        return self.model.wrapper.to_handler() # type: ignore # TODO not sure on type
 
 
 class TestImplementationProvider():
@@ -132,7 +133,7 @@ class TestImplementationProvider():
             
         client.subscribe(CallbackType.GROUP_MESSAGE, callback)
 
-    def start_test(self, client:WebPubSubClient, group_id:str):
+    def start_test(self, client:WebPubSubClient, group_id:str) -> str:
         logging.error(f"Starting test {group_id}")
         started_condition = Condition()
         test_ids: list[str] = []
@@ -156,7 +157,7 @@ class TestImplementationProvider():
             started_condition.wait_for(lambda: len(test_ids) > 0)
             return test_ids[0]
 
-    def poll_test(self, config:TestConfig, test_id:str, period_seconds:int = 5):
+    def poll_test(self, config:TestConfig, test_id:str, period_seconds:int = 5) -> None:
         finished = False
         while not finished:
             response = requests.get(
@@ -178,7 +179,7 @@ class TestImplementationProvider():
                 
             time.sleep(period_seconds)
 
-    def close(self, client:Optional[WebPubSubClient]):
+    def close(self, client:Optional[WebPubSubClient]) -> None:
         if client:
             client.close()
             
@@ -187,7 +188,7 @@ class Test:
         self._config = config
         self._provider = provider
 
-    def run(self):
+    def run(self) -> None:
         p = self._provider
         wps_client = None
         try:
