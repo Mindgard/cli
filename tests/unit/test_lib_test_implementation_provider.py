@@ -37,7 +37,7 @@ class MockModelWrapper(LLMModelWrapper):
             return res
         return self.mirror(content)
 
-def _helper_default_config() -> TestConfig:
+def _helper_default_config(extra: Dict[str, Any] = {}) -> TestConfig:
     return TestConfig(
         api_base="https://test.internal",
         api_access_token="my access token",
@@ -48,16 +48,22 @@ def _helper_default_config() -> TestConfig:
         model = LLMModelConfig(
             wrapper=MockModelWrapper(),
             system_prompt = "my system prompt"
-        )
+        ),
+        **extra
     )
 
-def test_init_test(requests_mock: requests_mock.Mocker):
+def test_init_test(requests_mock: requests_mock.Mocker) -> None:
     # expectations
     test_url = "test_url"
     test_group_id = "test_group_id"
 
+    additional_headers = {
+        "x-api-key": "my-api-key",
+        "x-associated-user-sub": "my-user-sub"
+    }
+
     # inputs
-    config = _helper_default_config()
+    config = _helper_default_config({"additional_headers": additional_headers})
     test_api_base = "https://test.internal"
     test_access_token = "my access token"
     
@@ -81,6 +87,8 @@ def test_init_test(requests_mock: requests_mock.Mocker):
     assert cli_init_requests.last_request.headers.get("Authorization") == f"Bearer {test_access_token}", "should set authorization header"
     assert cli_init_requests.last_request.headers.get("X-User-Agent") == f"mindgard-cli/{VERSION}", "should set user agent"
     assert cli_init_requests.last_request.headers.get("User-Agent") == f"mindgard-cli/{VERSION}", "should set user agent"
+    assert cli_init_requests.last_request.headers.get("x-api-key") == additional_headers.get("x-api-key"), "should set additional headers"
+    assert cli_init_requests.last_request.headers.get("x-associated-user-sub") == additional_headers.get("x-associated-user-sub"), "should set additional headers"
     assert cli_init_requests.last_request.json() == {
         "target": config.target,
         "modelType": config.model.model_type,

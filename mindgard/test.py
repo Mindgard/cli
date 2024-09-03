@@ -64,7 +64,7 @@ class TestConfig:
     parallelism: int
     model: ModelConfig
     attack_pack: str = "sandbox"
-    def to_orchestrator_init_params(self):
+    additional_headers: Optional[Dict[str, str]] = None
         """
         Get parameters for the init test request to orchestrator
         """
@@ -93,6 +93,7 @@ class TestImplementationProvider():
                 "Authorization": f"Bearer {config.api_access_token}",
                 "User-Agent": f"mindgard-cli/{VERSION}",
                 "X-User-Agent": f"mindgard-cli/{VERSION}",
+                **(config.additional_headers or {})
             },
             json=config.to_orchestrator_init_params()
         )
