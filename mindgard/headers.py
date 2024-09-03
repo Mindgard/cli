@@ -3,9 +3,9 @@ import re
 
 def parse_headers(headers_comma_separated: Optional[str] = None, headers_list: List[str] = []) -> Dict[str, str]:
     if headers_comma_separated is None:
-        return parse_list_of_headers(headers_input=headers_list)
+        return parse_list_of_headers(headers_input=headers_list or [])
     else:
-        return parse_list_of_headers(headers_input=headers_comma_separated.split(",") + headers_list)
+        return parse_list_of_headers(headers_input=headers_comma_separated.split(",") + (headers_list or []))
 
 def parse_list_of_headers(headers_input:list[str]) -> Dict[str, str]:
     headers: Dict[str, str] = {}

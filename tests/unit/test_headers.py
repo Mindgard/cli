@@ -1,5 +1,13 @@
 from mindgard.headers import parse_headers
 
+def test_no_headers() -> None:
+    headers = parse_headers(None, None)
+    assert headers == {}
+
+def test_when_no_headers_list() -> None:
+    headers = parse_headers(headers_comma_separated="Authorization: bearer XXX", headers_list=None)
+    assert headers["Authorization"] == "bearer XXX"
+
 def test_headers_have_key_value() -> None:
     headers = parse_headers(headers_comma_separated="Authorization: bearer XXX")
     assert headers["Authorization"] == "bearer XXX"
@@ -11,6 +19,11 @@ def test_header_values_can_be_comma_separated() -> None:
 
 def test_can_have_multiple_headers() -> None:
     headers = parse_headers(headers_list=["Authorization: bearer YYY","Cookie: monster"])
+    assert headers["Authorization"] == "bearer YYY"
+    assert headers["Cookie"] == "monster"
+
+def test_when_no_headers_comma_seperated() -> None:
+    headers = parse_headers(headers_list=["Authorization: bearer YYY","Cookie: monster"], headers_comma_separated=None)
     assert headers["Authorization"] == "bearer YYY"
     assert headers["Cookie"] == "monster"
 
