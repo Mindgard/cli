@@ -170,11 +170,12 @@ class TestImplementationProvider():
                 if response.status_code == 200:
                     test = response.json()
                     finished = test["hasFinished"]
-            except requests.JSONDecodeError:
-                # TODO logging
+                    logging.info(f"Test {test_id} has finished! {test['hasFinished']} {test['isCompleted']}")
+            except requests.JSONDecodeError as jde:
+                logging.error(f"Error decoding response: {jde}")
                 pass
-            except KeyError:
-                # TODO logging
+            except KeyError as ke:
+                logging.error(f"KeyError response: {ke}")
                 pass
                 
             time.sleep(period_seconds)
@@ -193,11 +194,17 @@ class Test:
         wps_client = None
         try:
             wps_url, group_id = p.init_test(self._config)
+            logging.info("Creating webpubsub client")
             wps_client = p.create_client(wps_url)
+            logging.info("Connecting to webpubsub client")
             p.connect_websocket(wps_client)
             handler = self._config.handler()
             p.register_handler(handler, wps_client, group_id)
+            logging.info("Submitting test")
             test_id = p.start_test(wps_client, group_id)
+            logging.info("Polling test...")
             p.poll_test(self._config, test_id)
+            logging.info("...Test complete!")
         finally:
+            logging.info("Closing webpubsub client")
             p.close(wps_client)
