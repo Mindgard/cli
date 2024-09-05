@@ -57,13 +57,53 @@ def test_init_test(requests_mock: requests_mock.Mocker) -> None:
     test_url = "test_url"
     test_group_id = "test_group_id"
 
+    # inputs
+    config = _helper_default_config()
+    test_api_base = "https://test.internal"
+    test_access_token = "my access token"
+    
+    cli_init_requests = requests_mock.post(
+        f"{test_api_base}/tests/cli_init",
+        json={
+            "url": test_url,
+            "groupId": test_group_id
+        },
+        status_code=200,
+    )
+
+    # test
+    provider = TestImplementationProvider()
+    url, group_id = provider.init_test(config)
+
+    assert url == test_url
+    assert group_id == test_group_id
+    assert cli_init_requests.call_count == 1
+    assert cli_init_requests.last_request is not None
+    assert cli_init_requests.last_request.headers.get("Authorization") == f"Bearer {test_access_token}", "should set authorization header"
+    assert cli_init_requests.last_request.headers.get("X-User-Agent") == f"mindgard-cli/{VERSION}", "should set user agent"
+    assert cli_init_requests.last_request.headers.get("User-Agent") == f"mindgard-cli/{VERSION}", "should set user agent"
+    assert cli_init_requests.last_request.json() == {
+        "target": config.target,
+        "modelType": config.model.model_type,
+        "system_prompt": config.model.system_prompt,
+        "attackPack": config.attack_pack,
+        "parallelism": config.parallelism,
+        "attackSource": config.attack_source,
+        "attackPack": config.attack_pack,
+    }
+
+def test_init_test_using_api_key_auth_flow(requests_mock: requests_mock.Mocker) -> None:
+    # expectations
+    test_url = "test_url"
+    test_group_id = "test_group_id"
+
     additional_headers = {
         "x-api-key": "my-api-key",
         "x-associated-user-sub": "my-user-sub"
     }
 
     # inputs
-    config = _helper_default_config({"additional_headers": additional_headers})
+    config = _helper_default_config(extra={"additional_headers": additional_headers})
     test_api_base = "https://test.internal"
     test_access_token = "my access token"
     
@@ -245,8 +285,12 @@ def test_start_test() -> None:
 
     assert test_id == want_test_id, "should return the correct test id"
 
-def test_poll_test_returns(requests_mock: requests_mock.Mocker) -> None:
-    config = _helper_default_config()
+def test_poll_test_returns_using_api_token_auth_flow(requests_mock: requests_mock.Mocker) -> None:
+    additional_headers = {
+        "x-api-key": "my-api-key",
+        "x-associated-user-sub": "my-user-sub"
+    }
+    config = _helper_default_config(extra={"additional_headers": additional_headers})
     test_api_base = "https://test.internal"
     test_id = "my test id"
     
@@ -272,6 +316,8 @@ def test_poll_test_returns(requests_mock: requests_mock.Mocker) -> None:
     provider.poll_test(config, test_id, period_seconds=0)
 
     assert get_request.call_count == len(responses), "should have not returned until hasFinished is true"
+    assert get_request.last_request.headers.get("x-api-key") == additional_headers.get("x-api-key"), "should set additional headers"
+    assert get_request.last_request.headers.get("x-associated-user-sub") == additional_headers.get("x-associated-user-sub"), "should set additional headers"
 
 def test_poll_test_continues_on_bad_response(requests_mock: requests_mock.Mocker) -> None:
     """
