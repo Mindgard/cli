@@ -65,6 +65,8 @@ class TestConfig:
     model: ModelConfig
     attack_pack: str = "sandbox"
     additional_headers: Optional[Dict[str, str]] = None
+    # Only needed if initial submit is made to a different endpoint than polling will be conducted
+    polling_api_base: Optional[str] = None
     def to_orchestrator_init_params(self) -> Dict[str, Any]:
         """
         Get parameters for the init test request to orchestrator
@@ -158,10 +160,13 @@ class TestImplementationProvider():
             return test_ids[0]
 
     def poll_test(self, config:TestConfig, test_id:str, period_seconds:int = 5) -> None:
+        # Only needed if initial submit is made to a different endpoint than polling will be conducted
+        # If polling_api_base not provided, use api base.
+        api_base_url: str = config.polling_api_base or config.api_base
         finished = False
         while not finished:
             response = requests.get(
-                url=f"{config.api_base}/assessments/{test_id}",
+                url=f"{api_base_url}/assessments/{test_id}",
                 headers={
                     "Authorization": f"Bearer {config.api_access_token}",
                 }
