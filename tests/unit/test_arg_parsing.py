@@ -29,7 +29,7 @@ cases = [
             target="mytarget",
             modelType="llm",
             system_prompt="mysysprompt",
-            attackPack=None,
+            attackPack="sandbox",
             attackSource="user",
             parallelism=4,
             labels=None
@@ -47,6 +47,68 @@ cases = [
         ),
         expected_exit_code=0,
     ),
+    Case(
+        name="mode",
+        input_args=[
+            'mindgard', 'test', 'mytarget', 
+            '--system-prompt', 'mysysprompt', 
+            '--preset', 'tester',
+            '--parallelism', '4',
+            '--mode', 'fast',
+        ],
+        expected_request=OrchestratorSetupRequest(
+            target="mytarget",
+            modelType="llm",
+            system_prompt="mysysprompt",
+            attackPack="sandbox",
+            attackSource="user",
+            parallelism=4,
+            labels=None
+        ),
+        cli_run_response=OrchestratorTestResponse(
+            id="123",
+            mindgardModelName="model",
+            source="user",
+            createdAt="2022-01-01",
+            attacks=[],
+            isCompleted=True,
+            hasFinished=True,
+            risk=12,
+            test_url="http://example.com"
+        ),
+        expected_exit_code=0,
+    ),
+    Case(
+        name="mode",
+        input_args=[
+            'mindgard', 'test', 'mytarget', 
+            '--system-prompt', 'mysysprompt', 
+            '--preset', 'tester',
+            '--parallelism', '4',
+            '--mode', 'thorough',
+        ],
+        expected_request=OrchestratorSetupRequest(
+            target="mytarget",
+            modelType="llm",
+            system_prompt="mysysprompt",
+            attackPack="large",
+            attackSource="user",
+            parallelism=4,
+            labels=None
+        ),
+        cli_run_response=OrchestratorTestResponse(
+            id="123",
+            mindgardModelName="model",
+            source="user",
+            createdAt="2022-01-01",
+            attacks=[],
+            isCompleted=True,
+            hasFinished=True,
+            risk=12,
+            test_url="http://example.com"
+        ),
+        expected_exit_code=0,
+    )
 ]
 
 

@@ -4,27 +4,27 @@ import traceback
 
 # Types
 from typing import List, cast
-from .types import log_levels, model_types, valid_image_datasets, type_model_presets_list
+from mindgard.types import log_levels, model_types, valid_image_datasets, type_model_presets_list
 
 # Models
-from .preflight import preflight_image, preflight_llm
-from .wrappers.utils import parse_args_into_model
+from mindgard.preflight import preflight_image, preflight_llm
+from mindgard.wrappers.utils import parse_args_into_model
 from mindgard.wrappers.image import ImageModelWrapper
 from mindgard.wrappers.llm import LLMModelWrapper
 
 # Run functions
-from .run_functions.list_tests import list_test_submit, list_test_polling, list_test_output
-from .run_functions.sandbox_test import submit_sandbox_submit_factory, submit_sandbox_polling
-from .run_functions.external_models import model_test_polling, model_test_output_factory, model_test_submit_factory
-from .external_model_handlers.image_model import image_message_handler
-from .external_model_handlers.llm_model import llm_message_handler
-from .run_poll_display import cli_run
+from mindgard.run_functions.list_tests import list_test_submit, list_test_polling, list_test_output
+from mindgard.run_functions.sandbox_test import submit_sandbox_submit_factory, submit_sandbox_polling
+from mindgard.run_functions.external_models import model_test_polling, model_test_output_factory, model_test_submit_factory
+from mindgard.external_model_handlers.image_model import image_message_handler
+from mindgard.external_model_handlers.llm_model import llm_message_handler
+from mindgard.run_poll_display import cli_run
 
-from .orchestrator import OrchestratorSetupRequest
+from mindgard.orchestrator import OrchestratorSetupRequest
 
 # Constants and Utils
-from .constants import VERSION
-from .utils import is_version_outdated, print_to_stderr, parse_toml_and_args_into_final_args, convert_test_to_cli_response, CliResponse
+from mindgard.constants import VERSION
+from mindgard.utils import is_version_outdated, print_to_stderr, parse_toml_and_args_into_final_args, convert_test_to_cli_response, CliResponse
 
 # Logging
 import logging
@@ -32,7 +32,7 @@ from rich.logging import RichHandler
 from rich.console import Console
 
 # Auth
-from .auth import login, logout
+from mindgard.auth import login, logout
 
 # both validate and test need these same arguments, so have factored them out
 def shared_arguments(parser: argparse.ArgumentParser):
@@ -82,6 +82,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     shared_arguments(test_parser)
     test_parser.add_argument('--parallelism', type=int, help='The maximum number of parallel requests that can be made to the API.', required=False)
     test_parser.add_argument('--dataset', type=str, help='The dataset to use for image models', choices=valid_image_datasets, required=False)
+    test_parser.add_argument('--mode', type=str, help='Specify the number of samples to use during attacks; contact Mindgard for access to \'thorough\' test',  choices=['fast', 'thorough'], default="fast", required=False)
 
     validate_parser = subparsers.add_parser("validate", help="Validates that we can communicate with your model")
     shared_arguments(validate_parser)
@@ -144,7 +145,8 @@ def main() -> None:
                         system_prompt=final_args["system_prompt"],
                         dataset=None,
                         modelType=final_args["model_type"],
-                        attackSource="user"
+                        attackSource="user",
+                        attackPack=("large" if final_args['mode'] == "thorough" else "sandbox"),
                     )
                     submit = model_test_submit_factory(
                         request=request,
