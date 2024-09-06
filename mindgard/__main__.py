@@ -82,7 +82,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     shared_arguments(test_parser)
     test_parser.add_argument('--parallelism', type=int, help='The maximum number of parallel requests that can be made to the API.', required=False)
     test_parser.add_argument('--dataset', type=str, help='The dataset to use for image models', choices=valid_image_datasets, required=False)
-    test_parser.add_argument('--mode', type=str, help='Specify the number of samples to use during attacks; contact Mindgard for access to \'thorough\' test',  choices=['fast', 'thorough'], default="fast", required=False)
+    test_parser.add_argument('--mode', type=str, help='Specify the number of samples to use during attacks; contact Mindgard for access to \'thorough\' test', choices=['fast', 'thorough'], required=False)
 
     validate_parser = subparsers.add_parser("validate", help="Validates that we can communicate with your model")
     shared_arguments(validate_parser)

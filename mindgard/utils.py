@@ -6,16 +6,16 @@ import toml
 
 # Types
 from typing import Any, Dict, List, Optional, Tuple
-from .types import valid_image_datasets
+from mindgard.types import valid_image_datasets
 
 # Data models
-from .orchestrator import OrchestratorTestResponse
+from mindgard.orchestrator import OrchestratorTestResponse
 
 # B64 encode decode
 import base64
 
 # Constants
-from .constants import (
+from mindgard.constants import (
     REPOSITORY_URL,
     VERSION,
 )
@@ -96,6 +96,7 @@ def parse_toml_and_args_into_final_args(
     final_args["parallelism"] = final_args.get("parallelism") if final_args.get("parallelism") is not None else 5
     final_args["model_type"] = final_args.get("model_type") if final_args.get("model_type") is not None else 'llm'
     final_args["json"] = final_args.get("json") if final_args.get("json") is not None else False
+    final_args["mode"] = final_args.get("mode") if final_args.get("mode") is not None else "fast"
 
     if final_args["model_type"] == "image":
         if final_args.get("dataset", "unknown") not in valid_image_datasets:
