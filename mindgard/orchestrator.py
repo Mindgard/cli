@@ -4,13 +4,13 @@ import json
 # Types
 from pydantic import BaseModel, model_validator
 from typing import Optional, Any, Dict, Literal, cast, List
-from .types import type_post_request_function, type_get_request_function
+from mindgard.types import type_post_request_function, type_get_request_function
 
 # Constants
-from .constants import API_BASE, DASHBOARD_URL
+from mindgard.constants import API_BASE, DASHBOARD_URL
 
 # Requests
-from .api_service import (
+from mindgard.api_service import (
     api_get,
     api_post,
 )
@@ -23,7 +23,7 @@ BaseModel.model_config["protected_namespaces"] = ()
 
 
 # Type aliases
-from .types import type_orchestrator_attack_pack, type_orchestrator_source
+from mindgard.types import type_orchestrator_source
 
 
 class OrchestratorSetupRequest(BaseModel):
@@ -154,8 +154,6 @@ def setup_orchestrator_webpubsub_request(
     request_function: type_post_request_function = api_post,
 ) -> OrchestratorSetupResponse:
     url = f"{API_BASE}/tests/cli_init"
-
-    request.attackPack = os.environ.get("ATTACK_PACK", "sandbox")
 
     try:
         payload = request.model_dump()

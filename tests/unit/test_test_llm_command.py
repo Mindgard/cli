@@ -295,26 +295,6 @@ def test_mindgard_extra_config(requests_mock: requests_mock.Mocker):
     assert submitted_test is not None
     assert submitted_test.get("extraConfig") == config
 
-def test_empty_attack_pack_config(requests_mock: requests_mock.Mocker):
-    def run_test():
-        with mock.patch.dict('os.environ'):
-            if "ATTACK_PACK" in os.environ:
-                del os.environ["ATTACK_PACK"]
-            _run_llm_test()
-
-    submitted_test = _test_inner(run_test, requests_mock)
-    assert submitted_test is not None
-    assert submitted_test.get("attackPack") == "sandbox"
-
-def test_attack_pack_config(requests_mock: requests_mock.Mocker) -> None:
-    def run_test() -> None:
-        with mock.patch.dict(os.environ, {"ATTACK_PACK": "my_attack_pack"}):
-            _run_llm_test()
-
-    submitted_test = _test_inner(run_test, requests_mock)
-    assert submitted_test is not None
-    assert submitted_test.get("attackPack") == "my_attack_pack"
-
 def test_image_test_model_type_llm(requests_mock: requests_mock.Mocker) -> None:
     def run_test() -> None:
         _run_llm_test(json_out=False, model_type="llm")
