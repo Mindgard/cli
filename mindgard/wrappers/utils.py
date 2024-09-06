@@ -1,4 +1,4 @@
-from typing import Any, Dict, Literal
+from typing import Any, Dict, Literal, Union
 
 from mindgard.headers import parse_headers
 from mindgard.wrappers.image import ImageModelWrapper, get_image_model_wrapper
@@ -8,7 +8,7 @@ from mindgard.wrappers.llm import LLMModelWrapper, get_llm_model_wrapper
 # TODO: make an alias for model_type
 def parse_args_into_model(
     model_type: Literal["image", "llm"], args: Dict[str, Any]
-) -> LLMModelWrapper | ImageModelWrapper:
+) -> Union[LLMModelWrapper, ImageModelWrapper]:
     if model_type == "llm":
         return get_llm_model_wrapper(
             preset=args["preset"],
