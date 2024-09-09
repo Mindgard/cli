@@ -4,11 +4,11 @@ Status: Pre-Alpha -- implementation incomplete and interfaces are likely to chan
 Provides headless execution of mindgard tests.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import logging
 from threading import Condition
 import time
-from typing import Any, Dict, Optional, Protocol, Tuple
+from typing import Any, Dict, Optional, Protocol, Tuple, List
 from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCredential
 from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs, CallbackType, WebPubSubDataType
 import requests
@@ -79,6 +79,58 @@ class TestConfig:
     def handler(self) -> Any:
         return self.model.wrapper.to_handler() # type: ignore # TODO not sure on type
 
+@dataclass
+class AttackState():
+    id: str
+    name: str
+    ended: bool
+    failed: Optional[bool]
+    passed: Optional[bool]
+    risk: Optional[int]
+    
+
+@dataclass
+class TestState():
+    notifier: Condition = field(default_factory=Condition)
+    
+    submitting: bool = False
+    submitted: bool = False
+    started: bool = False
+    test_complete: bool = False
+    attacks: List[AttackState] = field(default_factory=list[AttackState])
+    model_exceptions: List[Exception] = field(default_factory=list[Exception])
+    test_id: Optional[str] = None
+
+    def set_started(self) -> None:
+        with self.notifier:
+            self.started = True
+            self.notifier.notify_all()
+
+    def set_submitting_test(self) -> None:
+        with self.notifier:
+            self.submitting = True
+            self.notifier.notify_all()
+
+    def set_attacking(self, test_id:str, attacks:List[AttackState]) -> None:
+        with self.notifier:
+            self.submitted = True
+            self.test_id = test_id
+            self.attacks = attacks
+            self.started = True
+            self.notifier.notify_all()
+
+    def set_test_complete(self, test_id:str, attacks:List[AttackState]) -> None:
+        with self.notifier:
+            self.test_id = test_id
+            self.attacks = attacks
+            self.test_complete = True
+            self.notifier.notify_all()
+
+    def add_exception(self, exception:Exception) -> None:
+        with self.notifier:
+            self.model_exceptions.append(exception)
+            self.notifier.notify_all()
+
 
 class TestImplementationProvider():
 
@@ -117,9 +169,9 @@ class TestImplementationProvider():
         def callback(msg:OnGroupDataMessageArgs) -> None:
             if msg.data["messageType"] != "Request":
                 return
-            
-            payload = handler(payload=msg.data["payload"])
 
+            payload = handler(payload=msg.data["payload"])
+            
             client.send_to_group(
                 "orchestrator",
                 {
