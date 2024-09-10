@@ -12,14 +12,9 @@ class FakeTest():
     self._state.set_started()
     self._state.set_submitting_test()
     self._state.set_attacking("my_test_id", attacks=[
-      AttackState(id="1", name="myattack1", ended=False, failed=False, passed=True,  risk=50),
-      AttackState(id="2", name="myattack2", ended=False, failed=False, passed=False, risk=80),
-      AttackState(id="3", name="myattack3", ended=False, failed=True,  passed=None,  risk=None),
-    ])
-    self._state.set_attacking("my_test_id", attacks=[
-      AttackState(id="1", name="myattack1", ended=False, failed=False, passed=True,  risk=50),
-      AttackState(id="2", name="myattack2", ended=True, failed=False, passed=False, risk=80),
-      AttackState(id="3", name="myattack3", ended=False, failed=True,  passed=None,  risk=None),
+      AttackState(id="1", name="myattack1", state="queued", errored=False, passed=True,  risk=50),
+      AttackState(id="2", name="myattack2", state="running", errored=False, passed=False, risk=80),
+      AttackState(id="3", name="myattack3", state="completed", errored=True,  passed=None,  risk=None),
     ])
 
     self._state.add_exception(Exception("my 2nd exception"))
@@ -27,15 +22,10 @@ class FakeTest():
     self._state.add_exception(Exception("my 1st exception"))
     self._state.add_exception(Exception("my 1st exception"))
 
-    self._state.set_attacking("my_test_id", attacks=[
-      AttackState(id="1", name="myattack1", ended=True, failed=False, passed=True,  risk=50),
-      AttackState(id="2", name="myattack2", ended=True, failed=False, passed=False, risk=80),
-      AttackState(id="3", name="myattack3", ended=False, failed=True,  passed=None,  risk=None),
-    ])
     self._state.set_test_complete("my_test_id", attacks=[
-      AttackState(id="1", name="myattack1", ended=True, failed=False, passed=True,  risk=50),
-      AttackState(id="2", name="myattack2", ended=True, failed=False, passed=False, risk=80),
-      AttackState(id="3", name="myattack3", ended=True, failed=True,  passed=None,  risk=None),
+      AttackState(id="1", name="myattack1", state="completed", errored=False, passed=True,  risk=50),
+      AttackState(id="2", name="myattack2", state="completed", errored=False, passed=False, risk=80),
+      AttackState(id="3", name="myattack3", state="completed", errored=True,  passed=None,  risk=None),
     ])
 
 def test_ui_complete(

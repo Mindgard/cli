@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 import logging
 from threading import Condition
 import time
-from typing import Any, Dict, Optional, Protocol, Tuple, List
+from typing import Any, Dict, Literal, Optional, Protocol, Tuple, List
 from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCredential
 from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs, CallbackType, WebPubSubDataType
 import requests
@@ -83,8 +83,8 @@ class TestConfig:
 class AttackState():
     id: str
     name: str
-    ended: bool
-    failed: Optional[bool]
+    state: Literal["queued", "running", "completed"]
+    errored: Optional[bool]
     passed: Optional[bool]
     risk: Optional[int]
     
@@ -131,13 +131,35 @@ class TestState():
             self.model_exceptions.append(exception)
             self.notifier.notify_all()
 
+def api_response_to_attack_state(attack:Dict[str, Any]) -> AttackState:
+    if attack["state"] == 0:
+        state = "queued"
+    elif attack["state"] == 1:
+        state = "running"
+    else:
+        state = "completed"
+
+    errored = (state == "completed" and attack["state"] == -1) or None
+    risk = attack.get("risk") if attack["state"] == 2 else None
+    return AttackState(
+        id=attack["id"],
+        name=attack["attack"],
+        state=state,
+        errored=errored,
+        passed=attack.get("passed", None),
+        risk=risk
+    )
 
 class TestImplementationProvider():
+
+    def __init__(self, state:Optional[TestState] = None):
+        self._state = state or TestState()
 
     def init_test(self, config:TestConfig) -> Tuple[str, str]:
         """
         Init a test in with API and return the url and group_id
         """
+        self._state.set_submitting_test()
         url = f"{config.api_base}/tests/cli_init"
 
         response = requests.post(
@@ -223,7 +245,11 @@ class TestImplementationProvider():
                 if response.status_code == 200:
                     test = response.json()
                     finished = test["hasFinished"]
-                    logging.info(f"Test {test_id} has finished! {test['hasFinished']} {test['isCompleted']}")
+                    attacks = [api_response_to_attack_state(attack) for attack in test["attacks"]]
+                    if finished:
+                        self._state.set_test_complete(test_id, attacks)
+                    else:
+                        self._state.set_attacking(test_id, attacks)
             except requests.JSONDecodeError as jde:
                 logging.error(f"Error decoding response: {jde}")
                 pass

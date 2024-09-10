@@ -18,33 +18,26 @@ class FakeTest():
 
     sleep(1)
     self._state.set_attacking("my_test_id", attacks=[
-      AttackState(id="1", name="myattack1", ended=False, failed=False, passed=True,  risk=50),
-      AttackState(id="2", name="myattack2", ended=False, failed=False, passed=False, risk=80),
-      AttackState(id="3", name="myattack3", ended=False, failed=True,  passed=None,  risk=None),
-    ])
-    self._state.set_attacking("my_test_id", attacks=[
-      AttackState(id="1", name="myattack1", ended=False, failed=False, passed=True,  risk=50),
-      AttackState(id="2", name="myattack2", ended=True, failed=False, passed=False, risk=80),
-      AttackState(id="3", name="myattack3", ended=False, failed=True,  passed=None,  risk=None),
+      AttackState(id="1", name="myattack1", state="queued", errored=False, passed=True,  risk=50),
+      AttackState(id="2", name="myattack2", state="queued", errored=False, passed=False, risk=80),
+      AttackState(id="3", name="myattack3", state="completed", errored=True,  passed=None,  risk=None),
     ])
     sleep(1)
-
     self._state.add_exception(Exception("my 2nd exception"))
     sleep(1)
     self._state.add_exception(Exception("my 2nd exception"))
     self._state.add_exception(Exception("my 1st exception"))
     self._state.add_exception(Exception("my 1st exception"))
-    
     self._state.set_attacking("my_test_id", attacks=[
-      AttackState(id="1", name="myattack1", ended=True, failed=False, passed=True,  risk=50),
-      AttackState(id="2", name="myattack2", ended=True, failed=False, passed=False, risk=80),
-      AttackState(id="3", name="myattack3", ended=False, failed=True,  passed=None,  risk=None),
+      AttackState(id="1", name="myattack1", state="queued", errored=False, passed=None,  risk=None),
+      AttackState(id="2", name="myattack2", state="completed", errored=False, passed=True, risk=45),
+      AttackState(id="3", name="myattack3", state="completed", errored=True,  passed=None,  risk=None),
     ])
     sleep(1)
     self._state.set_test_complete("my_test_id", attacks=[
-      AttackState(id="1", name="myattack1", ended=True, failed=False, passed=True,  risk=50),
-      AttackState(id="2", name="myattack2", ended=True, failed=False, passed=False, risk=80),
-      AttackState(id="3", name="myattack3", ended=True, failed=True,  passed=None,  risk=None),
+      AttackState(id="1", name="myattack1", state="queued", errored=False, passed=True,  risk=50),
+      AttackState(id="2", name="myattack2", state="queued", errored=False, passed=False, risk=80),
+      AttackState(id="3", name="myattack3", state="completed", errored=True,  passed=None,  risk=None),
     ])
 
 test_state = TestState()

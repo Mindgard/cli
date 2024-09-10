@@ -56,11 +56,13 @@ class TestUI():
     progress_table.add_row(exceptions_progress)
 
     def task_update(attack_progress:Progress, task: TaskID, attack: AttackState) -> None:
-      if attack.ended:
-        if attack.failed:
+      if attack.state == "completed":
+        if attack.errored:
           attack_progress.update(task, status="[red3]failed", completed=1)
         else:
           attack_progress.update(task, status="[chartreuse3]success", completed=1)
+      elif attack.state == "running":
+        attack_progress.update(task, status="[yellow]running", completed=0)
       else:
         attack_progress.update(task, status="[chartreuse1]queued", completed=0)
 
@@ -71,7 +73,7 @@ class TestUI():
         task_update(attack_progress, attack_id_task_map[attack.id], attack)
 
       attacks_progress = overall_task_progress.add_task("Progress", total=len(state.attacks))
-      completed_attacks = sum(1 for attack in state.attacks if attack.ended)
+      completed_attacks = sum(1 for attack in state.attacks if attack.state == "completed")
       overall_task_progress.update(attacks_progress, completed=completed_attacks)
 
       model_exception_task_map: Dict[str, TaskID] = {}
@@ -119,7 +121,7 @@ class TestUI():
     table.add_column("Risk", justify="right", style="green")
 
     for attack in state.attacks:
-      if attack.failed:
+      if attack.errored:
         name = f"Error running '{attack.name}'"
         risk_str = "n/a"
         emoji = "❗️"
