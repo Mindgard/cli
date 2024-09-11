@@ -142,7 +142,7 @@ def main() -> None:
             if args.command == 'test':
                 if os.getenv("MINDGARD_TOGGLE_USE_LIB") == "true":
                     from mindgard.main_lib import run_test
-                    run_test(final_args)
+                    run_test(final_args, cast(LLMModelWrapper, model_wrapper))
                 else:
                     if final_args["model_type"] == "llm":
                         request = OrchestratorSetupRequest(

@@ -11,9 +11,10 @@ from mindgard.constants import API_BASE
 from mindgard.test import LLMModelConfig, Test, TestConfig, TestImplementationProvider, TestState
 from mindgard.test_ui import TestUI
 from mindgard.utils import print_to_stderr
+from mindgard.wrappers.llm import LLMModelWrapper
 
 
-def run_test(final_args:Dict[str, str]):
+def run_test(final_args:Dict[str, str], model_wrapper: LLMModelWrapper):
   access_token = load_access_token()
   if not access_token:
       print_to_stderr("\033[1;37mRun `mindgard login`\033[0;0m to authenticate.")
