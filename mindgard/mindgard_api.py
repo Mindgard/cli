@@ -12,8 +12,8 @@ class AttackResponse():
     id: str
     name: str
     state: Literal["queued", "running", "completed"]
-    errored: Optional[bool]
-    risk: Optional[int]
+    errored: Optional[bool] = None
+    risk: Optional[int] = None
 
 @dataclass
 class FetchTestDataResponse():

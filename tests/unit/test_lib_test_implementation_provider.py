@@ -7,6 +7,7 @@ from typing import Any, Callable, Dict, List, Literal, Optional
 from unittest import mock
 
 import requests_mock
+from mindgard.mindgard_api import AttackResponse, FetchTestDataResponse, MindgardApi
 from mindgard.version import VERSION
 from mindgard.test import AttackState, TestConfig, TestImplementationProvider, LLMModelConfig
 from mindgard.wrappers.llm import Context, LLMModelWrapper, PromptResponse
@@ -287,65 +288,58 @@ def test_start_test() -> None:
 
     assert test_id == want_test_id, "should return the correct test id"
 
-def test_poll_test_returns_using_api_token_auth_flow(requests_mock: requests_mock.Mocker) -> None:
+def test_poll_test_returns_using_api_token_auth_flow() -> None:
+    mock_mindgard_api = mock.MagicMock(spec=MindgardApi)
+
+    test_id = "my test id"
     additional_headers = {
         "x-api-key": "my-api-key",
         "x-associated-user-sub": "my-user-sub"
     }
     config = _helper_default_config(extra={"additional_headers": additional_headers})
-    test_api_base = "https://test.internal"
-    test_id = "my test id"
-    attacks_incomplete_api = [{
-        "id": "myattack1_id",
-        "attack": "myattack1",
-        "state": 0, # cover the case where not started
-        "risk": 0,
-    },{
-        "id": "myattack2_id",
-        "attack": "myattack2",
-        "state": 1, # running
-        "risk": 0,
-    }]
-    attacks_complete_api = [{
-        "id": "myattack1_id",
-        "attack": "myattack1",
-        "state": 2, # completed successfully
-        "risk": 45,
-    },{
-        "id": "myattack2_id",
-        "attack": "myattack2",
-        "state": -1, # failed
-        "risk": 0,
-    }]
-    
-    responses = [{
-        'json': {
-            'hasFinished': False,
-            'attacks': attacks_incomplete_api,
-        },
-        'status_code': 200
-    }, {
-        'json': {
-            'hasFinished': True,
-            'attacks': attacks_complete_api,
-        },
-        'status_code': 200
-    }]
-    # test that we first don't return, then return
-    get_request = requests_mock.get(
-        f"{test_api_base}/assessments/{test_id}",
-        responses
-    )
+
+    mock_mindgard_api.fetch_test_data.side_effect = [
+    None,
+    FetchTestDataResponse(
+        has_finished=False,
+        attacks=[
+            AttackResponse(
+                id="myattack1_id",
+                name="myattack1",
+                state="queued",
+            ),
+            AttackResponse(
+                id="myattack2_id",
+                name="myattack2",
+                state="running",
+            ),
+        ]
+    ),FetchTestDataResponse(
+        has_finished=True,
+        attacks=[
+            AttackResponse(
+                id="myattack1_id",
+                name="myattack1",
+                state="completed",
+                errored=False,
+                risk=45,
+            ),
+            AttackResponse(
+                id="myattack2_id",
+                name="myattack2",
+                state="completed",
+                errored=True,
+            ),
+        ]
+    )]
 
     # test
     mock_state = mock.MagicMock()
-    provider = TestImplementationProvider(mock_state)
+    provider = TestImplementationProvider(mock_state, mock_mindgard_api)
     provider.poll_test(config, test_id, period_seconds=0)
 
-    assert get_request.call_count == len(responses), "should have not returned until hasFinished is true"
-    assert get_request.last_request is not None
-    assert get_request.last_request.headers.get("x-api-key") == additional_headers.get("x-api-key"), "should set additional headers"
-    assert get_request.last_request.headers.get("x-associated-user-sub") == additional_headers.get("x-associated-user-sub"), "should set additional headers"
+    expected_call = mock.call(api_base="https://test.internal", access_token="my access token", additional_headers=additional_headers, test_id=test_id)
+    mock_mindgard_api.fetch_test_data.assert_has_calls([expected_call, expected_call])
     mock_state.set_attacking.assert_called_once_with(test_id, [
         AttackState(id="myattack1_id", name="myattack1", state="queued", errored=None, passed=None, risk=None),
         AttackState(id="myattack2_id", name="myattack2", state="running", errored=None, passed=None, risk=None),
@@ -355,39 +349,6 @@ def test_poll_test_returns_using_api_token_auth_flow(requests_mock: requests_moc
         AttackState(id="myattack2_id", name="myattack2", state="completed", errored=True, passed=None, risk=None),
     ])
 
-def test_poll_test_continues_on_bad_response(requests_mock: requests_mock.Mocker) -> None:
-    """
-    This represents protections against unexpected responses from the server which could
-    result in a test bailing. This is not a common issue but the cost of exiting early
-    can be quite high (there is currently no 'resume test' feature).
-    """
-    config = _helper_default_config()
-    test_api_base = "https://test.internal"
-    test_id = "my test id"
-    
-
-    responses = [{
-        'text': 'garbage', # unexpected response format
-        'status_code': 200
-    },{
-        'json': { 'hasFinished': True, },
-        'status_code': 500
-    },{
-        'json': {'garbage':'missing key'}, # exercise key error issues
-        'status_code': 200
-    },{
-        'json': {'hasFinished': True, 'attacks': []},
-        'status_code': 200
-    }]
-    get_request = requests_mock.get(
-        f"{test_api_base}/assessments/{test_id}",
-        responses
-    )
-    # test
-    provider = TestImplementationProvider()
-    provider.poll_test(config, test_id, period_seconds=0)
-
-    assert get_request.call_count == len(responses), "should have not returned until hasFinished is true"
 
 def test_close() -> None:
     wps_client = mock.MagicMock(spec=WebPubSubClient)

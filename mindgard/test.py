@@ -153,9 +153,9 @@ def api_response_to_attack_state(attack:Dict[str, Any]) -> AttackState:
 
 class TestImplementationProvider():
 
-    def __init__(self, state:Optional[TestState] = None):
+    def __init__(self, state:Optional[TestState] = None, mindgard_api:Optional[MindgardApi] = None):
         self._state = state or TestState()
-        self._mindgard_api = MindgardApi()
+        self._mindgard_api = mindgard_api or MindgardApi()
 
     def init_test(self, config:TestConfig) -> Tuple[str, str]:
         """
