@@ -4,11 +4,11 @@ Status: Pre-Alpha -- implementation incomplete and interfaces are likely to chan
 Provides headless execution of mindgard tests.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import logging
 from threading import Condition
 import time
-from typing import Any, Dict, Optional, Protocol, Tuple
+from typing import Any, Dict, Literal, Optional, Protocol, Tuple, List
 from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCredential
 from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs, CallbackType, WebPubSubDataType
 import requests
@@ -79,13 +79,87 @@ class TestConfig:
     def handler(self) -> Any:
         return self.model.wrapper.to_handler() # type: ignore # TODO not sure on type
 
+@dataclass
+class AttackState():
+    id: str
+    name: str
+    state: Literal["queued", "running", "completed"]
+    errored: Optional[bool]
+    passed: Optional[bool]
+    risk: Optional[int]
+    
+
+@dataclass
+class TestState():
+    notifier: Condition = field(default_factory=Condition)
+    
+    submitting: bool = False
+    submitted: bool = False
+    started: bool = False
+    test_complete: bool = False
+    attacks: List[AttackState] = field(default_factory=list[AttackState])
+    model_exceptions: List[Exception] = field(default_factory=list[Exception])
+    test_id: Optional[str] = None
+
+    def set_started(self) -> None:
+        with self.notifier:
+            self.started = True
+            self.notifier.notify_all()
+
+    def set_submitting_test(self) -> None:
+        with self.notifier:
+            self.submitting = True
+            self.notifier.notify_all()
+
+    def set_attacking(self, test_id:str, attacks:List[AttackState]) -> None:
+        with self.notifier:
+            self.submitted = True
+            self.test_id = test_id
+            self.attacks = attacks
+            self.started = True
+            self.notifier.notify_all()
+
+    def set_test_complete(self, test_id:str, attacks:List[AttackState]) -> None:
+        with self.notifier:
+            self.test_id = test_id
+            self.attacks = attacks
+            self.test_complete = True
+            self.notifier.notify_all()
+
+    def add_exception(self, exception:Exception) -> None:
+        with self.notifier:
+            self.model_exceptions.append(exception)
+            self.notifier.notify_all()
+
+def api_response_to_attack_state(attack:Dict[str, Any]) -> AttackState:
+    if attack["state"] == 0:
+        state = "queued"
+    elif attack["state"] == 1:
+        state = "running"
+    else:
+        state = "completed"
+
+    errored = (state == "completed" and attack["state"] == -1) or None
+    risk = attack.get("risk") if attack["state"] == 2 else None
+    return AttackState(
+        id=attack["id"],
+        name=attack["attack"],
+        state=state,
+        errored=errored,
+        passed=attack.get("passed", None),
+        risk=risk
+    )
 
 class TestImplementationProvider():
+
+    def __init__(self, state:Optional[TestState] = None):
+        self._state = state or TestState()
 
     def init_test(self, config:TestConfig) -> Tuple[str, str]:
         """
         Init a test in with API and return the url and group_id
         """
+        self._state.set_submitting_test()
         url = f"{config.api_base}/tests/cli_init"
 
         response = requests.post(
@@ -117,9 +191,9 @@ class TestImplementationProvider():
         def callback(msg:OnGroupDataMessageArgs) -> None:
             if msg.data["messageType"] != "Request":
                 return
-            
-            payload = handler(payload=msg.data["payload"])
 
+            payload = handler(payload=msg.data["payload"])
+            
             client.send_to_group(
                 "orchestrator",
                 {
@@ -134,11 +208,11 @@ class TestImplementationProvider():
         client.subscribe(CallbackType.GROUP_MESSAGE, callback)
 
     def start_test(self, client:WebPubSubClient, group_id:str) -> str:
-        logging.error(f"Starting test {group_id}")
+        logging.info(f"start_test: opening connection and starting test")
         started_condition = Condition()
         test_ids: list[str] = []
         def handler(msg:OnGroupDataMessageArgs) -> None:
-            logging.error(f"received message {msg.data}")
+            logging.debug(f"received message {msg.data}")
             if msg.data["messageType"] == "StartedTest":
                 with started_condition:
                     test_ids.append(msg.data["payload"]["testId"])
@@ -152,10 +226,12 @@ class TestImplementationProvider():
         }
         client.send_to_group(group_name="orchestrator", content=payload, data_type=WebPubSubDataType.JSON)
         
-        logging.error("waiting for test to start")
+        logging.info("start_test: waiting for test_id")
         with started_condition:
             started_condition.wait_for(lambda: len(test_ids) > 0)
-            return test_ids[0]
+            test_id = test_ids[0]
+            logging.info(f"start_test: received test_id {test_id}")
+            return test_id
 
     def poll_test(self, config:TestConfig, test_id:str, period_seconds:int = 5) -> None:
         finished = False
@@ -171,7 +247,11 @@ class TestImplementationProvider():
                 if response.status_code == 200:
                     test = response.json()
                     finished = test["hasFinished"]
-                    logging.info(f"Test {test_id} has finished! {test['hasFinished']} {test['isCompleted']}")
+                    attacks = [api_response_to_attack_state(attack) for attack in test["attacks"]]
+                    if finished:
+                        self._state.set_test_complete(test_id, attacks)
+                    else:
+                        self._state.set_attacking(test_id, attacks)
             except requests.JSONDecodeError as jde:
                 logging.error(f"Error decoding response: {jde}")
                 pass

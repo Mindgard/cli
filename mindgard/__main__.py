@@ -1,9 +1,11 @@
 import argparse
+import os
 import sys
 import traceback
 
 # Types
 from typing import List, cast
+
 from mindgard.types import log_levels, model_types, valid_image_datasets, type_model_presets_list
 
 # Models
@@ -138,41 +140,45 @@ def main() -> None:
 
         if passed_preflight:
             if args.command == 'test':
-                if final_args["model_type"] == "llm":
-                    request = OrchestratorSetupRequest(
-                        target=final_args["target"],
-                        parallelism=int(final_args["parallelism"]),
-                        system_prompt=final_args["system_prompt"],
-                        dataset=None,
-                        modelType=final_args["model_type"],
-                        attackSource="user",
-                        attackPack=("large" if final_args['mode'] == "thorough" else "sandbox"),
-                    )
-                    submit = model_test_submit_factory(
-                        request=request,
-                        model_wrapper=cast(LLMModelWrapper, model_wrapper),
-                        message_handler=llm_message_handler
-                    )
-                elif final_args["model_type"] == "image":
-                    dataset = final_args["dataset"] or valid_image_datasets[0]
+                if os.getenv("MINDGARD_TOGGLE_USE_LIB") == "true":
+                    from mindgard.main_lib import run_test
+                    run_test(final_args, cast(LLMModelWrapper, model_wrapper))
+                else:
+                    if final_args["model_type"] == "llm":
+                        request = OrchestratorSetupRequest(
+                            target=final_args["target"],
+                            parallelism=int(final_args["parallelism"]),
+                            system_prompt=final_args["system_prompt"],
+                            dataset=None,
+                            modelType=final_args["model_type"],
+                            attackSource="user",
+                            attackPack=("large" if final_args['mode'] == "thorough" else "sandbox"),
+                        )
+                        submit = model_test_submit_factory(
+                            request=request,
+                            model_wrapper=cast(LLMModelWrapper, model_wrapper),
+                            message_handler=llm_message_handler
+                        )
+                    elif final_args["model_type"] == "image":
+                        dataset = final_args["dataset"] or valid_image_datasets[0]
 
-                    request = OrchestratorSetupRequest(
-                        target=final_args["target"],
-                        parallelism=int(final_args["parallelism"]),
-                        dataset=dataset,
-                        modelType=final_args["model_type"],
-                        attackSource="user",
-                        labels=final_args["labels"]
-                    )
-                    submit = model_test_submit_factory(
-                        request=request,
-                        model_wrapper=cast(ImageModelWrapper, model_wrapper),
-                        message_handler=image_message_handler
-                    )
+                        request = OrchestratorSetupRequest(
+                            target=final_args["target"],
+                            parallelism=int(final_args["parallelism"]),
+                            dataset=dataset,
+                            modelType=final_args["model_type"],
+                            attackSource="user",
+                            labels=final_args["labels"]
+                        )
+                        submit = model_test_submit_factory(
+                            request=request,
+                            model_wrapper=cast(ImageModelWrapper, model_wrapper),
+                            message_handler=image_message_handler
+                        )
 
-                output = model_test_output_factory(risk_threshold=int(final_args["risk_threshold"]))
-                cli_response = cli_run(submit, model_test_polling, output_func=output, json_out=final_args["json"])
-                exit(convert_test_to_cli_response(test=cli_response, risk_threshold=int(final_args["risk_threshold"])).code()) # type: ignore
+                    output = model_test_output_factory(risk_threshold=int(final_args["risk_threshold"]))
+                    cli_response = cli_run(submit, model_test_polling, output_func=output, json_out=final_args["json"])
+                    exit(convert_test_to_cli_response(test=cli_response, risk_threshold=int(final_args["risk_threshold"])).code()) # type: ignore
 
         else:
             exit(CliResponse(1).code())

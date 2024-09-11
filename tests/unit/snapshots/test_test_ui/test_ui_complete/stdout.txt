@@ -1,0 +1,15 @@
+Submitting...  Submitted!
+Progress ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:00                  
+Attack myattack1 done success                                                   
+Attack myattack2 done success                                                   
+Attack myattack3 done failed                                                    
+                                                                                
+[!!!] my 2nd exception x2                                                       
+[!!!] my 1st exception x2                                                                   Results - https://sandbox.mindgard.ai/r/test/my_test_id             
+┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┓
+┃ Pass       ┃ Name                                                ┃      Risk ┃
+┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━┩
+│ ✅️         │ myattack1                                           │        50 │
+│ ❌‍         │ myattack2                                           │        80 │
+│ ❗️         │ Error running 'myattack3'                           │       n/a │
+└────────────┴─────────────────────────────────────────────────────┴───────────┘
