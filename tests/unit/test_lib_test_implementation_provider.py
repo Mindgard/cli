@@ -297,6 +297,7 @@ def test_poll_test_returns_using_api_token_auth_flow() -> None:
         "x-associated-user-sub": "my-user-sub"
     }
     config = _helper_default_config(extra={"additional_headers": additional_headers})
+    config.risk_threshold = 90
 
     mock_mindgard_api.fetch_test_data.side_effect = [
     None,
@@ -322,7 +323,14 @@ def test_poll_test_returns_using_api_token_auth_flow() -> None:
                 name="myattack1",
                 state="completed",
                 errored=False,
-                risk=45,
+                risk=90,
+            ),
+            AttackResponse(
+                id="myattack1_id",
+                name="myattack1",
+                state="completed",
+                errored=False,
+                risk=91,
             ),
             AttackResponse(
                 id="myattack2_id",
@@ -345,7 +353,8 @@ def test_poll_test_returns_using_api_token_auth_flow() -> None:
         AttackState(id="myattack2_id", name="myattack2", state="running", errored=None, passed=None, risk=None),
     ])
     mock_state.set_test_complete.assert_called_once_with(test_id, [
-        AttackState(id="myattack1_id", name="myattack1", state="completed", errored=False, passed=None, risk=45),
+        AttackState(id="myattack1_id", name="myattack1", state="completed", errored=False, passed=True, risk=90),
+        AttackState(id="myattack1_id", name="myattack1", state="completed", errored=False, passed=False, risk=91),
         AttackState(id="myattack2_id", name="myattack2", state="completed", errored=True, passed=None, risk=None),
     ])
 

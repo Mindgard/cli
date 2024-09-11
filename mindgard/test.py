@@ -66,6 +66,7 @@ class TestConfig:
     model: ModelConfig
     attack_pack: str = "sandbox"
     additional_headers: Optional[Dict[str, str]] = None
+    risk_threshold: int = 50 # TODO: move to constants
     def to_orchestrator_init_params(self) -> Dict[str, Any]:
         """
         Get parameters for the init test request to orchestrator
@@ -251,7 +252,7 @@ class TestImplementationProvider():
                     name=attack_data.name,
                     state=attack_data.state,
                     errored=attack_data.errored,
-                    passed=None,
+                    passed=None if attack_data.risk is None else (attack_data.risk <= config.risk_threshold),
                     risk=attack_data.risk
                 ) for attack_data in test_data.attacks]
 
