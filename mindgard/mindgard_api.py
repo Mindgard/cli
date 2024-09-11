@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import logging
 from typing import Any, Dict, Literal, Optional
 
 import requests
@@ -51,7 +52,7 @@ class MindgardApi():
             access_token:str, 
             additional_headers:Optional[dict[str, str]],
             test_id:str
-    ) -> FetchTestDataResponse:
+    ) -> Optional[FetchTestDataResponse]:
         response = requests.get(
             url=f"{api_base}/assessments/{test_id}",
             headers={
@@ -62,26 +63,23 @@ class MindgardApi():
             }
         )
 
-        data = response.json()
-        # try:
-        #     if response.status_code == 200:
-        #         test = response.json()
-        #         finished = test["hasFinished"]
-        #         attacks = [api_response_to_attack_state(attack) for attack in test["attacks"]]
-        #         if finished:
-        #             self._state.set_test_complete(test_id, attacks)
-        #         else:
-        #             self._state.set_attacking(test_id, attacks)
-        # except requests.JSONDecodeError as jde:
-        #     logging.error(f"Error decoding response: {jde}")
-        #     pass
-        # except KeyError as ke:
-        #     logging.error(f"KeyError response: {ke}")
-        #     pass
-        attacks = [api_response_to_attack_state(attack) for attack in data["attacks"]]
+        if response.status_code != 200:
+            return None
+        
+        try:
+            data = response.json()
+        except requests.JSONDecodeError as jde:
+            logging.error(f"Error decoding response: {jde}")
+            return None
 
-        return FetchTestDataResponse(
-            has_finished=data["hasFinished"],
-            attacks=attacks
-        )
+        try:
+            attacks = [api_response_to_attack_state(attack) for attack in data["attacks"]]
+
+            return FetchTestDataResponse(
+                has_finished=data["hasFinished"],
+                attacks=attacks
+            )
+        except KeyError as ke:
+            logging.error(f"KeyError response: {ke}")
+            return None
         

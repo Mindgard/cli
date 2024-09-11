@@ -12,6 +12,7 @@ from typing import Any, Dict, Literal, Optional, Protocol, Tuple, List
 from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCredential
 from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs, CallbackType, WebPubSubDataType
 import requests
+from mindgard.mindgard_api import MindgardApi
 from mindgard.wrappers.image import ImageModelWrapper
 
 from mindgard.version import VERSION
@@ -154,6 +155,7 @@ class TestImplementationProvider():
 
     def __init__(self, state:Optional[TestState] = None):
         self._state = state or TestState()
+        self._mindgard_api = MindgardApi()
 
     def init_test(self, config:TestConfig) -> Tuple[str, str]:
         """
@@ -236,29 +238,28 @@ class TestImplementationProvider():
     def poll_test(self, config:TestConfig, test_id:str, period_seconds:int = 5) -> None:
         finished = False
         while not finished:
-            response = requests.get(
-                url=f"{config.api_base}/assessments/{test_id}",
-                headers={
-                    "Authorization": f"Bearer {config.api_access_token}",
-                    **(config.additional_headers or {})
-                }
+            test_data = self._mindgard_api.fetch_test_data(
+                api_base=config.api_base,
+                access_token=config.api_access_token,
+                additional_headers=config.additional_headers,
+                test_id=test_id
             )
-            try:
-                if response.status_code == 200:
-                    test = response.json()
-                    finished = test["hasFinished"]
-                    attacks = [api_response_to_attack_state(attack) for attack in test["attacks"]]
-                    if finished:
-                        self._state.set_test_complete(test_id, attacks)
-                    else:
-                        self._state.set_attacking(test_id, attacks)
-            except requests.JSONDecodeError as jde:
-                logging.error(f"Error decoding response: {jde}")
-                pass
-            except KeyError as ke:
-                logging.error(f"KeyError response: {ke}")
-                pass
-                
+            if test_data is not None:
+                finished = test_data.has_finished
+                attacks = [AttackState(
+                    id=attack_data.id,
+                    name=attack_data.name,
+                    state=attack_data.state,
+                    errored=attack_data.errored,
+                    passed=None,
+                    risk=attack_data.risk
+                ) for attack_data in test_data.attacks]
+
+                if finished:
+                    self._state.set_test_complete(test_id, attacks)
+                else:
+                    self._state.set_attacking(test_id, attacks)
+   
             time.sleep(period_seconds)
 
     def close(self, client:Optional[WebPubSubClient]) -> None:

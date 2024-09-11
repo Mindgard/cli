@@ -351,7 +351,7 @@ def test_poll_test_returns_using_api_token_auth_flow(requests_mock: requests_moc
         AttackState(id="myattack2_id", name="myattack2", state="running", errored=None, passed=None, risk=None),
     ])
     mock_state.set_test_complete.assert_called_once_with(test_id, [
-        AttackState(id="myattack1_id", name="myattack1", state="completed", errored=None, passed=None, risk=45),
+        AttackState(id="myattack1_id", name="myattack1", state="completed", errored=False, passed=None, risk=45),
         AttackState(id="myattack2_id", name="myattack2", state="completed", errored=True, passed=None, risk=None),
     ])
 
@@ -376,7 +376,7 @@ def test_poll_test_continues_on_bad_response(requests_mock: requests_mock.Mocker
         'json': {'garbage':'missing key'}, # exercise key error issues
         'status_code': 200
     },{
-        'json': {'hasFinished': True},
+        'json': {'hasFinished': True, 'attacks': []},
         'status_code': 200
     }]
     get_request = requests_mock.get(

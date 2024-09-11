@@ -92,3 +92,61 @@ def test_fetch_test_data(requests_mock:requests_mock.Mocker):
         errored=None,
         risk=None,
     )
+
+def test_fetch_test_data_garbage_response(requests_mock:requests_mock.Mocker):
+    api_base=f"https://example.com/api/v1"
+    test_id = "test_id"
+    requests_mock.get(
+        f"{api_base}/assessments/{test_id}", 
+        status_code=200,
+        text='garbage',
+    )
+
+    mindgard_api = MindgardApi()
+    test_data = mindgard_api.fetch_test_data(
+        api_base=api_base, 
+        access_token="anything", 
+        additional_headers=None,
+        test_id=test_id
+    )
+
+    assert test_data is None
+
+
+def test_fetch_test_data_non200_response(requests_mock:requests_mock.Mocker):
+    api_base=f"https://example.com/api/v1"
+    test_id = "test_id"
+    requests_mock.get(
+        f"{api_base}/assessments/{test_id}", 
+        status_code=404,
+        json={ 'hasFinished': True, 'attacks': [] }, # valid data ensures we validate that response is ignored
+    )
+
+    mindgard_api = MindgardApi()
+    test_data = mindgard_api.fetch_test_data(
+        api_base=api_base, 
+        access_token="anything", 
+        additional_headers=None,
+        test_id=test_id
+    )
+
+    assert test_data is None
+
+def test_fetch_test_data_missing_keys(requests_mock:requests_mock.Mocker):
+    api_base=f"https://example.com/api/v1"
+    test_id = "test_id"
+    requests_mock.get(
+        f"{api_base}/assessments/{test_id}", 
+        status_code=200,
+        json={ 'attacks': [] }, # missing hasFinished
+    )
+
+    mindgard_api = MindgardApi()
+    test_data = mindgard_api.fetch_test_data(
+        api_base=api_base, 
+        access_token="anything", 
+        additional_headers=None,
+        test_id=test_id
+    )
+
+    assert test_data is None
