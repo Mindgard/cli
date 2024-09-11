@@ -98,7 +98,7 @@ class TestUI():
             task = attack_id_task_map[attack.id]
             task_update(attack_progress, task, attack)
           
-          completed_attacks = sum(1 for attack in state.attacks if attack.ended)
+          completed_attacks = sum(1 for attack in state.attacks if attack.state == "completed")
           overall_task_progress.update(attacks_progress, completed=completed_attacks)
 
           model_exception_counts: Dict[str, int] = {}

@@ -208,11 +208,11 @@ class TestImplementationProvider():
         client.subscribe(CallbackType.GROUP_MESSAGE, callback)
 
     def start_test(self, client:WebPubSubClient, group_id:str) -> str:
-        logging.error(f"Starting test {group_id}")
+        logging.info(f"start_test: opening connection and starting test")
         started_condition = Condition()
         test_ids: list[str] = []
         def handler(msg:OnGroupDataMessageArgs) -> None:
-            logging.error(f"received message {msg.data}")
+            logging.debug(f"received message {msg.data}")
             if msg.data["messageType"] == "StartedTest":
                 with started_condition:
                     test_ids.append(msg.data["payload"]["testId"])
@@ -226,10 +226,12 @@ class TestImplementationProvider():
         }
         client.send_to_group(group_name="orchestrator", content=payload, data_type=WebPubSubDataType.JSON)
         
-        logging.error("waiting for test to start")
+        logging.info("start_test: waiting for test_id")
         with started_condition:
             started_condition.wait_for(lambda: len(test_ids) > 0)
-            return test_ids[0]
+            test_id = test_ids[0]
+            logging.info(f"start_test: received test_id {test_id}")
+            return test_id
 
     def poll_test(self, config:TestConfig, test_id:str, period_seconds:int = 5) -> None:
         finished = False
