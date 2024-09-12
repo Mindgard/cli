@@ -228,7 +228,14 @@ class Test():
     def get_state(self) -> TestState:
         with self._notifier:
             return self._state.clone()
-    
+        
+    @contextlib.contextmanager
+    def state_then_wait_if(self, predicate:Callable[[TestState], bool]):
+        with self._notifier:
+            yield self._state
+            if predicate(self._state):
+                self._notifier.wait()
+
     # TODO: coverage
     @contextlib.contextmanager
     def state_wait(self):

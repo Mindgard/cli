@@ -4,6 +4,7 @@ from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn, TaskID
 from rich.live import Live
 from mindgard.test import AttackState, Test
+
 class TestUI():
   def __init__(self, test: Test, console:Console = Console()):
     self._console = console
@@ -81,31 +82,32 @@ class TestUI():
       
 
     with Live(progress_table, refresh_per_second=10, console=self._console):
-      finished = False
-      while not finished:
-        state = test.get_state()
-        for attack in state.attacks:
-          task = attack_id_task_map[attack.id]
-          task_update(attack_progress, task, attack)
-        
-        completed_attacks = sum(1 for attack in state.attacks if attack.state == "completed")
-        overall_task_progress.update(attacks_progress, completed=completed_attacks)
+      while True:
+        with test.state_then_wait_if(lambda state: not state.test_complete) as state:
+          for attack in state.attacks:
+            task = attack_id_task_map[attack.id]
+            task_update(attack_progress, task, attack)
+          
+          completed_attacks = sum(1 for attack in state.attacks if attack.state == "completed")
+          overall_task_progress.update(attacks_progress, completed=completed_attacks)
 
-        model_exception_counts: Dict[str, int] = {}
-        for model_exception in state.model_exceptions:
-          name = str(model_exception)
-          if model_exception_task_map.get(name) is None:
-            model_exception_task_map[name] = exceptions_progress.add_task("")
-          if model_exception_counts.get(name) is None:
-            model_exception_counts[name] = 1
-          else:
-            model_exception_counts[name] += 1
-        for name, task in model_exception_task_map.items():
-          exceptions_progress.update(task, description=f"[dark_orange3][!!!] {name} x{model_exception_counts[name]}")
+          model_exception_counts: Dict[str, int] = {}
+          for model_exception in state.model_exceptions:
+            name = str(model_exception)
+            if model_exception_task_map.get(name) is None:
+              model_exception_task_map[name] = exceptions_progress.add_task("")
+            if model_exception_counts.get(name) is None:
+              model_exception_counts[name] = 1
+            else:
+              model_exception_counts[name] += 1
+          for name, task in model_exception_task_map.items():
+            exceptions_progress.update(task, description=f"[dark_orange3][!!!] {name} x{model_exception_counts[name]}")
+          
+          if state.test_complete:
+            break
 
-        finished = state.test_complete
-        if not finished:
-          test.state_wait()
+
+      
 
     ##################################
     # the test is complete
