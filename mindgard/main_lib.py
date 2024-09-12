@@ -20,8 +20,6 @@ def run_test(final_args:Dict[str, str], model_wrapper: LLMModelWrapper):
       print_to_stderr("\033[1;37mRun `mindgard login`\033[0;0m to authenticate.")
       exit(2)
 
-  test_state = TestState()
-  test_implementation_provider = TestImplementationProvider(test_state)
   test_config = TestConfig(
       api_base=API_BASE,
       api_access_token=access_token,
@@ -34,13 +32,12 @@ def run_test(final_args:Dict[str, str], model_wrapper: LLMModelWrapper):
       )
   )
 
-  test = Test(test_config, test_implementation_provider)
-  console = Console()
-  test_ui = TestUI(test_state, console)
+  test = Test(test_config)
+  test_ui = TestUI(test)
 
-  t = Thread(target=test.run)
-  t.start()
+  test_thread = Thread(target=test.run)
+  test_thread.start()
 
   test_ui.run()
-  t.join()
+  test_thread.join()
   exit(1)
