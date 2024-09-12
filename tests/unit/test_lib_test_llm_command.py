@@ -3,6 +3,7 @@ from unittest.mock import Mock
 
 from azure.messaging.webpubsubclient import WebPubSubClient
 import pytest
+from mindgard.constants import DEFAULT_RISK_THRESHOLD
 from mindgard.mindgard_api import AttackResponse, FetchTestDataResponse
 from mindgard.test import AttackState, Test, TestConfig, TestImplementationProvider, LLMModelConfig
 from mindgard.wrappers.llm import TestStaticResponder
@@ -124,3 +125,52 @@ def test_lib_closes_on_exception(mock_provider:MockProviderFixture, config:TestC
         test.run()
     assert e.value == exception, "the same exception should be propagated (not a copy/wrap)"
     assert mock_provider.provider.close.called, "the test should be closed even if an exception is raised"
+
+def test_test_config_defaults():
+    got_config = TestConfig(
+        api_base="your_api_base",
+        api_access_token="your_api_access_token",
+        target="your_target",
+        attack_source="your_attack_source",
+        parallelism=1,
+        model=LLMModelConfig(
+            wrapper=TestStaticResponder(system_prompt="test",handler=mock_handler),
+            system_prompt="your_system_prompt",
+            model_type="your_model_type"
+        )
+    )
+    
+    assert got_config.risk_threshold == DEFAULT_RISK_THRESHOLD, f"the default risk threshold should be {DEFAULT_RISK_THRESHOLD=}"
+    assert got_config.attack_pack == "sandbox", "the default attack pack should be sandbox"
+    assert got_config.additional_headers == None, "the default additional_headers should be empty"
+
+def test_lib_emits_passed_failed(mock_provider:MockProviderFixture, config:TestConfig):
+    config.risk_threshold = 90
+    mock_provider.provider.poll_test.side_effect = None
+    mock_provider.provider.poll_test.return_value = FetchTestDataResponse(
+        has_finished=True,
+        attacks=[
+            AttackResponse(
+                id="my attack id 1",
+                name="my attack name 1",
+                state="completed",
+                errored=False,
+                risk=89,
+            ),
+            AttackResponse(
+                id="my attack id 2",
+                name="my attack name 2",
+                state="completed",
+                errored=False,
+                risk=90,
+            ),
+        ]
+    )
+    test = Test(config, poll_period_seconds=0)
+    test._provider = mock_provider.provider # TODO: fixme
+    test.run()
+
+    final_state = test.get_state()
+    assert final_state.test_complete == True, "the test should be completed"
+    assert final_state.attacks[0].passed == True, "passed should be true when risk < risk theshold"
+    assert final_state.attacks[1].passed == False, "passed should be false when risk >= risk theshold"

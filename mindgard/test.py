@@ -14,6 +14,7 @@ from typing import Any, Callable, Dict, Literal, Optional, Protocol, Tuple, List
 from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCredential
 from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs, CallbackType, WebPubSubDataType
 import requests
+from mindgard.constants import DEFAULT_RISK_THRESHOLD
 from mindgard.mindgard_api import AttackResponse, FetchTestDataResponse, MindgardApi
 from mindgard.wrappers.image import ImageModelWrapper
 
@@ -68,6 +69,7 @@ class TestConfig:
     model: ModelConfig
     attack_pack: str = "sandbox"
     additional_headers: Optional[Dict[str, str]] = None
+    risk_threshold: int = DEFAULT_RISK_THRESHOLD
     def to_orchestrator_init_params(self) -> Dict[str, Any]:
         """
         Get parameters for the init test request to orchestrator
@@ -207,13 +209,13 @@ class TestImplementationProvider():
             client._is_stopping = True # type: ignore
             client.close()
 
-def _attack_response_to_attack_state(attack_data:AttackResponse) -> AttackState:
+def _attack_response_to_attack_state(attack_data:AttackResponse, risk_threshold: int) -> AttackState:
     return AttackState(
         id=attack_data.id,
         name=attack_data.name,
         state=attack_data.state,
         errored=attack_data.errored,
-        passed=None,
+        passed=None if attack_data.risk is None else (attack_data.risk < risk_threshold),
         risk=None if attack_data.errored else attack_data.risk
     )
 
@@ -304,7 +306,7 @@ class Test():
                 )
                 if test_data is not None:
                     finished = test_data.has_finished
-                    attacks = [_attack_response_to_attack_state(attack_data) for attack_data in test_data.attacks]
+                    attacks = [_attack_response_to_attack_state(attack_data, self._config.risk_threshold) for attack_data in test_data.attacks]
                     if finished:
                         self._set_test_complete(test_id, attacks)
                     else:
