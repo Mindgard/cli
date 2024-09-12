@@ -204,6 +204,7 @@ class TestImplementationProvider():
 
     def close(self, client:Optional[WebPubSubClient]) -> None:
         if client:
+            client._is_stopping = True # type: ignore
             client.close()
 
 def _attack_response_to_attack_state(attack_data:AttackResponse) -> AttackState:
