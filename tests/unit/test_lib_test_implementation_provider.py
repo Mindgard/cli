@@ -9,7 +9,7 @@ from unittest import mock
 import requests_mock
 from mindgard.mindgard_api import AttackResponse, FetchTestDataResponse, MindgardApi
 from mindgard.version import VERSION
-from mindgard.test import AttackState, TestConfig, TestImplementationProvider, LLMModelConfig
+from mindgard.test import TestConfig, TestImplementationProvider, LLMModelConfig
 from mindgard.wrappers.llm import Context, LLMModelWrapper, PromptResponse
 
 from azure.messaging.webpubsubclient import WebPubSubClient
@@ -17,8 +17,7 @@ from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs, Callb
 
 
 # Please there must be a better way to get pytest to ignore these
-TestConfig.__test__ = False # type: ignore
-TestImplementationProvider.__test__ = False # type: ignore
+
 
 # TODO: move to test utils
 class MockModelWrapper(LLMModelWrapper):
@@ -73,8 +72,7 @@ def test_init_test(requests_mock: requests_mock.Mocker) -> None:
     )
 
     # test
-    mock_state = mock.MagicMock()
-    provider = TestImplementationProvider(mock_state)
+    provider = TestImplementationProvider()
     url, group_id = provider.init_test(config)
 
     assert url == test_url
@@ -93,7 +91,6 @@ def test_init_test(requests_mock: requests_mock.Mocker) -> None:
         "attackSource": config.attack_source,
         "attackPack": config.attack_pack,
     }
-    mock_state.set_submitting_test.assert_called_once()
 
 def test_init_test_using_api_key_auth_flow(requests_mock: requests_mock.Mocker) -> None:
     # expectations
@@ -298,56 +295,16 @@ def test_poll_test_returns_using_api_token_auth_flow() -> None:
     }
     config = _helper_default_config(extra={"additional_headers": additional_headers})
 
-    mock_mindgard_api.fetch_test_data.side_effect = [
-    None,
-    FetchTestDataResponse(
-        has_finished=False,
-        attacks=[
-            AttackResponse(
-                id="myattack1_id",
-                name="myattack1",
-                state="queued",
-            ),
-            AttackResponse(
-                id="myattack2_id",
-                name="myattack2",
-                state="running",
-            ),
-        ]
-    ),FetchTestDataResponse(
-        has_finished=True,
-        attacks=[
-            AttackResponse(
-                id="myattack1_id",
-                name="myattack1",
-                state="completed",
-                errored=False,
-                risk=45,
-            ),
-            AttackResponse(
-                id="myattack2_id",
-                name="myattack2",
-                state="completed",
-                errored=True,
-            ),
-        ]
-    )]
-
     # test
-    mock_state = mock.MagicMock()
-    provider = TestImplementationProvider(mock_state, mock_mindgard_api)
-    provider.poll_test(config, test_id, period_seconds=0)
-
-    expected_call = mock.call(api_base="https://test.internal", access_token="my access token", additional_headers=additional_headers, test_id=test_id)
-    mock_mindgard_api.fetch_test_data.assert_has_calls([expected_call, expected_call])
-    mock_state.set_attacking.assert_called_once_with(test_id, [
-        AttackState(id="myattack1_id", name="myattack1", state="queued", errored=None, passed=None, risk=None),
-        AttackState(id="myattack2_id", name="myattack2", state="running", errored=None, passed=None, risk=None),
-    ])
-    mock_state.set_test_complete.assert_called_once_with(test_id, [
-        AttackState(id="myattack1_id", name="myattack1", state="completed", errored=False, passed=None, risk=45),
-        AttackState(id="myattack2_id", name="myattack2", state="completed", errored=True, passed=None, risk=None),
-    ])
+    provider = TestImplementationProvider(mock_mindgard_api)
+    ret = provider.poll_test(config, test_id)
+    assert ret == mock_mindgard_api.fetch_test_data.return_value, "should return the result of the fetch_test_data call"
+    mock_mindgard_api.fetch_test_data.assert_called_once_with(
+        api_base="https://test.internal", 
+        access_token="my access token", 
+        additional_headers=additional_headers, 
+        test_id=test_id
+    )
 
 
 def test_close() -> None:

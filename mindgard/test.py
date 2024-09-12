@@ -4,15 +4,17 @@ Status: Pre-Alpha -- implementation incomplete and interfaces are likely to chan
 Provides headless execution of mindgard tests.
 """
 
+import contextlib
+import copy
 from dataclasses import dataclass, field
 import logging
 from threading import Condition
 import time
-from typing import Any, Dict, Literal, Optional, Protocol, Tuple, List
+from typing import Any, Callable, Dict, Literal, Optional, Protocol, Tuple, List
 from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCredential
 from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs, CallbackType, WebPubSubDataType
 import requests
-from mindgard.mindgard_api import MindgardApi
+from mindgard.mindgard_api import AttackResponse, FetchTestDataResponse, MindgardApi
 from mindgard.wrappers.image import ImageModelWrapper
 
 from mindgard.version import VERSION
@@ -85,15 +87,12 @@ class AttackState():
     id: str
     name: str
     state: Literal["queued", "running", "completed"]
-    errored: Optional[bool]
-    passed: Optional[bool]
-    risk: Optional[int]
-    
+    errored: Optional[bool] = None
+    passed: Optional[bool] = None
+    risk: Optional[int] = None
 
 @dataclass
 class TestState():
-    notifier: Condition = field(default_factory=Condition)
-    
     submitting: bool = False
     submitted: bool = False
     started: bool = False
@@ -102,66 +101,25 @@ class TestState():
     model_exceptions: List[Exception] = field(default_factory=list[Exception])
     test_id: Optional[str] = None
 
-    def set_started(self) -> None:
-        with self.notifier:
-            self.started = True
-            self.notifier.notify_all()
-
-    def set_submitting_test(self) -> None:
-        with self.notifier:
-            self.submitting = True
-            self.notifier.notify_all()
-
-    def set_attacking(self, test_id:str, attacks:List[AttackState]) -> None:
-        with self.notifier:
-            self.submitted = True
-            self.test_id = test_id
-            self.attacks = attacks
-            self.started = True
-            self.notifier.notify_all()
-
-    def set_test_complete(self, test_id:str, attacks:List[AttackState]) -> None:
-        with self.notifier:
-            self.test_id = test_id
-            self.attacks = attacks
-            self.test_complete = True
-            self.notifier.notify_all()
-
-    def add_exception(self, exception:Exception) -> None:
-        with self.notifier:
-            self.model_exceptions.append(exception)
-            self.notifier.notify_all()
-
-def api_response_to_attack_state(attack:Dict[str, Any]) -> AttackState:
-    if attack["state"] == 0:
-        state = "queued"
-    elif attack["state"] == 1:
-        state = "running"
-    else:
-        state = "completed"
-
-    errored = (state == "completed" and attack["state"] == -1) or None
-    risk = attack.get("risk") if attack["state"] == 2 else None
-    return AttackState(
-        id=attack["id"],
-        name=attack["attack"],
-        state=state,
-        errored=errored,
-        passed=attack.get("passed", None),
-        risk=risk
-    )
-
+    def clone(self):
+        return TestState(
+            submitting=self.submitting,
+            submitted=self.submitted,
+            started=self.started,
+            test_complete=self.test_complete,
+            attacks=copy.deepcopy(self.attacks),
+            model_exceptions=copy.deepcopy(self.model_exceptions),
+            test_id=self.test_id
+        )
 class TestImplementationProvider():
 
-    def __init__(self, state:Optional[TestState] = None, mindgard_api:Optional[MindgardApi] = None):
-        self._state = state or TestState()
+    def __init__(self, mindgard_api:Optional[MindgardApi] = None):
         self._mindgard_api = mindgard_api or MindgardApi()
 
     def init_test(self, config:TestConfig) -> Tuple[str, str]:
         """
         Init a test in with API and return the url and group_id
         """
-        self._state.set_submitting_test()
         url = f"{config.api_base}/tests/cli_init"
 
         response = requests.post(
@@ -182,6 +140,7 @@ class TestImplementationProvider():
             raise ValueError("Invalid response from orchestrator, missing websocket credentials.")
 
         return url, group_id
+    
     def create_client(self, connection_url:str) -> WebPubSubClient:
         credentials = WebPubSubClientCredential(client_access_url_provider=connection_url)
         return WebPubSubClient(credential=credentials)
@@ -235,58 +194,114 @@ class TestImplementationProvider():
             logging.info(f"start_test: received test_id {test_id}")
             return test_id
 
-    def poll_test(self, config:TestConfig, test_id:str, period_seconds:int = 5) -> None:
-        finished = False
-        while not finished:
-            test_data = self._mindgard_api.fetch_test_data(
-                api_base=config.api_base,
-                access_token=config.api_access_token,
-                additional_headers=config.additional_headers,
-                test_id=test_id
-            )
-            if test_data is not None:
-                finished = test_data.has_finished
-                attacks = [AttackState(
-                    id=attack_data.id,
-                    name=attack_data.name,
-                    state=attack_data.state,
-                    errored=attack_data.errored,
-                    passed=None,
-                    risk=attack_data.risk
-                ) for attack_data in test_data.attacks]
-
-                if finished:
-                    self._state.set_test_complete(test_id, attacks)
-                else:
-                    self._state.set_attacking(test_id, attacks)
-   
-            time.sleep(period_seconds)
+    def poll_test(self, config:TestConfig, test_id:str) -> Optional[FetchTestDataResponse]:
+        return self._mindgard_api.fetch_test_data(
+            api_base=config.api_base,
+            access_token=config.api_access_token,
+            additional_headers=config.additional_headers,
+            test_id=test_id
+        )
 
     def close(self, client:Optional[WebPubSubClient]) -> None:
         if client:
             client.close()
-            
-class Test:
-    def __init__(self, config:TestConfig, provider:TestImplementationProvider = TestImplementationProvider()):
-        self._config = config
-        self._provider = provider
 
+def _attack_response_to_attack_state(attack_data:AttackResponse) -> AttackState:
+    return AttackState(
+        id=attack_data.id,
+        name=attack_data.name,
+        state=attack_data.state,
+        errored=attack_data.errored,
+        passed=None,
+        risk=None if attack_data.errored else attack_data.risk
+    )
+
+class Test():
+    def __init__(self, config:TestConfig, poll_period_seconds:int = 5):
+        self._config = config
+        self._state = TestState() # TOOD: coverage
+        self._provider = TestImplementationProvider() # TOOD: coverage
+        self._notifier = Condition()
+        self._poll_period_seconds = poll_period_seconds
+
+    # for clients to observe state[changes]
+    def get_state(self) -> TestState:
+        with self._notifier:
+            return self._state.clone()
+    
+    # TODO: coverage
+    @contextlib.contextmanager
+    def state_wait(self):
+        with self._notifier:
+            self._notifier.wait()
+            yield self._state
+
+    # TODO: coverage
+    @contextlib.contextmanager
+    def state_wait_for(self, predicate:Callable[[TestState], bool]):
+        with self._notifier:
+            self._notifier.wait_for(lambda: predicate(self._state))
+            yield self._state
+    
+    def _set_started(self) -> None:
+        with self._notifier:
+            self._state.started = True
+            self._notifier.notify_all()
+
+    def _set_submitting_test(self) -> None:
+        with self._notifier:
+            self._state.submitting = True
+            self._notifier.notify_all()
+
+    def _set_attacking(self, test_id:str, attacks:List[AttackState]) -> None:
+        with self._notifier:
+            self._state.submitted = True
+            self._state.test_id = test_id
+            self._state.attacks = attacks
+            self._state.started = True
+            self._notifier.notify_all()
+
+    def _set_test_complete(self, test_id:str, attacks:List[AttackState]) -> None:
+        with self._notifier:
+            self._state.test_id = test_id
+            self._state.attacks = attacks
+            self._state.test_complete = True
+            self._notifier.notify_all()
+
+    def _add_exception(self, exception:Exception) -> None:
+        with self._notifier:
+            self._state.model_exceptions.append(exception)
+            self._notifier.notify_all()
+
+    # run the test
     def run(self) -> None:
+        self._set_started()
         p = self._provider
         wps_client = None
+        test_id = None
         try:
+            self._set_submitting_test()
             wps_url, group_id = p.init_test(self._config)
-            logging.info("Creating webpubsub client")
             wps_client = p.create_client(wps_url)
-            logging.info("Connecting to webpubsub client")
             p.connect_websocket(wps_client)
             handler = self._config.handler()
             p.register_handler(handler, wps_client, group_id)
-            logging.info("Submitting test")
             test_id = p.start_test(wps_client, group_id)
-            logging.info("Polling test...")
-            p.poll_test(self._config, test_id)
-            logging.info("...Test complete!")
+
+            finished = False
+            while not finished:
+                test_data = p.poll_test(
+                    config=self._config,
+                    test_id=test_id
+                )
+                if test_data is not None:
+                    finished = test_data.has_finished
+                    attacks = [_attack_response_to_attack_state(attack_data) for attack_data in test_data.attacks]
+                    if finished:
+                        self._set_test_complete(test_id, attacks)
+                    else:
+                        self._set_attacking(test_id, attacks)
+   
+                time.sleep(self._poll_period_seconds)
         finally:
-            logging.info("Closing webpubsub client")
             p.close(wps_client)
