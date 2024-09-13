@@ -5,10 +5,9 @@ new library system.
 
 from threading import Thread
 from typing import Dict
-from rich.console import Console
 from mindgard.auth import load_access_token
 from mindgard.constants import API_BASE
-from mindgard.test import LLMModelConfig, Test, TestConfig, TestImplementationProvider, TestState
+from mindgard.test import LLMModelConfig, Test, TestConfig
 from mindgard.test_ui import TestUI
 from mindgard.utils import print_to_stderr
 from mindgard.wrappers.llm import LLMModelWrapper
@@ -27,7 +26,7 @@ def run_test(final_args:Dict[str, str], model_wrapper: LLMModelWrapper):
       attack_source="user",
       parallelism=int(final_args["parallelism"]),
       model=LLMModelConfig(
-          wrapper=model_wrapper, # type:ignore # TODO: this can't be both
+          wrapper=model_wrapper,
           system_prompt=final_args["system_prompt"],
       )
   )
