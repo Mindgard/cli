@@ -7,7 +7,7 @@ from typing import Any, Callable, Dict, List, Literal, Optional
 from unittest import mock
 
 import requests_mock
-from mindgard.mindgard_api import AttackResponse, FetchTestDataResponse, MindgardApi
+from mindgard.mindgard_api import MindgardApi
 from mindgard.version import VERSION
 from mindgard.test import TestConfig, TestImplementationProvider, LLMModelConfig
 from mindgard.wrappers.llm import Context, LLMModelWrapper, PromptResponse

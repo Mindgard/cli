@@ -1,5 +1,5 @@
 from typing import Any, Dict
-from unittest.mock import Mock
+from unittest.mock import ANY, Mock
 
 from azure.messaging.webpubsubclient import WebPubSubClient
 import pytest
@@ -111,7 +111,13 @@ def test_lib_runs_test_complete(mock_provider:MockProviderFixture, config:TestCo
     mock_provider.provider.init_test.assert_called_once_with(config)
     mock_provider.provider.create_client.assert_called_once_with(mock_provider.test_wps_url)
     mock_provider.provider.connect_websocket.assert_called_once_with(mock_provider.wps_client)
-    mock_provider.provider.register_handler.assert_called_once_with(mock_handler, mock_provider.wps_client, mock_provider.test_group_id)
+    
+    # when the exception handling is fixed, we should assert that the handler is provided
+    #       for now we can assert that the handler looks like it should (out mock fixture)
+    mock_provider.provider.register_handler.assert_called_once_with(ANY, mock_provider.wps_client, mock_provider.test_group_id)
+    payload_in = {"prompt":"is ok"}
+    assert mock_provider.provider.register_handler.call_args[0][0](payload_in) == mock_handler(payload_in), "the handler should be the one provided"
+
     mock_provider.provider.start_test.assert_called_once_with(mock_provider.wps_client, mock_provider.test_group_id)
     mock_provider.provider.close.assert_called_once_with(mock_provider.wps_client)
 
@@ -131,7 +137,7 @@ def test_lib_does_not_expose_writable_state(config:TestConfig):
     before_state = test.get_state()
     assert before_state.model_exceptions == [], "the model exceptions should be empty at start (for validity of test)"
      # mutate the state (copy)
-    before_state.model_exceptions.append(Exception("mytest"))
+    before_state.model_exceptions.append("mytest")
     before_state.attacks.append(AttackState(id="myattack", name="myattack", state="queued"))
     assert test.get_state().model_exceptions == [], "the state should not be writable externally"
 

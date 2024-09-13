@@ -70,7 +70,7 @@ class TestUI():
       model_exception_task_map: Dict[str, TaskID] = {}
       model_exception_counts: Dict[str, int] = {}
       for model_exception in state.model_exceptions:
-        name = str(model_exception)
+        name = model_exception
         if model_exception_task_map.get(name) is None:
           model_exception_task_map[name] = exceptions_progress.add_task("")
           model_exception_counts[name] = 1
@@ -96,7 +96,7 @@ class TestUI():
 
           model_exception_counts: Dict[str, int] = {}
           for model_exception in state.model_exceptions:
-            name = str(model_exception)
+            name = model_exception
             if model_exception_task_map.get(name) is None:
               model_exception_task_map[name] = exceptions_progress.add_task("")
             if model_exception_counts.get(name) is None:
