@@ -17,6 +17,7 @@ def test_fetch_test_data(requests_mock:requests_mock.Mocker):
         status_code=200,
         json={
             'hasFinished': False,
+            'risk': 44,
             'attacks':[
                 {
                     'id': 'attack_id1',
@@ -92,6 +93,7 @@ def test_fetch_test_data(requests_mock:requests_mock.Mocker):
         errored=None,
         risk=None,
     )
+    assert test_data.risk == 44, "should set risk"
 
 def test_fetch_test_data_garbage_response(requests_mock:requests_mock.Mocker):
     api_base=f"https://example.com/api/v1"
