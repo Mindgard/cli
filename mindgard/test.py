@@ -19,6 +19,12 @@ from mindgard.mindgard_api import AttackResponse, FetchTestDataResponse, Mindgar
 
 from mindgard.version import VERSION
 
+# surpress distracting warning messages from azure webpubsubclient; aims to be as precise as possible
+# https://github.com/Azure/azure-sdk-for-python/issues/37390
+logging.getLogger('azure.messaging.webpubsubclient._client').addFilter(
+    lambda record: not(record.getMessage() == "The client is stopping state. Stop recovery." and record.levelno == logging.WARNING)
+)
+
 class RequestHandler(Protocol):
     """
     Protocol for converting a Request paylod to a Response payload
@@ -209,7 +215,6 @@ class TestImplementationProvider():
 
     def close(self, client:Optional[WebPubSubClient]) -> None:
         if client:
-            client._is_stopping = True # type: ignore
             client.close()
 
 def _attack_response_to_attack_state(attack_data:AttackResponse, risk_threshold: int) -> AttackState:
@@ -314,7 +319,7 @@ class Test():
                         self._set_test_complete(test_id, attacks)
                     else:
                         self._set_attacking(test_id, attacks)
-   
-                time.sleep(self._poll_period_seconds)
+                if not finished:
+                    time.sleep(self._poll_period_seconds)
         finally:
             p.close(wps_client)
