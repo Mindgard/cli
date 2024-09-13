@@ -94,7 +94,9 @@ def test_missing_access_token(
 @mock.patch("mindgard.main_lib.load_access_token", return_value="myApiKey")
 @mock.patch("mindgard.main_lib.Test", return_value=mock.MagicMock())
 @mock.patch("mindgard.main_lib.TestUI", return_value=mock.MagicMock())
+@mock.patch("mindgard.main_lib.Thread", return_value=mock.MagicMock())
 def test_final_exit_code(
+    mock_thread: mock.MagicMock,
     mock_test_ui: mock.MagicMock,
     mock_test: mock.MagicMock,
     mock_load_access_token: mock.MagicMock,
@@ -110,4 +112,8 @@ def test_final_exit_code(
         
     mock_test.return_value.run.assert_called_once()
     mock_test_ui.assert_called_once_with(mock_test.return_value)
-    mock_test_ui.return_value.run.assert_called_once()
+
+    # following also asserts: mock_test_ui.return_value.run.assert_called_once()
+    mock_thread.assert_called_once_with(target=mock_test_ui.return_value.run, daemon=True)
+    mock_thread.return_value.start.assert_called_once()
+    mock_thread.return_value.join.assert_called_once()
