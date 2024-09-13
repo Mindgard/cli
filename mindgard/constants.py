@@ -1,4 +1,4 @@
-from .config import load_auth_config
+from mindgard.config import load_auth_config
  
 VERSION: str = "0.53.0"
 REPOSITORY_URL: str = f"https://pypi.org/pypi/mindgard/json"
@@ -14,3 +14,4 @@ DASHBOARD_URL = auth_config.DASHBOARD_URL
 
 API_RETRY_ATTEMPTS = 10
 API_RETRY_WAIT_BETWEEN_ATTEMPTS_SECONDS = 3
+DEFAULT_RISK_THRESHOLD = 50

@@ -59,6 +59,7 @@ def _helper_default_config(extra: Dict[str, Any] = {}) -> TestConfig:
             wrapper=MockModelWrapper(),
             system_prompt = "my system prompt"
         ),
+        risk_threshold = 70,
     )
 
 # integration test between Test and TestUI, with only the implementations mocked
