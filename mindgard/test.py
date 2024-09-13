@@ -16,10 +16,8 @@ from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs, Callb
 import requests
 from mindgard.constants import DEFAULT_RISK_THRESHOLD
 from mindgard.mindgard_api import AttackResponse, FetchTestDataResponse, MindgardApi
-from mindgard.wrappers.image import ImageModelWrapper
 
 from mindgard.version import VERSION
-from mindgard.wrappers.llm import LLMModelWrapper
 
 class RequestHandler(Protocol):
     """
@@ -27,15 +25,21 @@ class RequestHandler(Protocol):
     """
     def __call__(self, payload: Any) -> Any: ...
 
+class _Wrapper(Protocol):
+    """
+    Protocol for supplied model wrappers
+    """
+
+    def to_handler(self) -> RequestHandler: ...
+
 @dataclass
 class ModelConfig:
+    wrapper: _Wrapper
     def to_orchestrator_init_params(self) -> Dict[str, Any]:
         return {}
-
-
+    
 @dataclass
 class ImageModelConfig(ModelConfig):
-    wrapper: ImageModelWrapper
     dataset: str
     labels: list[str]
     model_type: str = "image"
@@ -49,7 +53,6 @@ class ImageModelConfig(ModelConfig):
 
 @dataclass
 class LLMModelConfig(ModelConfig):
-    wrapper: LLMModelWrapper
     system_prompt: str
     model_type: str = "llm"
 
@@ -81,8 +84,8 @@ class TestConfig:
             "attackSource": self.attack_source
         }, **self.model.to_orchestrator_init_params()}
 
-    def handler(self) -> Any:
-        return self.model.wrapper.to_handler() # type: ignore # TODO not sure on type
+    def handler(self) -> RequestHandler:
+        return self.model.wrapper.to_handler()
 
 @dataclass
 class AttackState():
@@ -182,7 +185,7 @@ class TestImplementationProvider():
                     started_condition.notify_all()
 
         client.subscribe(CallbackType.GROUP_MESSAGE, handler)
-        payload = {
+        payload:Dict[str, Any] = {
             "correlationId": "",
             "messageType": "StartTest",
             "payload": {"groupId": group_id},
