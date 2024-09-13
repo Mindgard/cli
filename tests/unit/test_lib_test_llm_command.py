@@ -1,11 +1,11 @@
-from typing import Any
+from typing import Any, Dict
 from unittest.mock import Mock
 
 from azure.messaging.webpubsubclient import WebPubSubClient
 import pytest
 from mindgard.constants import DEFAULT_RISK_THRESHOLD
 from mindgard.mindgard_api import AttackResponse, FetchTestDataResponse
-from mindgard.test import AttackState, Test, TestConfig, TestImplementationProvider, LLMModelConfig
+from mindgard.test import AttackState, RequestHandler, Test, TestConfig, TestImplementationProvider, LLMModelConfig
 from mindgard.wrappers.llm import TestStaticResponder
 
 def mock_handler(payload: Any) -> Any:
@@ -78,6 +78,30 @@ def config():
             model_type="your_model_type"
         )
     )
+
+def test_lib_error_handling(mock_provider:MockProviderFixture, config:TestConfig):
+    def mock_register_handler(handler: RequestHandler, client:str, group_id:str):
+        handler({
+            "anything":"is ok"
+        })
+
+    want_exception = Exception("something")
+    class MockWrapper():
+        def to_handler(self) -> RequestHandler:
+            def handler(payload: Dict[str, Any]) -> Dict[str, Any]:
+                raise want_exception
+            return handler
+
+    mock_provider.provider.register_handler.side_effect = mock_register_handler
+    test = Test(config, poll_period_seconds=0)
+    config.model.wrapper = MockWrapper()
+
+    test._provider = mock_provider.provider # TODO: fixme
+
+    test.run()
+    state = test.get_state()
+    assert len(state.model_exceptions), "the state should show the singular exception"
+    assert str(state.model_exceptions[0]) == str(want_exception), "the exception in state should match the raised exception"
 
 def test_lib_runs_test_complete(mock_provider:MockProviderFixture, config:TestConfig):
     test = Test(config, poll_period_seconds=0)

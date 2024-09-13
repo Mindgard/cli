@@ -1,13 +1,13 @@
 # Typing
 from pydantic import BaseModel
-from typing import List, Optional, Literal, Dict, Any
-import time
+from typing import List, Optional, Literal, Any
 import logging
 # Requests
 import requests
 import base64
 # Utils
-from ..utils import check_expected_args
+from mindgard.test import RequestHandler
+from mindgard.utils import check_expected_args
 
 
 class LabelConfidence(BaseModel):
@@ -25,7 +25,7 @@ class ImageModelWrapper:
         # self.shape = [3, 1, 224, 224]????
 
 
-    def to_handler(self):
+    def to_handler(self) -> RequestHandler:
         def handler(payload: Any) -> Any:
             logging.debug(f"received request {payload}")
             image_bytes = base64.b64decode(payload["image"])
@@ -75,7 +75,7 @@ def image_label_tensor_align(labels: List[str], model_data: List[LabelConfidence
 
 
 def get_image_model_wrapper(
-    preset: Literal["huggingface", "local"],
+    preset: Optional[Literal["huggingface", "local"]],
     api_key: Optional[str],
     url: str,
     labels: List[str],

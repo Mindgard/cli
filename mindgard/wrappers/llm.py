@@ -2,21 +2,21 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import json
 import logging
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union, cast
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 from anthropic import Anthropic
 from anthropic.types import MessageParam
 import requests
 from openai import AzureOpenAI, OpenAI, OpenAIError
 import jsonpath_ng
 
-from ..headers import parse_headers
 # Utils
-from ..utils import check_expected_args
-from ..responses import extract_replies
-from ..types import type_model_presets
+from mindgard.test import RequestHandler
+from mindgard.utils import check_expected_args
+from mindgard.responses import extract_replies
+from mindgard.types import type_model_presets
 
 # Exceptions
-from ..exceptions import (
+from mindgard.exceptions import (
     Uncontactable,
     status_code_to_exception,
     openai_exception_to_exception,
@@ -54,7 +54,7 @@ class ContextManager:
 
 
 class LLMModelWrapper(ABC):
-    def to_handler(self):
+    def to_handler(self) -> RequestHandler:
         context_manager = ContextManager()
         def handler(payload: Any) -> Any:
             context = context_manager.get_context_or_none(payload.get("context_id"))

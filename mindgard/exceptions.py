@@ -1,24 +1,15 @@
+import logging
+
 # OpenAI exceptions
 from openai import (
-    APIError,
     OpenAIError,
-    ConflictError,
-    NotFoundError,
     APIStatusError,
-    RateLimitError,
-    APITimeoutError,
-    BadRequestError,
-    APIConnectionError,
-    AuthenticationError,
-    InternalServerError as OPAIInternalServerError,
-    PermissionDeniedError,
-    UnprocessableEntityError,
-    APIResponseValidationError,
 )
 
 # Typing
-from typing import Dict
+from typing import Callable, Dict, Literal, Optional, Type
 from requests import status_codes
+
 
 
 class MGException(Exception):
@@ -135,3 +126,48 @@ def openai_exception_to_exception(exception: OpenAIError) -> MGException:
     # otherwise do this, this needs to be refined more
     else:
         return EmptyResponse("response was empty or something")
+
+
+ErrorCode = Literal[
+    "CouldNotContact",
+    "ContentPolicy",
+    "CLIError",
+    "NotImplemented",
+    "NoResponse",
+    "RateLimited",
+    "NetworkIssue",
+    "MaxContextLength",
+]
+
+
+exceptions_to_cli_status_codes: Dict[Type[Exception], ErrorCode] = {
+    Uncontactable: "CouldNotContact",
+    BadRequest: "NoResponse",  # not sure about this, we don't handle 400 atm
+    Unauthorized: "NoResponse",
+    Forbidden: "NoResponse",
+    NotFound: "NoResponse",
+    Timeout: "NoResponse",
+    UnprocessableEntity: "NoResponse",  # this is currently being handled as a rate limit issue for some reason
+    FailedDependency: "NoResponse",
+    RateLimitOrInsufficientCredits: "RateLimited",
+    InternalServerError: "NoResponse",
+    ServiceUnavailable: "NoResponse",
+    NotImplemented: "NotImplemented",
+    EmptyResponse: "NoResponse",
+}
+
+
+def handle_exception_callback(
+    exception: Exception,
+    handle_visual_exception_callback: Optional[Callable[[str], None]],
+) -> ErrorCode:
+    # TODO - come take a look at this
+    error_code: ErrorCode = exceptions_to_cli_status_codes.get(type(exception), "CLIError")
+    callback_text = str(exception)
+
+    if handle_visual_exception_callback:
+        handle_visual_exception_callback(callback_text)
+
+    logging.debug(exception)
+    return error_code
+
