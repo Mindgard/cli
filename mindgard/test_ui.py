@@ -88,7 +88,7 @@ class TestUI():
             task = attack_id_task_map.get(attack.id)
             if task is None:  # library could have changed the attack list
               attack_id_task_map[attack.id] = attack_progress.add_task(f"Attack {attack.name}", total=1)
-            task = attack_id_task_map[attack.id]
+              task = attack_id_task_map[attack.id]
             task_update(attack_progress, task, attack)
           
           completed_attacks = sum(1 for attack in state.attacks if attack.state == "completed")

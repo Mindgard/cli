@@ -218,7 +218,7 @@ def _attack_response_to_attack_state(attack_data:AttackResponse) -> AttackState:
     )
 
 class Test():
-    def __init__(self, config:TestConfig, poll_period_seconds:int = 5):
+    def __init__(self, config:TestConfig, poll_period_seconds:float = 5):
         self._config = config
         self._state = TestState() # TOOD: coverage
         self._provider = TestImplementationProvider() # TOOD: coverage
@@ -233,7 +233,7 @@ class Test():
     @contextlib.contextmanager
     def state_then_wait_if(self, predicate:Callable[[TestState], bool]):
         with self._notifier:
-            yield self._state
+            yield self.get_state()
             if predicate(self._state):
                 self._notifier.wait()
 
