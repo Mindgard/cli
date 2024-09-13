@@ -1,3 +1,6 @@
+"""
+Integration test for Test and TestUI
+"""
 import platform
 from threading import Thread
 from typing import Any, Dict, Optional
@@ -75,8 +78,8 @@ def test_ui_complete(
             has_finished=False,
             attacks=[
                AttackResponse(
-                  id="my attack id 1",
-                  name="my attack name 1",
+                  id="1",
+                  name="myattack1",
                   state="queued"
                ),
             ]
@@ -109,7 +112,7 @@ def test_ui_complete(
       )
   ]
   
-  test = Test(_helper_default_config(), poll_period_seconds=0)
+  test = Test(_helper_default_config(), poll_period_seconds=0.01)
   console = Console()
   test_ui = TestUI(test, console)
 
