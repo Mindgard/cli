@@ -1,13 +1,14 @@
-from ..types import (
+from mindgard.exceptions import handle_exception_callback
+from mindgard.exceptions import ErrorCode
+from mindgard.types import (
     type_ui_exception_map,
     ExceptionCountTuple,
 )
 
-from typing import Optional, Callable, Literal, Optional, Dict, Type, Any
+from typing import Optional, Callable, Optional
 
 from rich.progress import Progress
 
-import time
 
 import logging
 
@@ -15,69 +16,12 @@ import logging
 from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs
 from azure.messaging.webpubsubclient import WebPubSubClient
 
-from ..wrappers.llm import LLMModelWrapper, ContextManager
+from mindgard.wrappers.llm import LLMModelWrapper, ContextManager
 
 # Exceptions
-from ..exceptions import (
+from mindgard.exceptions import (
     MGException,
-    ServiceUnavailable,
-    InternalServerError,
-    RateLimitOrInsufficientCredits,
-    FailedDependency,
-    UnprocessableEntity,
-    Timeout,
-    NotFound,
-    BadRequest,
-    Forbidden,
-    Unauthorized,
-    Uncontactable,
-    HTTPBaseError,
-    EmptyResponse,
-    NotImplemented,
 )
-
-ErrorCode = Literal[
-    "CouldNotContact",
-    "ContentPolicy",
-    "CLIError",
-    "NotImplemented",
-    "NoResponse",
-    "RateLimited",
-    "NetworkIssue",
-    "MaxContextLength",
-]
-
-exceptions_to_cli_status_codes: Dict[Type[Exception], ErrorCode] = {
-    Uncontactable: "CouldNotContact",
-    BadRequest: "NoResponse",  # not sure about this, we don't handle 400 atm
-    Unauthorized: "NoResponse",
-    Forbidden: "NoResponse",
-    NotFound: "NoResponse",
-    Timeout: "NoResponse",
-    UnprocessableEntity: "NoResponse",  # this is currently being handled as a rate limit issue for some reason
-    FailedDependency: "NoResponse",
-    RateLimitOrInsufficientCredits: "RateLimited",
-    InternalServerError: "NoResponse",
-    ServiceUnavailable: "NoResponse",
-    NotImplemented: "NotImplemented",
-    EmptyResponse: "NoResponse",
-}
-
-
-def handle_exception_callback(
-    exception: Exception,
-    handle_visual_exception_callback: Optional[Callable[[str], None]],
-) -> ErrorCode:
-    # TODO - come take a look at this
-    error_code: ErrorCode = exceptions_to_cli_status_codes.get(type(exception), "CLIError")  # type: ignore
-    callback_text = str(exception)
-
-    if handle_visual_exception_callback:
-        handle_visual_exception_callback(callback_text)
-
-    logging.debug(exception)
-    return error_code
-
 
 def llm_message_handler(
     ui_exception_map: type_ui_exception_map,

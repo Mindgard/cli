@@ -15,6 +15,7 @@ from azure.messaging.webpubsubclient import WebPubSubClient, WebPubSubClientCred
 from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs, CallbackType, WebPubSubDataType
 import requests
 from mindgard.constants import DEFAULT_RISK_THRESHOLD
+from mindgard.exceptions import handle_exception_callback
 from mindgard.mindgard_api import AttackResponse, FetchTestDataResponse, MindgardApi
 
 from mindgard.version import VERSION
@@ -22,8 +23,10 @@ from mindgard.version import VERSION
 class RequestHandler(Protocol):
     """
     Protocol for converting a Request paylod to a Response payload
+
+    Receives payload dict and returns reponse payload (to send unaltered) and an optional error string
     """
-    def __call__(self, payload: Any) -> Any: ...
+    def __call__(self, payload: Dict[str, Any]) -> Dict[str, Any]: ...
 
 class _Wrapper(Protocol):
     """
@@ -113,7 +116,7 @@ class TestState():
             started=self.started,
             test_complete=self.test_complete,
             attacks=copy.deepcopy(self.attacks),
-            model_exceptions=copy.deepcopy(self.model_exceptions),
+            model_exceptions=self.model_exceptions,
             test_id=self.test_id
         )
 class TestImplementationProvider():
@@ -292,13 +295,32 @@ class Test():
         p = self._provider
         wps_client = None
         test_id = None
+        handler = self._config.handler()
+
+        # TODO: I don't want to wrap the wrapped wrapper like this
+        #       but was too nervous to change the internals of model wrappers
+        #       until some of the old code is gone.
+        def my_handler(payload:Dict[str, Any]) -> Dict[str,Any]:
+            try:
+                return handler(payload)
+            except Exception as e:
+                self._add_exception(e)
+                # logging.error(f"Error in handler: {e}") # ??????
+                
+                # arguably we could pass self._add_exception to this, but the callback
+                # was not tested, and suspect the direction of travel is against that
+                error_code = handle_exception_callback(e, None)
+                return {
+                    "response": "",
+                    "error": error_code,
+                }
+
         try:
             self._set_submitting_test()
             wps_url, group_id = p.init_test(self._config)
             wps_client = p.create_client(wps_url)
             p.connect_websocket(wps_client)
-            handler = self._config.handler()
-            p.register_handler(handler, wps_client, group_id)
+            p.register_handler(my_handler, wps_client, group_id)
             test_id = p.start_test(wps_client, group_id)
 
             finished = False
