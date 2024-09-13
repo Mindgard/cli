@@ -112,7 +112,7 @@ class TestState():
     started: bool = False
     test_complete: bool = False
     attacks: List[AttackState] = field(default_factory=list[AttackState])
-    model_exceptions: List[Exception] = field(default_factory=list[Exception])
+    model_exceptions: List[str] = field(default_factory=list[str])
     test_id: Optional[str] = None
 
     def clone(self):
@@ -122,7 +122,7 @@ class TestState():
             started=self.started,
             test_complete=self.test_complete,
             attacks=copy.deepcopy(self.attacks),
-            model_exceptions=self.model_exceptions,
+            model_exceptions=[exception for exception in self.model_exceptions],
             test_id=self.test_id
         )
 class TestImplementationProvider():
@@ -291,7 +291,7 @@ class Test():
 
     def _add_exception(self, exception:Exception) -> None:
         with self._notifier:
-            self._state.model_exceptions.append(exception)
+            self._state.model_exceptions.append(str(exception))
             self._notifier.notify_all()
 
     # run the test
