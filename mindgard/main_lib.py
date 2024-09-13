@@ -5,7 +5,9 @@ new library system.
 
 from threading import Thread
 from typing import Any, Dict, Union
-from mindgard.auth import load_access_token
+
+import requests
+from mindgard.auth import clear_token, load_access_token
 from mindgard.constants import API_BASE
 from mindgard.test import ImageModelConfig, LLMModelConfig, Test, TestConfig
 from mindgard.test_ui import TestUI
@@ -56,6 +58,17 @@ def run_test(final_args:Dict[str, Any], model_wrapper: Union[LLMModelWrapper, Im
   test_ui_thread = Thread(target=test_ui.run, daemon=True)
   test_ui_thread.start()
 
-  test.run()
+  try:
+      test.run()
+  except requests.HTTPError as e:
+      if "Unauthorized" in str(e):
+          print_to_stderr(
+              "Access token is invalid. Please re-authenticate using `mindgard login`"
+          )
+          clear_token()
+          exit(2)
+      else:
+          raise e
+
   test_ui_thread.join()
   exit(0)
