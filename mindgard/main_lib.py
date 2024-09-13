@@ -52,9 +52,10 @@ def run_test(final_args:Dict[str, Any], model_wrapper: Union[LLMModelWrapper, Im
   test = Test(test_config)
   test_ui = TestUI(test)
 
-  test_thread = Thread(target=test.run)
-  test_thread.start()
+  # daemonize to prevent blocking the main thread's exit if test.run raises exception
+  test_ui_thread = Thread(target=test_ui.run, daemon=True)
+  test_ui_thread.start()
 
-  test_ui.run()
-  test_thread.join()
+  test.run()
+  test_ui_thread.join()
   exit(0)
