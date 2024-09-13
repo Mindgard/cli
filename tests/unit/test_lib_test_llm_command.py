@@ -30,6 +30,7 @@ class MockProviderFixture():
         self.provider.poll_test.side_effect = [
             None,
             FetchTestDataResponse(
+                risk=0,
                 has_finished=False,
                 attacks=[
                     AttackResponse(
@@ -40,6 +41,7 @@ class MockProviderFixture():
                 ]
             ),
             FetchTestDataResponse(
+                risk=44,
                 has_finished=True,
                 attacks=[
                     AttackResponse(
@@ -105,7 +107,7 @@ def test_lib_error_handling(mock_provider:MockProviderFixture, config:TestConfig
 
 def test_lib_runs_test_complete(mock_provider:MockProviderFixture, config:TestConfig):
     test = Test(config, poll_period_seconds=0)
-    test._provider = mock_provider.provider # TODO: fixme
+    test._provider = mock_provider.provider # type: ignore # TODO: fixme
     test.run()
 
     mock_provider.provider.init_test.assert_called_once_with(config)
@@ -151,7 +153,7 @@ def test_lib_closes_on_exception(mock_provider:MockProviderFixture, config:TestC
 
     with pytest.raises(Exception) as e:
         test = Test(config)
-        test._provider = mock_provider.provider # TODO: fixme
+        test._provider = mock_provider.provider # type: ignore # TODO: fixme
         test.run()
     assert e.value == exception, "the same exception should be propagated (not a copy/wrap)"
     assert mock_provider.provider.close.called, "the test should be closed even if an exception is raised"
@@ -174,10 +176,11 @@ def test_test_config_defaults():
     assert got_config.attack_pack == "sandbox", "the default attack pack should be sandbox"
     assert got_config.additional_headers == None, "the default additional_headers should be empty"
 
-def test_lib_emits_passed_failed(mock_provider:MockProviderFixture, config:TestConfig):
+def test_lib_emits_attack_passed_failed(mock_provider:MockProviderFixture, config:TestConfig):
     config.risk_threshold = 90
     mock_provider.provider.poll_test.side_effect = None
     mock_provider.provider.poll_test.return_value = FetchTestDataResponse(
+        risk=44,
         has_finished=True,
         attacks=[
             AttackResponse(
@@ -197,10 +200,42 @@ def test_lib_emits_passed_failed(mock_provider:MockProviderFixture, config:TestC
         ]
     )
     test = Test(config, poll_period_seconds=0)
-    test._provider = mock_provider.provider # TODO: fixme
+    test._provider = mock_provider.provider # type: ignore # TODO: fixme
     test.run()
 
     final_state = test.get_state()
     assert final_state.test_complete == True, "the test should be completed"
     assert final_state.attacks[0].passed == True, "passed should be true when risk < risk theshold"
     assert final_state.attacks[1].passed == False, "passed should be false when risk >= risk theshold"
+
+def test_lib_emits_test_passed(mock_provider:MockProviderFixture, config:TestConfig):
+    config.risk_threshold = 90
+    mock_provider.provider.poll_test.side_effect = None
+    mock_provider.provider.poll_test.return_value = FetchTestDataResponse(
+        has_finished=True,
+        risk=89,
+        attacks=[]
+    )
+    test = Test(config, poll_period_seconds=0)
+    test._provider = mock_provider.provider # type: ignore # TODO: fixme
+    test.run()
+
+    final_state = test.get_state()
+    assert final_state.test_complete == True, "the test should be completed"
+    assert final_state.passed == True, "passed should be true when risk < risk theshold"
+
+def test_lib_emits_test_failed(mock_provider:MockProviderFixture, config:TestConfig):
+    config.risk_threshold = 90
+    mock_provider.provider.poll_test.side_effect = None
+    mock_provider.provider.poll_test.return_value = FetchTestDataResponse(
+        has_finished=True,
+        risk=90,
+        attacks=[]
+    )
+    test = Test(config, poll_period_seconds=0)
+    test._provider = mock_provider.provider # type: ignore # TODO: fixme
+    test.run()
+
+    final_state = test.get_state()
+    assert final_state.test_complete == True, "the test should be completed"
+    assert final_state.passed == False, "passed should be false when risk >= risk theshold"

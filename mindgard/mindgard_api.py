@@ -18,6 +18,7 @@ class AttackResponse():
 @dataclass
 class FetchTestDataResponse():
     has_finished: bool
+    risk: int
     attacks: list[AttackResponse]
 
 
@@ -77,7 +78,8 @@ class MindgardApi():
 
             return FetchTestDataResponse(
                 has_finished=data["hasFinished"],
-                attacks=attacks
+                attacks=attacks,
+                risk=data["risk"],
             )
         except KeyError as ke:
             logging.error(f"KeyError response: {ke}")

@@ -114,6 +114,7 @@ class TestState():
     attacks: List[AttackState] = field(default_factory=list[AttackState])
     model_exceptions: List[str] = field(default_factory=list[str])
     test_id: Optional[str] = None
+    passed: Optional[bool] = None
 
     def clone(self):
         return TestState(
@@ -123,7 +124,8 @@ class TestState():
             test_complete=self.test_complete,
             attacks=copy.deepcopy(self.attacks),
             model_exceptions=[exception for exception in self.model_exceptions],
-            test_id=self.test_id
+            test_id=self.test_id,
+            passed=self.passed
         )
 class TestImplementationProvider():
 
@@ -282,11 +284,12 @@ class Test():
             self._state.started = True
             self._notifier.notify_all()
 
-    def _set_test_complete(self, test_id:str, attacks:List[AttackState]) -> None:
+    def _set_test_complete(self, test_id:str, attacks:List[AttackState], risk:int) -> None:
         with self._notifier:
             self._state.test_id = test_id
             self._state.attacks = attacks
             self._state.test_complete = True
+            self._state.passed = risk < self._config.risk_threshold
             self._notifier.notify_all()
 
     def _add_exception(self, exception:Exception) -> None:
@@ -338,7 +341,7 @@ class Test():
                     finished = test_data.has_finished
                     attacks = [_attack_response_to_attack_state(attack_data, self._config.risk_threshold) for attack_data in test_data.attacks]
                     if finished:
-                        self._set_test_complete(test_id, attacks)
+                        self._set_test_complete(test_id, attacks, test_data.risk)
                     else:
                         self._set_attacking(test_id, attacks)
                 if not finished:

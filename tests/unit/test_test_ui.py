@@ -76,6 +76,7 @@ def test_ui_complete(
   mock_provider.poll_test.side_effect = [
      None,
       FetchTestDataResponse(
+            risk=0,
             has_finished=False,
             attacks=[
                AttackResponse(
@@ -86,6 +87,7 @@ def test_ui_complete(
             ]
       ),
       FetchTestDataResponse(
+            risk=0,
             has_finished=True,
             attacks=[
                AttackResponse(
