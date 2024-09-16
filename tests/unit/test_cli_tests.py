@@ -4,6 +4,7 @@ from unittest import mock
 
 import pytest
 import requests
+from mindgard.constants import EXIT_CODE_ERROR, EXIT_CODE_SUCCESS
 from mindgard.main_lib import run_test
 from mindgard.test import ImageModelConfig, LLMModelConfig, TestConfig
 from mindgard.wrappers.image import ImageModelWrapper
@@ -142,3 +143,42 @@ def test_final_exit_code(
     mock_thread.assert_called_once_with(target=mock_test_ui.return_value.run, daemon=True)
     mock_thread.return_value.start.assert_called_once()
     mock_thread.return_value.join.assert_called_once()
+
+@mock.patch("mindgard.main_lib.load_access_token", return_value="myApiKey")
+@mock.patch("mindgard.main_lib.Test", return_value=mock.MagicMock())
+@mock.patch("mindgard.main_lib.TestUI", return_value=mock.MagicMock())
+@mock.patch("mindgard.main_lib.Thread", return_value=mock.MagicMock())
+def test_exit_code_test_passed(
+    mock_thread: mock.MagicMock,
+    mock_test_ui: mock.MagicMock,
+    mock_test: mock.MagicMock,
+    mock_load_access_token: mock.MagicMock
+):
+    mock_test.return_value.get_state.return_value.passed = True
+    with pytest.raises(SystemExit, match=str(EXIT_CODE_SUCCESS)):
+        run_test(final_args={
+            "model_type": 'llm', 
+            "target": "myTarget", 
+            "parallelism": 1,
+            "system_prompt": "mysysprompt",
+            }, model_wrapper=mock.MagicMock())
+        
+        
+@mock.patch("mindgard.main_lib.load_access_token", return_value="myApiKey")
+@mock.patch("mindgard.main_lib.Test", return_value=mock.MagicMock())
+@mock.patch("mindgard.main_lib.TestUI", return_value=mock.MagicMock())
+@mock.patch("mindgard.main_lib.Thread", return_value=mock.MagicMock())
+def test_exit_code_test_failed(
+    mock_thread: mock.MagicMock,
+    mock_test_ui: mock.MagicMock,
+    mock_test: mock.MagicMock,
+    mock_load_access_token: mock.MagicMock
+):
+    mock_test.return_value.get_state.return_value.passed = False
+    with pytest.raises(SystemExit, match=str(EXIT_CODE_ERROR)):
+        run_test(final_args={
+            "model_type": 'llm', 
+            "target": "myTarget", 
+            "parallelism": 1,
+            "system_prompt": "mysysprompt",
+            }, model_wrapper=mock.MagicMock())

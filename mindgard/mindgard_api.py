@@ -4,7 +4,7 @@ from typing import Any, Dict, Literal, Optional
 
 import requests
 
-from mindgard.constants import VERSION
+from mindgard.constants import ATTACK_STATE_COMPLETED, ATTACK_STATE_RUNNING, VERSION, ATTACK_STATE_QUEUED
 
 
 @dataclass
@@ -23,21 +23,21 @@ class FetchTestDataResponse():
 
 
 def api_response_to_attack_state(attack:Dict[str, Any]) -> AttackResponse:
-    if attack["state"] == 0:
+    if attack["state"] == ATTACK_STATE_QUEUED:
         state = "queued"
-    elif attack["state"] == 1:
+    elif attack["state"] == ATTACK_STATE_RUNNING:
         state = "running"
     else:
         state = "completed"
 
-    if attack["state"] < 0:
+    if attack["state"] < ATTACK_STATE_QUEUED:
         errored = True
-    elif attack["state"] == 2:
+    elif attack["state"] == ATTACK_STATE_COMPLETED:
         errored = False
     else:
         errored = None
 
-    risk = attack.get("risk") if attack["state"] == 2 else None
+    risk = attack.get("risk") if attack["state"] == ATTACK_STATE_COMPLETED else None
     return AttackResponse(
         id=attack["id"],
         name=attack["attack"],
