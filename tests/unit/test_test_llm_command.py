@@ -35,11 +35,11 @@ class PropagatingThread(Thread):
         except BaseException as e:
             self.exc = e
 
-    def join(self, timeout=None):
+    def join(self, timeout:Optional[float]=None) -> Any:
         super(PropagatingThread, self).join(timeout)
         if self.exc:
             raise self.exc
-        return self.ret
+        return self.ret # type: ignore
 
 class MockModelWrapper(LLMModelWrapper):
     @classmethod

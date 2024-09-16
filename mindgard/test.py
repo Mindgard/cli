@@ -26,6 +26,15 @@ logging.getLogger('azure.messaging.webpubsubclient._client').addFilter(
     lambda record: not(record.getMessage() == "The client is stopping state. Stop recovery." and record.levelno == logging.WARNING)
 )
 
+class TestError(Exception):
+    pass
+
+class InternalError(TestError):
+    pass
+
+class UnauthorizedError(TestError):
+    pass
+
 class RequestHandler(Protocol):
     """
     Protocol for converting a Request paylod to a Response payload
@@ -239,6 +248,7 @@ class Test():
         self._provider = TestImplementationProvider() # TOOD: coverage
         self._notifier = Condition()
         self._poll_period_seconds = poll_period_seconds
+        self._exit_error = None
 
     # for clients to observe state[changes]
     def get_state(self) -> TestState:
@@ -248,24 +258,29 @@ class Test():
     @contextlib.contextmanager
     def state_then_wait_if(self, predicate:Callable[[TestState], bool]):
         with self._notifier:
+            self._raise_on_error()
             yield self.get_state()
             if predicate(self._state):
                 self._notifier.wait()
+                self._raise_on_error()
 
     # TODO: coverage
     @contextlib.contextmanager
     def state_wait(self):
         with self._notifier:
+            self._raise_on_error()
             self._notifier.wait()
+            self._raise_on_error()
             yield self._state
 
     # TODO: coverage
     @contextlib.contextmanager
     def state_wait_for(self, predicate:Callable[[TestState], bool]):
         with self._notifier:
-            self._notifier.wait_for(lambda: predicate(self._state))
+            self._notifier.wait_for(lambda: self._exit_error or predicate(self._state))
+            self._raise_on_error()
             yield self._state
-    
+
     def _set_started(self) -> None:
         with self._notifier:
             self._state.started = True
@@ -296,6 +311,18 @@ class Test():
         with self._notifier:
             self._state.model_exceptions.append(str(exception))
             self._notifier.notify_all()
+
+    def _set_error(self, exception:BaseException) -> None:
+        with self._notifier:
+            self._exit_error = exception
+            self._notifier.notify_all()
+
+    def _raise_on_error(self) -> None:
+        """
+        Raise an exception if an error has occurred
+        """
+        if self._exit_error:
+            raise self._exit_error
 
     # run the test
     def run(self) -> None:
@@ -346,5 +373,14 @@ class Test():
                         self._set_attacking(test_id, attacks)
                 if not finished:
                     time.sleep(self._poll_period_seconds)
+        except TestError as e:
+            self._set_error(e)
+            raise e
+        except Exception as e:
+            self._set_error(e)
+            raise InternalError("An unexpected error occurred during the test execution") from e
+        except BaseException as e:
+            self._set_error(e)
+            raise
         finally:
             p.close(wps_client)

@@ -4,7 +4,6 @@ from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn, TaskID
 from rich.live import Live
 from mindgard.test import AttackState, Test
-
 class TestUI():
   def __init__(self, test: Test, console:Console = Console()):
     self._console = console
@@ -23,9 +22,8 @@ class TestUI():
     ) as submit_progress:
       submit_task_id = submit_progress.add_task("Submitting...", start=True)
 
-      test.state_wait_for(lambda state: state.submitted)
-          
-      submit_progress.update(submit_task_id, completed=100)
+      with test.state_wait_for(lambda state: state.started):
+        submit_progress.update(submit_task_id, completed=100)
 
 
     ##################################
