@@ -8,7 +8,7 @@ from typing import Any, Dict, Union
 
 import requests
 from mindgard.auth import clear_token, load_access_token
-from mindgard.constants import API_BASE, EXIT_CODE_ERROR, EXIT_CODE_SUCCESS
+from mindgard.constants import API_BASE, EXIT_CODE_ERROR, EXIT_CODE_NOT_PASSED, EXIT_CODE_PASSED
 from mindgard.test import ImageModelConfig, LLMModelConfig, Test, TestConfig, UnauthorizedError
 from mindgard.test_ui import TestUI
 from mindgard.utils import print_to_stderr
@@ -25,7 +25,7 @@ def run_test(final_args:Dict[str, Any], model_wrapper: Union[LLMModelWrapper, Im
   if final_args["model_type"] == "llm":
     test_config = TestConfig(
         api_base=API_BASE,
-        api_access_token="access_token",
+        api_access_token=access_token,
         target=final_args["target"],
         attack_source="user",
         parallelism=int(final_args["parallelism"]),
@@ -79,6 +79,6 @@ def run_test(final_args:Dict[str, Any], model_wrapper: Union[LLMModelWrapper, Im
   test_ui_thread.join()
   
   if test.get_state().passed:
-    exit(EXIT_CODE_SUCCESS)
+    exit(EXIT_CODE_PASSED)
   elif test.get_state().passed == False:
-    exit(EXIT_CODE_ERROR)
+    exit(EXIT_CODE_NOT_PASSED)

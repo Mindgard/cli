@@ -6,10 +6,11 @@
 from typing import Any, Callable, Dict, List, Literal, Optional
 from unittest import mock
 
+import pytest
 import requests_mock
 from mindgard.mindgard_api import MindgardApi
 from mindgard.version import VERSION
-from mindgard.test import TestConfig, TestImplementationProvider, LLMModelConfig
+from mindgard.test import InternalError, TestConfig, TestImplementationProvider, LLMModelConfig, UnauthorizedError
 from mindgard.wrappers.llm import Context, LLMModelWrapper, PromptResponse
 
 from azure.messaging.webpubsubclient import WebPubSubClient
@@ -138,6 +139,50 @@ def test_init_test_using_api_key_auth_flow(requests_mock: requests_mock.Mocker) 
         "attackSource": config.attack_source,
         "attackPack": config.attack_pack,
     }
+
+def test_init_test_unauthorized(requests_mock: requests_mock.Mocker) -> None:
+    test_url = "test_url"
+    test_group_id = "test_group_id"
+    for code in [401, 403]:
+        # inputs
+        config = _helper_default_config()
+        
+        requests_mock.post(
+            f"{config.api_base}/tests/cli_init",
+            json={
+                "url": test_url,
+                "groupId": test_group_id
+            },
+            status_code=code,
+        )
+        provider = TestImplementationProvider()
+
+        with pytest.raises(UnauthorizedError):
+            provider.init_test(config)
+
+        # TODO: assert __cause__ (e.value.__cause__)
+
+def test_init_test_unknown_error(requests_mock: requests_mock.Mocker) -> None:
+    test_url = "test_url"
+    test_group_id = "test_group_id"
+    for code in [500, 501, 502]:
+        # inputs
+        config = _helper_default_config()
+        
+        requests_mock.post(
+            f"{config.api_base}/tests/cli_init",
+            json={
+                "url": test_url,
+                "groupId": test_group_id
+            },
+            status_code=code,
+        )
+        provider = TestImplementationProvider()
+
+        with pytest.raises(InternalError):
+            provider.init_test(config)
+
+        # TODO: assert __cause__ (e.value.__cause__)
 
 @mock.patch("mindgard.test.WebPubSubClientCredential", autospec=True)
 @mock.patch("mindgard.test.WebPubSubClient", autospec=True)

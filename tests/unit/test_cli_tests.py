@@ -3,7 +3,7 @@ from typing import Any, Dict
 from unittest import mock
 
 import pytest
-from mindgard.constants import EXIT_CODE_ERROR, EXIT_CODE_SUCCESS
+from mindgard.constants import EXIT_CODE_NOT_PASSED, EXIT_CODE_PASSED
 from mindgard.main_lib import run_test
 from mindgard.test import ImageModelConfig, LLMModelConfig, TestConfig, UnauthorizedError
 from mindgard.wrappers.image import ImageModelWrapper
@@ -154,7 +154,7 @@ def test_exit_code_test_passed(
     mock_load_access_token: mock.MagicMock
 ):
     mock_test.return_value.get_state.return_value.passed = True
-    with pytest.raises(SystemExit, match=str(EXIT_CODE_SUCCESS)):
+    with pytest.raises(SystemExit, match=str(EXIT_CODE_PASSED)):
         run_test(final_args={
             "model_type": 'llm', 
             "target": "myTarget", 
@@ -174,7 +174,7 @@ def test_exit_code_test_failed(
     mock_load_access_token: mock.MagicMock
 ):
     mock_test.return_value.get_state.return_value.passed = False
-    with pytest.raises(SystemExit, match=str(EXIT_CODE_ERROR)):
+    with pytest.raises(SystemExit, match=str(EXIT_CODE_NOT_PASSED)):
         run_test(final_args={
             "model_type": 'llm', 
             "target": "myTarget", 
