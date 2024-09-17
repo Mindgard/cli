@@ -8,7 +8,7 @@ from typing import Any, Dict, Union
 
 import requests
 from mindgard.auth import clear_token, load_access_token
-from mindgard.constants import API_BASE
+from mindgard.constants import API_BASE, EXIT_CODE_ERROR, EXIT_CODE_SUCCESS
 from mindgard.test import ImageModelConfig, LLMModelConfig, Test, TestConfig
 from mindgard.test_ui import TestUI
 from mindgard.utils import print_to_stderr
@@ -20,7 +20,7 @@ def run_test(final_args:Dict[str, Any], model_wrapper: Union[LLMModelWrapper, Im
   access_token = load_access_token()
   if not access_token:
       print_to_stderr("\033[1;37mRun `mindgard login`\033[0;0m to authenticate.")
-      exit(2)
+      exit(EXIT_CODE_ERROR)
 
   if final_args["model_type"] == "llm":
     test_config = TestConfig(
@@ -66,9 +66,13 @@ def run_test(final_args:Dict[str, Any], model_wrapper: Union[LLMModelWrapper, Im
               "Access token is invalid. Please re-authenticate using `mindgard login`"
           )
           clear_token()
-          exit(2)
+          exit(EXIT_CODE_ERROR)
       else:
           raise e
 
   test_ui_thread.join()
-  exit(0)
+  
+  if test.get_state().passed:
+    exit(EXIT_CODE_SUCCESS)
+  elif test.get_state().passed == False:
+    exit(EXIT_CODE_ERROR)
