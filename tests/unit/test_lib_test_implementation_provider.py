@@ -351,6 +351,17 @@ def test_poll_test_returns_using_api_token_auth_flow() -> None:
         test_id=test_id
     )
 
+def test_poll_test_bubbles_up_exceptions() -> None:
+    mock_mindgard_api = mock.MagicMock(spec=MindgardApi)
+
+    test_id = "my test id"
+    config = _helper_default_config()
+
+    # test
+    provider = TestImplementationProvider(mock_mindgard_api)
+    mock_mindgard_api.fetch_test_data.side_effect = ValueError("test error")
+    with pytest.raises(InternalError):
+        provider.poll_test(config, test_id)
 
 def test_close() -> None:
     wps_client = mock.MagicMock(spec=WebPubSubClient)
