@@ -230,12 +230,15 @@ class TestImplementationProvider():
             return test_id
 
     def poll_test(self, config:TestConfig, test_id:str) -> Optional[FetchTestDataResponse]:
-        return self._mindgard_api.fetch_test_data(
-            api_base=config.api_base,
-            access_token=config.api_access_token,
-            additional_headers=config.additional_headers,
-            test_id=test_id
-        )
+        try:
+            return self._mindgard_api.fetch_test_data(
+                api_base=config.api_base,
+                access_token=config.api_access_token,
+                additional_headers=config.additional_headers,
+                test_id=test_id
+            )
+        except Exception as e:
+            raise InternalError("An unexpected error occurred during the test polling") from e
 
     def close(self, client:Optional[WebPubSubClient]) -> None:
         if client:
@@ -369,18 +372,28 @@ class Test():
             test_id = p.start_test(wps_client, group_id)
 
             finished = False
+            retries = 0
             while not finished:
-                test_data = p.poll_test(
-                    config=self._config,
-                    test_id=test_id
-                )
-                if test_data is not None:
-                    finished = test_data.has_finished
-                    attacks = [_attack_response_to_attack_state(attack_data, self._config.risk_threshold) for attack_data in test_data.attacks]
-                    if finished:
-                        self._set_test_complete(test_id, attacks, test_data.risk)
-                    else:
-                        self._set_attacking(test_id, attacks)
+                try:
+                    retries += 1
+                    test_data = p.poll_test(
+                        config=self._config,
+                        test_id=test_id
+                    )
+                except Exception as e:
+                    if retries > 9:
+                        raise
+                else:
+                    if test_data is not None:
+                        retries = 0
+                        finished = test_data.has_finished
+                        attacks = [_attack_response_to_attack_state(attack_data, self._config.risk_threshold) for attack_data in test_data.attacks]
+                        if finished:
+                            self._set_test_complete(test_id, attacks, test_data.risk)
+                        else:
+                            self._set_attacking(test_id, attacks)
+                    elif retries > 9:
+                        raise InternalError("Failed to poll test data 10 times")
                 if not finished:
                     time.sleep(self._poll_period_seconds)
         except TestError as e:

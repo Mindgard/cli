@@ -150,7 +150,7 @@ def test_lib_closes_on_exception(mock_provider:MockProviderFixture, config:TestC
     Exception should be propagated to the caller unaltered (this is unhandled case).
     """
     exception = Exception("test exception")
-    mock_provider.provider.poll_test.side_effect = exception
+    mock_provider.provider.init_test.side_effect = exception
 
     with pytest.raises(InternalError) as e:
         test = Test(config)
@@ -275,7 +275,7 @@ def test_lib_raises_in_state_wait(mock_provider:MockProviderFixture, config:Test
         test_run.join()
 
 def test_lib_raises_in_state_then_wait_if(mock_provider:MockProviderFixture, config:TestConfig):
-    mock_provider.provider.poll_test.side_effect = UnauthorizedError()
+    mock_provider.provider.init_test.side_effect = UnauthorizedError()
     test = Test(config, poll_period_seconds=0)
     test._provider = mock_provider.provider # type: ignore # TODO: fixme
             
@@ -299,3 +299,32 @@ def test_lib_raises_internal_error(mock_provider:MockProviderFixture, config:Tes
         test.run()
 
     assert e.value.__cause__ is expect_exception_inner, "the InternalError's cause should be the original exception"
+
+# TODO: hurriedly added this test, but the exception handling is not well designed yet
+def test_lib_retries_9_times(mock_provider:MockProviderFixture, config:TestConfig):
+    mock_provider.provider.poll_test.side_effect = [UnauthorizedError()] * 9 + [FetchTestDataResponse(has_finished=True, risk=0, attacks=[])]
+    test = Test(config, poll_period_seconds=0)
+    test._provider = mock_provider.provider # type: ignore # TODO: fixme
+    
+    test.run()
+    assert test.get_state().test_complete == True, "the test should be completed"
+
+# TODO: hurriedly added this test, but the exception handling is not well designed yet
+def test_lib_retries_10_nones(mock_provider:MockProviderFixture, config:TestConfig):
+    mock_provider.provider.poll_test.side_effect = [None] * 10
+    test = Test(config, poll_period_seconds=0)
+    test._provider = mock_provider.provider # type: ignore # TODO: fixme
+    
+    with pytest.raises(InternalError):
+        test.run()
+    
+    assert test.get_state().test_complete == False, "the test should not be completed"
+
+# TODO: hurriedly added this test, but the exception handling is not well designed yet
+def test_lib_retries_resets(mock_provider:MockProviderFixture, config:TestConfig):
+    mock_provider.provider.poll_test.side_effect = [None] * 9 + [FetchTestDataResponse(has_finished=False, risk=0, attacks=[])] + [None] * 9 + [FetchTestDataResponse(has_finished=True, risk=0, attacks=[])]
+    test = Test(config, poll_period_seconds=0)
+    test._provider = mock_provider.provider # type: ignore # TODO: fixme
+    
+    test.run()
+    assert test.get_state().test_complete == True, "the test should be completed"
