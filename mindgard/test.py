@@ -157,7 +157,17 @@ class TestImplementationProvider():
             },
             json=config.to_orchestrator_init_params()
         )
-        response.raise_for_status()
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as e:
+            if e.response.status_code == 401:
+                raise UnauthorizedError("Invalid access token") from e
+            elif e.response.status_code == 403:
+                raise UnauthorizedError("Access denied") from e
+            else:
+                raise InternalError("An unexpected error occurred during the test initialization") from e
+        except Exception as e:
+            raise InternalError("An unexpected error occurred during the test initialization") from e
 
         url = response.json().get("url", None)
         group_id = response.json().get("groupId", None)

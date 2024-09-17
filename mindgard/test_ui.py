@@ -3,27 +3,36 @@ from rich.table import Table
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn, TaskID
 from rich.live import Live
-from mindgard.test import AttackState, Test
+from mindgard.test import AttackState, Test, TestError
 class TestUI():
   def __init__(self, test: Test, console:Console = Console()):
     self._console = console
     self._test = test
 
   def run(self) -> None:
-    test = self._test
-    
-    # test.state_wait_for(lambda state: state.started)
-    test.state_wait_for(lambda state: state.submitting)
-    with Progress(
-      "{task.description}",
-      SpinnerColumn(finished_text="[green3] Submitted!"),
-      auto_refresh=True,
-      console=self._console,
-    ) as submit_progress:
-      submit_task_id = submit_progress.add_task("Submitting...", start=True)
+    try:
+      self._run()
+    except TestError:
+      # TODO: move error display to UI functions
+      #       this is an interim step to stop the exception appearing twice.
+      #       nb. we're only hiding errors we know to come from Test lib, not
+      #       errors that might have come from the UI itself.
+      pass
 
-      with test.state_wait_for(lambda state: state.started):
-        submit_progress.update(submit_task_id, completed=100)
+  def _run(self) -> None:
+    test = self._test
+
+    with test.state_wait_for(lambda state: state.submitting):
+      with Progress(
+        "{task.description}",
+        SpinnerColumn(finished_text="[green3] Submitted!"),
+        auto_refresh=True,
+        console=self._console,
+      ) as submit_progress:
+        submit_task_id = submit_progress.add_task("Submitting...", start=True)
+
+        with test.state_wait_for(lambda state: state.started):
+          submit_progress.update(submit_task_id, completed=100)
 
 
     ##################################
