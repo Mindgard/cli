@@ -8,8 +8,8 @@ from typing import Any, Dict, Union
 
 import requests
 from mindgard.auth import clear_token, load_access_token
-from mindgard.constants import API_BASE, EXIT_CODE_ERROR, EXIT_CODE_SUCCESS
-from mindgard.test import ImageModelConfig, LLMModelConfig, Test, TestConfig
+from mindgard.constants import API_BASE, EXIT_CODE_ERROR, EXIT_CODE_NOT_PASSED, EXIT_CODE_PASSED
+from mindgard.test import ImageModelConfig, LLMModelConfig, Test, TestConfig, UnauthorizedError
 from mindgard.test_ui import TestUI
 from mindgard.utils import print_to_stderr
 from mindgard.wrappers.image import ImageModelWrapper
@@ -55,11 +55,17 @@ def run_test(final_args:Dict[str, Any], model_wrapper: Union[LLMModelWrapper, Im
   test_ui = TestUI(test)
 
   # daemonize to prevent blocking the main thread's exit if test.run raises exception
-  test_ui_thread = Thread(target=test_ui.run, daemon=True)
+  test_ui_thread = Thread(target=test_ui.run, name="TestUI")
   test_ui_thread.start()
 
   try:
       test.run()
+  except UnauthorizedError:
+      print_to_stderr(
+          "Access token is invalid. Please re-authenticate using `mindgard login`"
+      )
+      clear_token()
+      exit(EXIT_CODE_ERROR)
   except requests.HTTPError as e:
       if "Unauthorized" in str(e):
           print_to_stderr(
@@ -73,6 +79,6 @@ def run_test(final_args:Dict[str, Any], model_wrapper: Union[LLMModelWrapper, Im
   test_ui_thread.join()
   
   if test.get_state().passed:
-    exit(EXIT_CODE_SUCCESS)
+    exit(EXIT_CODE_PASSED)
   elif test.get_state().passed == False:
-    exit(EXIT_CODE_ERROR)
+    exit(EXIT_CODE_NOT_PASSED)

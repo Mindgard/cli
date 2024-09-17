@@ -5,8 +5,9 @@ from azure.messaging.webpubsubclient import WebPubSubClient
 import pytest
 from mindgard.constants import DEFAULT_RISK_THRESHOLD
 from mindgard.mindgard_api import AttackResponse, FetchTestDataResponse
-from mindgard.test import AttackState, RequestHandler, Test, TestConfig, TestImplementationProvider, LLMModelConfig
+from mindgard.test import AttackState, InternalError, RequestHandler, Test, TestConfig, TestImplementationProvider, LLMModelConfig, UnauthorizedError
 from mindgard.wrappers.llm import TestStaticResponder
+from tests.unit.test_test_llm_command import PropagatingThread
 
 def mock_handler(payload: Any) -> Any:
     return {
@@ -98,7 +99,7 @@ def test_lib_error_handling(mock_provider:MockProviderFixture, config:TestConfig
     test = Test(config, poll_period_seconds=0)
     config.model.wrapper = MockWrapper()
 
-    test._provider = mock_provider.provider # TODO: fixme
+    test._provider = mock_provider.provider # type: ignore # TODO: fixme
 
     test.run()
     state = test.get_state()
@@ -151,11 +152,11 @@ def test_lib_closes_on_exception(mock_provider:MockProviderFixture, config:TestC
     exception = Exception("test exception")
     mock_provider.provider.poll_test.side_effect = exception
 
-    with pytest.raises(Exception) as e:
+    with pytest.raises(InternalError) as e:
         test = Test(config)
         test._provider = mock_provider.provider # type: ignore # TODO: fixme
         test.run()
-    assert e.value == exception, "the same exception should be propagated (not a copy/wrap)"
+    assert e.value.__cause__ == exception, "the same exception should be propagated (not a copy/wrap)"
     assert mock_provider.provider.close.called, "the test should be closed even if an exception is raised"
 
 def test_test_config_defaults():
@@ -239,3 +240,62 @@ def test_lib_emits_test_failed(mock_provider:MockProviderFixture, config:TestCon
     final_state = test.get_state()
     assert final_state.test_complete == True, "the test should be completed"
     assert final_state.passed == False, "passed should be false when risk >= risk theshold"
+
+def test_lib_raises_in_state_wait_for(mock_provider:MockProviderFixture, config:TestConfig):
+    mock_provider.provider.poll_test.side_effect = UnauthorizedError()
+    test = Test(config, poll_period_seconds=0)
+    test._provider = mock_provider.provider # type: ignore # TODO: fixme
+            
+    test_run = PropagatingThread(target=test.run)
+    test_run.start()
+
+    with pytest.raises(UnauthorizedError):
+        with test.state_wait_for(lambda state: state.test_complete):
+            pass
+
+    with pytest.raises(UnauthorizedError):
+        test_run.join()
+    
+def test_lib_raises_in_state_wait(mock_provider:MockProviderFixture, config:TestConfig):
+    mock_provider.provider.poll_test.side_effect = UnauthorizedError()
+    test = Test(config, poll_period_seconds=0)
+    test._provider = mock_provider.provider # type: ignore # TODO: fixme
+            
+    test_run = PropagatingThread(target=test.run)
+    test_run.start()
+
+    with pytest.raises(UnauthorizedError):
+        while True: 
+            with test.state_wait() as state:
+                # mediocre attempt to stop test blocking forever
+                if state.test_complete:
+                    break
+
+    with pytest.raises(UnauthorizedError):
+        test_run.join()
+
+def test_lib_raises_in_state_then_wait_if(mock_provider:MockProviderFixture, config:TestConfig):
+    mock_provider.provider.poll_test.side_effect = UnauthorizedError()
+    test = Test(config, poll_period_seconds=0)
+    test._provider = mock_provider.provider # type: ignore # TODO: fixme
+            
+    test_run = PropagatingThread(target=test.run)
+    test_run.start()
+
+    with pytest.raises(UnauthorizedError):
+        with test.state_then_wait_if(lambda state: state.test_complete):
+            pass
+
+    with pytest.raises(UnauthorizedError):
+        test_run.join()
+
+def test_lib_raises_internal_error(mock_provider:MockProviderFixture, config:TestConfig):
+    expect_exception_inner = Exception("this is the cause")
+    mock_provider.provider.poll_test.side_effect = expect_exception_inner
+    test = Test(config, poll_period_seconds=0)
+    test._provider = mock_provider.provider # type: ignore # TODO: fixme
+
+    with pytest.raises(InternalError) as e:
+        test.run()
+
+    assert e.value.__cause__ is expect_exception_inner, "the InternalError's cause should be the original exception"

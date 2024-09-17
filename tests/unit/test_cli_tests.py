@@ -3,10 +3,9 @@ from typing import Any, Dict
 from unittest import mock
 
 import pytest
-import requests
-from mindgard.constants import EXIT_CODE_ERROR, EXIT_CODE_SUCCESS
+from mindgard.constants import EXIT_CODE_NOT_PASSED, EXIT_CODE_PASSED
 from mindgard.main_lib import run_test
-from mindgard.test import ImageModelConfig, LLMModelConfig, TestConfig
+from mindgard.test import ImageModelConfig, LLMModelConfig, TestConfig, UnauthorizedError
 from mindgard.wrappers.image import ImageModelWrapper
 from mindgard.wrappers.llm import TestStaticResponder
 
@@ -105,7 +104,7 @@ def test_run_uuthorization_exceptions(
     mock_clear_token: mock.MagicMock,
     capsys: pytest.CaptureFixture[str]
 ):
-    mock_test.return_value.run.side_effect = requests.HTTPError("Unauthorized")
+    mock_test.return_value.run.side_effect = UnauthorizedError()
     with pytest.raises(SystemExit, match="2"):
         run_test(final_args={
             "model_type": 'llm', 
@@ -140,7 +139,7 @@ def test_final_exit_code(
     mock_test_ui.assert_called_once_with(mock_test.return_value)
 
     # following also asserts: mock_test_ui.return_value.run.assert_called_once()
-    mock_thread.assert_called_once_with(target=mock_test_ui.return_value.run, daemon=True)
+    mock_thread.assert_called_once_with(target=mock_test_ui.return_value.run, name="TestUI")
     mock_thread.return_value.start.assert_called_once()
     mock_thread.return_value.join.assert_called_once()
 
@@ -155,7 +154,7 @@ def test_exit_code_test_passed(
     mock_load_access_token: mock.MagicMock
 ):
     mock_test.return_value.get_state.return_value.passed = True
-    with pytest.raises(SystemExit, match=str(EXIT_CODE_SUCCESS)):
+    with pytest.raises(SystemExit, match=str(EXIT_CODE_PASSED)):
         run_test(final_args={
             "model_type": 'llm', 
             "target": "myTarget", 
@@ -175,7 +174,7 @@ def test_exit_code_test_failed(
     mock_load_access_token: mock.MagicMock
 ):
     mock_test.return_value.get_state.return_value.passed = False
-    with pytest.raises(SystemExit, match=str(EXIT_CODE_ERROR)):
+    with pytest.raises(SystemExit, match=str(EXIT_CODE_NOT_PASSED)):
         run_test(final_args={
             "model_type": 'llm', 
             "target": "myTarget", 
