@@ -1,1 +1,1 @@
-VERSION: str = "0.54.1"
+VERSION: str = "0.55.0"
