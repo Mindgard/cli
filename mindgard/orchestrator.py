@@ -37,17 +37,7 @@ class OrchestratorSetupRequest(BaseModel):
     labels: Optional[List[str]] = None
 
     @model_validator(mode="after")  # type: ignore
-    def check_system_prompt_or_dataset(self):
-        if (
-            self.system_prompt
-            and self.dataset
-            or not self.system_prompt
-            and not self.dataset
-        ):
-            raise ValueError(
-                "Only one of system prompt or dataset can be provided, not both."
-            )
-
+    def check_parallelism(self):
         if self.parallelism < 1:
             raise ValueError("Parallelism must be greater than 0.")
 
