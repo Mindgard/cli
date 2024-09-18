@@ -60,3 +60,12 @@ valid_image_datasets = [
     "mnist",
     "beans",
 ]
+
+valid_llm_datasets = {
+    "customerservice": "BadCustomer",
+    "finance": "BadFinance",
+    "legal": "BadLegal",
+    "medical": "BadMedical",
+    "injection": "SqlInjection",
+    "rce": "Xss",
+}

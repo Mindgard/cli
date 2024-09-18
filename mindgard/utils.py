@@ -6,7 +6,7 @@ import toml
 
 # Types
 from typing import Any, Dict, List, Optional, Tuple
-from mindgard.types import valid_image_datasets
+from mindgard.types import valid_image_datasets, valid_llm_datasets
 
 # Data models
 from mindgard.orchestrator import OrchestratorTestResponse
@@ -101,6 +101,15 @@ def parse_toml_and_args_into_final_args(
     if final_args["model_type"] == "image":
         if final_args.get("dataset", "unknown") not in valid_image_datasets:
             raise ValueError(f"Dataset set in config file ({final_args['dataset']}) was invalid! (choices: {[x for x in valid_image_datasets]})")
+
+    if final_args["model_type"] == "llm":
+        domain = final_args.get("domain", None)
+
+        if domain and (domain not in valid_llm_datasets.keys()):
+            raise ValueError(f"Domain set in config file ({final_args['domain']}) was invalid! (choices: {[x for x in valid_llm_datasets]})")
+
+        final_args["dataset"] = valid_llm_datasets.get(final_args["domain"], None)
+
 
     if (final_args["model_type"] == 'image'):
         if (toml_args.get('labels') is None):

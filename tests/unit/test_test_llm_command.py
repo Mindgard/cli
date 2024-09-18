@@ -116,7 +116,7 @@ def _run_llm_test(json_out:bool = True, model_type:str = 'llm') -> None:
     request = OrchestratorSetupRequest(
         target="mymodel",
         parallelism=4,
-        system_prompt="my system prompt",
+        system_prompt=None if model_type == "image" else "my system prompt",
         dataset=None,
         modelType=model_type,
         attackSource="user"

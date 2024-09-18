@@ -6,7 +6,7 @@ import traceback
 # Types
 from typing import List, cast
 
-from mindgard.types import log_levels, model_types, valid_image_datasets, type_model_presets_list
+from mindgard.types import log_levels, model_types, valid_image_datasets, type_model_presets_list, valid_llm_datasets
 
 # Models
 from mindgard.preflight import preflight_image, preflight_llm
@@ -84,6 +84,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     shared_arguments(test_parser)
     test_parser.add_argument('--parallelism', type=int, help='The maximum number of parallel requests that can be made to the API.', required=False)
     test_parser.add_argument('--dataset', type=str, help='The dataset to use for image models', choices=valid_image_datasets, required=False)
+    test_parser.add_argument('--domain', type=str, help='The domain to inform the dataset used for LLMs.', choices=valid_llm_datasets, required=False)
     test_parser.add_argument('--mode', type=str, help='Specify the number of samples to use during attacks; contact Mindgard for access to \'thorough\' test', choices=['fast', 'thorough'], required=False)
 
     validate_parser = subparsers.add_parser("validate", help="Validates that we can communicate with your model")
@@ -149,7 +150,7 @@ def main() -> None:
                             target=final_args["target"],
                             parallelism=int(final_args["parallelism"]),
                             system_prompt=final_args["system_prompt"],
-                            dataset=None,
+                            dataset=final_args["dataset"],
                             modelType=final_args["model_type"],
                             attackSource="user",
                             attackPack=("large" if final_args['mode'] == "thorough" else "sandbox"),
