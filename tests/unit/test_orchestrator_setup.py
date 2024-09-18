@@ -29,19 +29,7 @@ def get_orchestrator_setup_request(parallelism: int = 1) -> Dict[str, Any]:
     }
 
 
-@pytest.mark.parametrize("system_prompt,dataset", [(None, None), ("test", "test")])  # type: ignore
-def test_orchestrator_setup_request_validation_neither_both_error(
-    system_prompt: Any, dataset: Any
-) -> None:
-    with pytest.raises(ValidationError):
-        OrchestratorSetupRequest(
-            system_prompt=system_prompt,
-            dataset=dataset,
-            **get_orchestrator_setup_request(1)
-        )
-
-
-@pytest.mark.parametrize("system_prompt,dataset", [("test", None), (None, "test")])  # type: ignore
+@pytest.mark.parametrize("system_prompt,dataset", [("test", None), (None, "test"), (None, None), ("test", "test")])  # type: ignore
 def test_orchestrator_setup_request_validation_either(
     system_prompt: Any, dataset: Any
 ) -> None:
