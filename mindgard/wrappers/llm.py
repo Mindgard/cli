@@ -2,12 +2,15 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import json
 import logging
+from functools import wraps
 from typing import Any, Dict, List, Optional, Tuple, Union, cast
 from anthropic import Anthropic
 from anthropic.types import MessageParam
 import requests
 from openai import AzureOpenAI, OpenAI, OpenAIError
 import jsonpath_ng
+from ratelimit import limits, RateLimitException
+import time
 
 # Utils
 from mindgard.test import RequestHandler
@@ -102,6 +105,17 @@ class TestStaticResponder(LLMModelWrapper):
             with_context.add(PromptResponse(prompt=content, response=response))
         return response
 
+def throttle(f, rate_limit, sleeper, clock):
+    ratelimited = limits(calls=rate_limit, clock=clock, period=60)
+    def wrapper(*args, **kwargs):
+        while True:
+            try:
+                return ratelimited(f)(*args,**kwargs)
+            except RateLimitException as exception:
+                sleeper(exception.period_remaining)
+
+    return wrapper
+
 
 class APIModelWrapper(LLMModelWrapper):
     def __init__(
@@ -112,9 +126,13 @@ class APIModelWrapper(LLMModelWrapper):
         system_prompt: Optional[str] = None,
         tokenizer: Optional[str] = None,
         headers: Optional[Dict[str, str]] = None,
+        rate_limit: Optional[int] = 60000,
+        clock = time.monotonic,
+        sleep = time.sleep
     ) -> None:
         self.context_manager = ContextManager()
         self.api_url = api_url
+        self.throttled_call_llm = throttle(self._call_llm, clock=clock, sleeper=sleep, rate_limit=rate_limit)
         if tokenizer:
             logging.debug(
                 "Note that with tokenizer enabled, the request_template format is different."
@@ -184,6 +202,8 @@ class APIModelWrapper(LLMModelWrapper):
         return cast(Dict[str, Any], payload)
 
     def __call__(self, content: str, with_context: Optional[Context] = None) -> str:
+        return self.throttled_call_llm(content,with_context)
+    def _call_llm(self, content: str, with_context: Optional[Context] = None) -> str:
         if with_context is not None:
             logging.debug(
                 "APIModelWrapper is temporarily incompatible with chat completions history. Attacks that require chat completions history fail."
@@ -210,7 +230,6 @@ class APIModelWrapper(LLMModelWrapper):
             raise e
 
         return extract_replies(response, self.selector)
-
 
 class AzureAIStudioWrapper(APIModelWrapper):
     def __init__(
@@ -308,6 +327,7 @@ class HuggingFaceWrapper(APIModelWrapper):
         api_url: str,
         request_template: str,
         system_prompt: Optional[str] = None,
+        rate_limit: Optional[str] = 60000,
     ) -> None:
         super().__init__(
             api_url,
@@ -315,6 +335,7 @@ class HuggingFaceWrapper(APIModelWrapper):
             selector='[0]["generated_text"]',
             headers={"Authorization": f"Bearer {api_key}"},
             system_prompt=system_prompt,
+            rate_limit=rate_limit
         )
 
 
@@ -459,8 +480,8 @@ def get_llm_model_wrapper(
     selector: Optional[str] = None,
     request_template: Optional[str] = None,
     tokenizer: Optional[str] = None,
+    rate_limit: Optional[int] = 60000
 ) -> LLMModelWrapper:
-
     # Create model based on preset
     if preset == "huggingface-openai":
         check_expected_args(locals(), ["api_key", "url"])
@@ -482,6 +503,7 @@ def get_llm_model_wrapper(
             api_url=url,
             system_prompt=system_prompt,
             request_template=request_template,
+            rate_limit=rate_limit,
         )
     elif preset == "azure-aistudio":
         check_expected_args(locals(), ["api_key", "url", "system_prompt"])
@@ -540,6 +562,7 @@ def get_llm_model_wrapper(
                 system_prompt=system_prompt,
                 tokenizer=tokenizer,
                 headers=headers,
+                rate_limit=rate_limit,
             )
         else:
             return APIModelWrapper(
@@ -548,4 +571,5 @@ def get_llm_model_wrapper(
                 request_template=request_template,
                 system_prompt=system_prompt,
                 tokenizer=tokenizer,
+                rate_limit=rate_limit,
             )

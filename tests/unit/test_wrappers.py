@@ -51,6 +51,55 @@ def test_api_model_wrapper_no_context_no_settings_no_system_prompt() -> None:
         assert mock.last_request.json() == {"prompt":text}
 
 
+
+def test_api_model_wrapper_rate_limit() -> None:
+    url = "https://example.com/somewhere"
+    class Clock(object):
+        def __init__(self):
+            self.reset()
+
+        def __call__(self):
+            return self.now
+
+        def reset(self):
+            self.now = 0
+
+        def increment(self, num=1):
+            self.now += num
+
+    clock = Clock()
+
+    class Sleeper:
+        last_duration = 0
+        calls = 0
+        def __call__(self, duration) -> None:
+            self.last_duration = duration
+            self.calls = self.calls + 1
+            clock.increment(10)
+
+    sleeper = Sleeper()
+
+    wrapper = APIModelWrapper(
+        url,
+        clock=clock,
+        sleep=sleeper,
+        rate_limit=1
+    )
+
+    text = "myprompt"
+
+    with requests_mock.mock() as m:
+        mock = m.post(
+            url,
+            json="eh up",
+        )
+        clock.increment(1)
+        wrapper(text)
+        assert sleeper.calls == 0
+        wrapper(text)
+        assert sleeper.calls == 6
+
+
 def test_api_model_wrapper_no_context_no_settings() -> None:
     system_prompt = "mysysprompt"
     text = "myprompt"
