@@ -1747,6 +1747,16 @@ files = [
 ]
 
 [[package]]
+name = "ratelimit"
+version = "2.2.1"
+description = "API rate limit decorator"
+optional = false
+python-versions = "*"
+files = [
+    {file = "ratelimit-2.2.1.tar.gz", hash = "sha256:af8a9b64b821529aca09ebaf6d8d279100d766f19e90b5059ac6a718ca6dee42"},
+]
+
+[[package]]
 name = "readme-renderer"
 version = "43.0"
 description = "readme_renderer is a library for rendering readme descriptions for Warehouse"
@@ -2643,4 +2653,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "jaraco.test", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "000741a890d4c523bc75391b274bcec4e5eae57c462c4bb8a4e0df2c4f07199c"
+content-hash = "ea6e80acd49b6db2a7e245593126abe5b9b323cca353b55dc9dc768dc91b9108"

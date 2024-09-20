@@ -21,6 +21,7 @@ def parse_args_into_model(
             model_name=args["model_name"],
             az_api_version=args["az_api_version"],
             tokenizer=args["tokenizer"],
+            rate_limit=args["rate_limit"]
         )
     elif model_type == "image":
         return get_image_model_wrapper(
