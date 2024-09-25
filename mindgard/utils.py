@@ -64,7 +64,14 @@ def is_version_outdated() -> Optional[str]:
     except Exception:
         return ""
 
-
+def map_mode_to_attack_pack(mode: str) -> str:
+    if mode == "thorough":
+        return "large"
+    elif mode == "medium":
+        return "medium"
+    else:
+        return "sandbox"
+    
 def parse_toml_and_args_into_final_args(
     config_file_path: Optional[str], args: Namespace
 ) -> Dict[str, Any]:
@@ -97,6 +104,8 @@ def parse_toml_and_args_into_final_args(
     final_args["model_type"] = final_args.get("model_type") if final_args.get("model_type") is not None else 'llm'
     final_args["json"] = final_args.get("json") if final_args.get("json") is not None else False
     final_args["mode"] = final_args.get("mode") if final_args.get("mode") is not None else "fast"
+
+    final_args["attack_pack"] = map_mode_to_attack_pack(args.mode)
 
     if final_args["model_type"] == "image":
         if final_args.get("dataset", "unknown") not in valid_image_datasets:

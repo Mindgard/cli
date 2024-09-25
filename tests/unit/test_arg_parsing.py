@@ -7,7 +7,7 @@ from unittest import mock
 from unittest.mock import mock_open, patch
 
 import pytest
-from mindgard.utils import parse_toml_and_args_into_final_args
+from mindgard.utils import map_mode_to_attack_pack, parse_toml_and_args_into_final_args
 from mindgard.types import valid_image_datasets, valid_llm_datasets
 from mindgard.__main__ import main, parse_args
 from mindgard.orchestrator import OrchestratorSetupRequest, OrchestratorTestResponse
@@ -55,7 +55,7 @@ cases = [
         expected_exit_code=0,
     ),
     Case(
-        name="mode",
+        name="mode-fast",
         input_args=[
             'mindgard', 'test', 'mytarget', 
             '--system-prompt', 'mysysprompt', 
@@ -86,7 +86,7 @@ cases = [
         expected_exit_code=0,
     ),
     Case(
-        name="mode",
+        name="mode-thorough",
         input_args=[
             'mindgard', 'test', 'mytarget', 
             '--system-prompt', 'mysysprompt', 
@@ -99,6 +99,37 @@ cases = [
             modelType="llm",
             system_prompt="mysysprompt",
             attackPack="large",
+            attackSource="user",
+            parallelism=4,
+            labels=None
+        ),
+        cli_run_response=OrchestratorTestResponse(
+            id="123",
+            mindgardModelName="model",
+            source="user",
+            createdAt="2022-01-01",
+            attacks=[],
+            isCompleted=True,
+            hasFinished=True,
+            risk=12,
+            test_url="http://example.com"
+        ),
+        expected_exit_code=0,
+    ),
+    Case(
+        name="mode-medium",
+        input_args=[
+            'mindgard', 'test', 'mytarget', 
+            '--system-prompt', 'mysysprompt', 
+            '--preset', 'tester',
+            '--parallelism', '4',
+            '--mode', 'medium',
+        ],
+        expected_request=OrchestratorSetupRequest(
+            target="mytarget",
+            modelType="llm",
+            system_prompt="mysysprompt",
+            attackPack="medium",
             attackSource="user",
             parallelism=4,
             labels=None
@@ -506,3 +537,19 @@ def test_passing_domain_not_in_approved_choices() -> None:
         with pytest.raises(SystemExit):
             parsed_args = parse_args(cast(List[str], cli_command.split()))
             parse_toml_and_args_into_final_args(None, parsed_args)
+
+def test_map_mode_to_attack_pack_return_value_used() -> None:
+    input_value = "medium"
+    cli_command = f"test --mode {input_value}"
+    parsed_args = parse_args(cast(List[str], cli_command.split()))
+
+    with mock.patch("mindgard.utils.map_mode_to_attack_pack") as m:
+        
+        assert parse_toml_and_args_into_final_args(None, parsed_args)["attack_pack"] == m.return_value
+        m.assert_called_once_with(input_value)
+
+def test_map_mode_to_attack_pack() -> None:
+    assert map_mode_to_attack_pack("fast") == "sandbox", "fast should be translated to sandbox in api"
+    assert map_mode_to_attack_pack("thorough") == "large", "thorough should be translated to large in api"
+    assert map_mode_to_attack_pack("random") == "sandbox", "should default to sandbox"
+    assert map_mode_to_attack_pack("medium") == "medium"
