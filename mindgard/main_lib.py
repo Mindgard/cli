@@ -34,6 +34,8 @@ def run_test(final_args:Dict[str, Any], model_wrapper: Union[LLMModelWrapper, Im
             system_prompt=final_args["system_prompt"],
         )
     )
+    if (attack_pack := final_args.get("attack_pack")):
+        test_config.attack_pack = attack_pack
   elif final_args["model_type"] == "image":
     test_config = TestConfig(
         api_base=API_BASE,

@@ -59,6 +59,7 @@ def test_run_llm_test(
         "target": "mytarget",
         "parallelism": 1,
         "system_prompt": "mysysprompt",
+        "attack_pack": "myattackpack",
     }
     
     model_wrapper = TestStaticResponder(system_prompt="test")
@@ -72,6 +73,7 @@ def test_run_llm_test(
             api_access_token="myApiKey",
             target="mytarget",
             attack_source="user",
+            attack_pack="myattackpack",
             parallelism=1,
             model=LLMModelConfig(
                 wrapper=model_wrapper,
