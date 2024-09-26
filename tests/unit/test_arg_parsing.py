@@ -86,13 +86,13 @@ cases = [
         expected_exit_code=0,
     ),
     Case(
-        name="mode-thorough",
+        name="mode-exhaustive",
         input_args=[
             'mindgard', 'test', 'mytarget', 
             '--system-prompt', 'mysysprompt', 
             '--preset', 'tester',
             '--parallelism', '4',
-            '--mode', 'thorough',
+            '--mode', 'exhaustive',
         ],
         expected_request=OrchestratorSetupRequest(
             target="mytarget",
@@ -117,13 +117,13 @@ cases = [
         expected_exit_code=0,
     ),
     Case(
-        name="mode-medium",
+        name="mode-thorough",
         input_args=[
             'mindgard', 'test', 'mytarget', 
             '--system-prompt', 'mysysprompt', 
             '--preset', 'tester',
             '--parallelism', '4',
-            '--mode', 'medium',
+            '--mode', 'thorough',
         ],
         expected_request=OrchestratorSetupRequest(
             target="mytarget",
