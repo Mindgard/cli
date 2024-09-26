@@ -468,7 +468,7 @@ def get_llm_model_wrapper(
     selector: Optional[str] = None,
     request_template: Optional[str] = None,
     tokenizer: Optional[str] = None,
-    rate_limit: Optional[int] = 60000
+    rate_limit: int = 60000
 ) -> LLMModelWrapper:
     # Create model based on preset
     if preset == "huggingface-openai":
@@ -535,7 +535,7 @@ def get_llm_model_wrapper(
     elif preset == "tester":
         if not system_prompt:
             raise ValueError("`--system-prompt` argument is required")
-        return TestStaticResponder(system_prompt=system_prompt)
+        return TestStaticResponder(system_prompt=system_prompt, rate_limit=rate_limit)
     else:
         if not url:
             raise ValueError(
