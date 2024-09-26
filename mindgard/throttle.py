@@ -30,7 +30,7 @@ def throttle(
     def wrapper(*args:Any, **kwargs:Any) -> R:
         while True:
             try:
-                return ratelimited(f)(*args,**kwargs)
+                return ratelimited(f)(*args,**kwargs) # type: ignore # ratelimited is a wrapper around f
             except RateLimitException as exception:
                 # loop once the window resets
                 sleeper(int(exception.period_remaining))  # type: ignore # there is no type on the received exception from lib
