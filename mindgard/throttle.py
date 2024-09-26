@@ -1,5 +1,11 @@
+import sys
 import time
-from typing import Any, Callable, ParamSpec, TypeVar
+if sys.version_info < (3, 10):
+    from typing_extensions import ParamSpec, TypeVar
+else:
+    from typing import ParamSpec, TypeVar
+    
+from typing import Any, Callable
 from ratelimit import RateLimitException, limits
 
 P = ParamSpec("P")
