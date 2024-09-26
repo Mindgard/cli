@@ -65,9 +65,9 @@ def is_version_outdated() -> Optional[str]:
         return ""
 
 def map_mode_to_attack_pack(mode: str) -> str:
-    if mode == "thorough":
+    if mode == "exhaustive":
         return "large"
-    elif mode == "medium":
+    elif mode == "thorough":
         return "medium"
     else:
         return "sandbox"

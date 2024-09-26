@@ -557,7 +557,7 @@ arg_parse_test_cases = [
 
     ArgParsingTestCase(
         name="medium mode",
-        cli_command="test --mode medium",
+        cli_command="test --mode thorough",
         should_exit_error=False,
         final_args_should_include={
             "attack_pack": "medium"
@@ -565,7 +565,7 @@ arg_parse_test_cases = [
     ),
     ArgParsingTestCase(
         name="thorough mode",
-        cli_command="test --mode thorough",
+        cli_command="test --mode exhaustive",
         should_exit_error=False,
         final_args_should_include={
             "attack_pack": "large"
