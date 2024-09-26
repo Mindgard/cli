@@ -2,12 +2,12 @@ import os
 import sys
 from argparse import Namespace
 from dataclasses import dataclass
-from typing import List, Tuple, cast
+from typing import Dict, List, Tuple, cast
 from unittest import mock
 from unittest.mock import mock_open, patch
 
 import pytest
-from mindgard.utils import map_mode_to_attack_pack, parse_toml_and_args_into_final_args
+from mindgard.utils import parse_toml_and_args_into_final_args
 from mindgard.types import valid_image_datasets, valid_llm_datasets
 from mindgard.__main__ import main, parse_args
 from mindgard.orchestrator import OrchestratorSetupRequest, OrchestratorTestResponse
@@ -530,26 +530,74 @@ def test_passing_domain() -> None:
         assert final_args["dataset"] == "MyRandomDataset", 'Domain should be converted to dataset based on valid_llm_datasets'
 
 
-def test_passing_domain_not_in_approved_choices() -> None:
-    cli_command = "test --domain my_non_existant_domain"
 
-    with patch.dict(valid_llm_datasets, {'test_domain': 'dataset'}, clear=True):
-        with pytest.raises(SystemExit):
-            parsed_args = parse_args(cast(List[str], cli_command.split()))
-            parse_toml_and_args_into_final_args(None, parsed_args)
+@dataclass
+class ArgParsingTestCase:
+    name: str
+    cli_command: str # the input command
 
-def test_map_mode_to_attack_pack_return_value_used() -> None:
-    input_value = "medium"
-    cli_command = f"test --mode {input_value}"
-    parsed_args = parse_args(cast(List[str], cli_command.split()))
+    should_exit_error: bool # if we expect argparse to raise SystemExit
+    final_args_should_include: Dict[str, str] # test should check that these values are in final_args
 
-    with mock.patch("mindgard.utils.map_mode_to_attack_pack") as m:
-        
-        assert parse_toml_and_args_into_final_args(None, parsed_args)["attack_pack"] == m.return_value
-        m.assert_called_once_with(input_value)
+arg_parse_test_cases = [
+    ArgParsingTestCase(
+        name="invalid domain",
+        cli_command="test --domain my_non_existant_domain",
+        should_exit_error=True,
+        final_args_should_include={}
+    ),
+    ArgParsingTestCase(
+        name="valid domain",
+        cli_command="test --domain my_domain",
+        should_exit_error=False,
+        final_args_should_include={
+            "dataset": "my_domain_dataset"
+        }
+    ),
 
-def test_map_mode_to_attack_pack() -> None:
-    assert map_mode_to_attack_pack("fast") == "sandbox", "fast should be translated to sandbox in api"
-    assert map_mode_to_attack_pack("thorough") == "large", "thorough should be translated to large in api"
-    assert map_mode_to_attack_pack("random") == "sandbox", "should default to sandbox"
-    assert map_mode_to_attack_pack("medium") == "medium"
+    ArgParsingTestCase(
+        name="medium mode",
+        cli_command="test --mode medium",
+        should_exit_error=False,
+        final_args_should_include={
+            "attack_pack": "medium"
+        }
+    ),
+    ArgParsingTestCase(
+        name="thorough mode",
+        cli_command="test --mode thorough",
+        should_exit_error=False,
+        final_args_should_include={
+            "attack_pack": "large"
+        }
+    ),
+    ArgParsingTestCase(
+        name="fast mode",
+        cli_command="test --mode fast",
+        should_exit_error=False,
+        final_args_should_include={
+            "attack_pack": "sandbox"
+        }
+    ),
+    ArgParsingTestCase(
+        name="fast mode default",
+        cli_command="test",
+        should_exit_error=False,
+        final_args_should_include={
+            "attack_pack": "sandbox"
+        }
+    )
+]
+@pytest.mark.parametrize("test_case", arg_parse_test_cases, ids=lambda x: x.name)
+def test_arg_parsing_final_args(test_case: ArgParsingTestCase) -> None:
+    def _test():
+        parsed_args = parse_args(test_case.cli_command.split())
+        final_args = parse_toml_and_args_into_final_args(None, parsed_args)
+        for key, value in test_case.final_args_should_include.items():
+            assert final_args[key] == value, f"final_args[{key}] should be {value}"
+    with patch.dict(valid_llm_datasets, {'my_domain': 'my_domain_dataset'}, clear=True):
+        if test_case.should_exit_error:
+            with pytest.raises(SystemExit):
+                _test()
+        else:
+            _test()
