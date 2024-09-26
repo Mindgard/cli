@@ -104,6 +104,7 @@ def parse_toml_and_args_into_final_args(
     final_args["model_type"] = final_args.get("model_type") if final_args.get("model_type") is not None else 'llm'
     final_args["json"] = final_args.get("json") if final_args.get("json") is not None else False
     final_args["mode"] = final_args.get("mode") if final_args.get("mode") is not None else "fast"
+    final_args["rate_limit"] = final_args.get("rate_limit") if final_args.get("rate_limit") is not None else 3600 # 60rps
 
     final_args["attack_pack"] = map_mode_to_attack_pack(args.mode)
 

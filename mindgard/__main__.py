@@ -83,7 +83,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     test_parser = subparsers.add_parser("test", help="Attacks command")
     shared_arguments(test_parser)
     test_parser.add_argument('--parallelism', type=int, help='The maximum number of parallel requests that can be made to the API.', required=False)
-    test_parser.add_argument('--rate-limit', type=int, default=60000, help='The maximum number of requests to make to model in one minute', required=False)
+    test_parser.add_argument('--rate-limit', type=int, help='The maximum number of requests to make to model in one minute (default: 3600)', required=False)
     test_parser.add_argument('--dataset', type=str, help='The dataset to use for image models', choices=valid_image_datasets, required=False)
     test_parser.add_argument('--domain', type=str, help='The domain to inform the dataset used for LLMs.', choices=valid_llm_datasets, required=False)
     test_parser.add_argument('--mode', type=str, help='Specify the number of samples to use during attacks; contact Mindgard for access to \'thorough\' or \'exhaustive\' test', choices=['fast', 'thorough', 'exhaustive'], required=False)
