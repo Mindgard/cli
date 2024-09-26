@@ -1,3 +1,4 @@
+from unittest import mock
 import requests_mock
 import base64
 import pytest
@@ -50,55 +51,33 @@ def test_api_model_wrapper_no_context_no_settings_no_system_prompt() -> None:
         assert wrapper(text) == '"eh up"'
         assert mock.last_request.json() == {"prompt":text}
 
-
-
-def test_api_model_wrapper_rate_limit() -> None:
+@mock.patch("mindgard.wrappers.llm.throttle", return_value=mock.MagicMock())
+def test_api_model_wrapper_rate_limit(
+    mock_throttle: mock.MagicMock
+) -> None:
     url = "https://example.com/somewhere"
-    class Clock(object):
-        def __init__(self):
-            self.reset()
-
-        def __call__(self):
-            return self.now
-
-        def reset(self):
-            self.now = 0
-
-        def increment(self, num=1):
-            self.now += num
-
-    clock = Clock()
-
-    class Sleeper:
-        last_duration = 0
-        calls = 0
-        def __call__(self, duration) -> None:
-            self.last_duration = duration
-            self.calls = self.calls + 1
-            clock.increment(10)
-
-    sleeper = Sleeper()
-
     wrapper = APIModelWrapper(
         url,
-        clock=clock,
-        sleep=sleeper,
-        rate_limit=1
+        system_prompt="mysysprompt",
+        rate_limit=100
     )
+    mock_throttle.assert_called_once_with(mock.ANY, rate_limit=100)
+    ret = wrapper("myprompt", with_context=None)
+    mock_throttle.return_value.assert_called_once_with("myprompt", None)
+    assert ret == mock_throttle.return_value.return_value
 
-    text = "myprompt"
-
-    with requests_mock.mock() as m:
-        mock = m.post(
-            url,
-            json="eh up",
-        )
-        clock.increment(1)
-        wrapper(text)
-        assert sleeper.calls == 0
-        wrapper(text)
-        assert sleeper.calls == 6
-
+@mock.patch("mindgard.wrappers.llm.throttle", return_value=mock.MagicMock())
+def test_tester_preset_rate_limits(
+    mock_throttle: mock.MagicMock
+) -> None:
+    wrapper = TestStaticResponder(
+        system_prompt="mysysprompt",
+        rate_limit=100
+    )
+    mock_throttle.assert_called_once_with(mock.ANY, rate_limit=100)
+    ret = wrapper("myprompt", with_context=None)
+    mock_throttle.return_value.assert_called_once_with("myprompt", None)
+    assert ret == mock_throttle.return_value.return_value
 
 def test_api_model_wrapper_no_context_no_settings() -> None:
     system_prompt = "mysysprompt"

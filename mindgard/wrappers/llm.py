@@ -8,11 +8,10 @@ from anthropic.types import MessageParam
 import requests
 from openai import AzureOpenAI, OpenAI, OpenAIError
 import jsonpath_ng
-from ratelimit import limits, RateLimitException
-import time
 
 # Utils
 from mindgard.test import RequestHandler
+from mindgard.throttle import throttle
 from mindgard.utils import check_expected_args
 from mindgard.responses import extract_replies
 from mindgard.types import type_model_presets
@@ -75,19 +74,22 @@ class TestStaticResponder(LLMModelWrapper):
     This is only for testing
     """
 
-    def __init__(self, system_prompt: str, handler: Any = None):
+    def __init__(self, system_prompt: str, handler: Any = None, rate_limit: int = 3600):
         self.context_manager = ContextManager()
         self._system_prompt = system_prompt
         self._handler = handler
-        pass
+        self._throttled_call = throttle(self._call_inner, rate_limit=rate_limit)
 
     def to_handler(self):
         if self._handler is not None:
             return self._handler
         else:
             return super().to_handler()
-
+        
     def __call__(self, content: str, with_context: Optional[Context] = None) -> str:
+        return self._throttled_call(content, with_context)
+    
+    def _call_inner(self, content: str, with_context: Optional[Context] = None) -> str:
         request = f"[start]sys: {self._system_prompt};"
         if with_context is not None:
             request = f"{request}"
@@ -104,17 +106,6 @@ class TestStaticResponder(LLMModelWrapper):
             with_context.add(PromptResponse(prompt=content, response=response))
         return response
 
-def throttle(f, rate_limit, sleeper, clock):
-    ratelimited = limits(calls=rate_limit, clock=clock, period=60)
-    def wrapper(*args, **kwargs):
-        while True:
-            try:
-                return ratelimited(f)(*args,**kwargs)
-            except RateLimitException as exception:
-                sleeper(exception.period_remaining)
-
-    return wrapper
-
 
 class APIModelWrapper(LLMModelWrapper):
     def __init__(
@@ -125,13 +116,11 @@ class APIModelWrapper(LLMModelWrapper):
         system_prompt: Optional[str] = None,
         tokenizer: Optional[str] = None,
         headers: Optional[Dict[str, str]] = None,
-        rate_limit: Optional[int] = 60000,
-        clock = time.monotonic,
-        sleep = time.sleep
+        rate_limit: int = 3600,
     ) -> None:
         self.context_manager = ContextManager()
         self.api_url = api_url
-        self.throttled_call_llm = throttle(self._call_llm, clock=clock, sleeper=sleep, rate_limit=rate_limit)
+        self.throttled_call_llm = throttle(self._call_llm, rate_limit=rate_limit)
         if tokenizer:
             logging.debug(
                 "Note that with tokenizer enabled, the request_template format is different."
