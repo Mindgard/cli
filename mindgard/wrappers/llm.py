@@ -11,6 +11,7 @@ import jsonpath_ng
 
 # Utils
 from mindgard.test import RequestHandler
+from mindgard.throttle import throttle
 from mindgard.utils import check_expected_args
 from mindgard.responses import extract_replies
 from mindgard.types import type_model_presets
@@ -73,19 +74,22 @@ class TestStaticResponder(LLMModelWrapper):
     This is only for testing
     """
 
-    def __init__(self, system_prompt: str, handler: Any = None):
+    def __init__(self, system_prompt: str, handler: Any = None, rate_limit: int = 3600):
         self.context_manager = ContextManager()
         self._system_prompt = system_prompt
         self._handler = handler
-        pass
+        self._throttled_call = throttle(self._call_inner, rate_limit=rate_limit)
 
     def to_handler(self):
         if self._handler is not None:
             return self._handler
         else:
             return super().to_handler()
-
+        
     def __call__(self, content: str, with_context: Optional[Context] = None) -> str:
+        return self._throttled_call(content, with_context)
+    
+    def _call_inner(self, content: str, with_context: Optional[Context] = None) -> str:
         request = f"[start]sys: {self._system_prompt};"
         if with_context is not None:
             request = f"{request}"
@@ -112,9 +116,11 @@ class APIModelWrapper(LLMModelWrapper):
         system_prompt: Optional[str] = None,
         tokenizer: Optional[str] = None,
         headers: Optional[Dict[str, str]] = None,
+        rate_limit: int = 3600,
     ) -> None:
         self.context_manager = ContextManager()
         self.api_url = api_url
+        self.throttled_call_llm = throttle(self._call_llm, rate_limit=rate_limit)
         if tokenizer:
             logging.debug(
                 "Note that with tokenizer enabled, the request_template format is different."
@@ -184,6 +190,8 @@ class APIModelWrapper(LLMModelWrapper):
         return cast(Dict[str, Any], payload)
 
     def __call__(self, content: str, with_context: Optional[Context] = None) -> str:
+        return self.throttled_call_llm(content,with_context)
+    def _call_llm(self, content: str, with_context: Optional[Context] = None) -> str:
         if with_context is not None:
             logging.debug(
                 "APIModelWrapper is temporarily incompatible with chat completions history. Attacks that require chat completions history fail."
@@ -210,7 +218,6 @@ class APIModelWrapper(LLMModelWrapper):
             raise e
 
         return extract_replies(response, self.selector)
-
 
 class AzureAIStudioWrapper(APIModelWrapper):
     def __init__(
@@ -308,6 +315,7 @@ class HuggingFaceWrapper(APIModelWrapper):
         api_url: str,
         request_template: str,
         system_prompt: Optional[str] = None,
+        rate_limit: Optional[str] = 60000,
     ) -> None:
         super().__init__(
             api_url,
@@ -315,6 +323,7 @@ class HuggingFaceWrapper(APIModelWrapper):
             selector='[0]["generated_text"]',
             headers={"Authorization": f"Bearer {api_key}"},
             system_prompt=system_prompt,
+            rate_limit=rate_limit
         )
 
 
@@ -459,8 +468,8 @@ def get_llm_model_wrapper(
     selector: Optional[str] = None,
     request_template: Optional[str] = None,
     tokenizer: Optional[str] = None,
+    rate_limit: int = 60000
 ) -> LLMModelWrapper:
-
     # Create model based on preset
     if preset == "huggingface-openai":
         check_expected_args(locals(), ["api_key", "url"])
@@ -482,6 +491,7 @@ def get_llm_model_wrapper(
             api_url=url,
             system_prompt=system_prompt,
             request_template=request_template,
+            rate_limit=rate_limit,
         )
     elif preset == "azure-aistudio":
         check_expected_args(locals(), ["api_key", "url", "system_prompt"])
@@ -525,7 +535,7 @@ def get_llm_model_wrapper(
     elif preset == "tester":
         if not system_prompt:
             raise ValueError("`--system-prompt` argument is required")
-        return TestStaticResponder(system_prompt=system_prompt)
+        return TestStaticResponder(system_prompt=system_prompt, rate_limit=rate_limit)
     else:
         if not url:
             raise ValueError(
@@ -540,6 +550,7 @@ def get_llm_model_wrapper(
                 system_prompt=system_prompt,
                 tokenizer=tokenizer,
                 headers=headers,
+                rate_limit=rate_limit,
             )
         else:
             return APIModelWrapper(
@@ -548,4 +559,5 @@ def get_llm_model_wrapper(
                 request_template=request_template,
                 system_prompt=system_prompt,
                 tokenizer=tokenizer,
+                rate_limit=rate_limit,
             )
