@@ -551,7 +551,8 @@ arg_parse_test_cases = [
         cli_command="test --domain my_domain",
         should_exit_error=False,
         final_args_should_include={
-            "dataset": "my_domain_dataset"
+            "dataset": "my_domain_dataset",
+            "domain": "my_domain"
         }
     ),
 

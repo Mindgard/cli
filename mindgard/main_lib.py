@@ -28,6 +28,7 @@ def run_test(final_args:Dict[str, Any], model_wrapper: Union[LLMModelWrapper, Im
         api_access_token=access_token,
         target=final_args["target"],
         attack_source="user",
+        dataset_domain=final_args.get('domain', None),
         parallelism=int(final_args["parallelism"]),
         model=LLMModelConfig(
             wrapper=model_wrapper,

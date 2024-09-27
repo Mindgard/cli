@@ -82,6 +82,42 @@ def test_run_llm_test(
         )
     )
 
+@mock.patch("mindgard.main_lib.load_access_token", return_value="myApiKey")
+@mock.patch("mindgard.main_lib.Test", return_value=mock.MagicMock())
+def test_run_llm_test_with_domain(
+    mock_test: mock.MagicMock,
+    mock_load_access_token: mock.MagicMock
+):
+    final_args: Dict[str, Any] = {
+        "model_type": "llm",
+        "target": "mytarget",
+        "parallelism": 1,
+        "system_prompt": "mysysprompt",
+        "attack_pack": "myattackpack",
+        "domain": "my_domain"
+    }
+    
+    model_wrapper = TestStaticResponder(system_prompt="test")
+    
+    with pytest.raises(SystemExit):
+        run_test(final_args=final_args, model_wrapper=model_wrapper)
+    
+    mock_test.assert_called_once_with(
+        TestConfig(
+            api_base="https://api.sandbox.mindgard.ai/api/v1",
+            api_access_token="myApiKey",
+            target="mytarget",
+            attack_source="user",
+            attack_pack="myattackpack",
+            dataset_domain="my_domain",
+            parallelism=1,
+            model=LLMModelConfig(
+                wrapper=model_wrapper,
+                system_prompt="mysysprompt",
+            )
+        )
+    )
+
 @mock.patch("mindgard.main_lib.load_access_token", return_value=None)
 def test_missing_access_token(
     mock_load_access_token: mock.MagicMock,
