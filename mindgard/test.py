@@ -88,6 +88,7 @@ class TestConfig:
     attack_source: str
     parallelism: int
     model: ModelConfig
+    dataset_domain: Optional[str] = None
     attack_pack: str = "sandbox"
     additional_headers: Optional[Dict[str, str]] = None
     risk_threshold: int = DEFAULT_RISK_THRESHOLD
@@ -95,12 +96,17 @@ class TestConfig:
         """
         Get parameters for the init test request to orchestrator
         """
-        return {**{
+        params = {**{
             "target": self.target,
             "attackPack": self.attack_pack,
             "parallelism": self.parallelism,
             "attackSource": self.attack_source
         }, **self.model.to_orchestrator_init_params()}
+
+        if self.dataset_domain is not None:
+            params['datasetDomain'] = self.dataset_domain
+
+        return params
 
     def handler(self) -> RequestHandler:
         return self.model.wrapper.to_handler()
