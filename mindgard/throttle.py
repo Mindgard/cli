@@ -1,3 +1,4 @@
+import logging
 import sys
 import time
 if sys.version_info < (3, 10):
@@ -7,6 +8,8 @@ else:
     
 from typing import Any, Callable
 from ratelimit import RateLimitException, limits
+
+logger = logging.getLogger(__name__)
 
 P = ParamSpec("P")
 R = TypeVar('R')
@@ -38,7 +41,9 @@ def throttle(
             try:
                 return ratelimited(f)(*args,**kwargs) # type: ignore # ratelimited is a wrapper around f
             except RateLimitException as exception:
+                logger.debug("Rate limit reached, sleeping for %s seconds", exception.period_remaining)
                 # loop once the window resets
-                sleeper(int(exception.period_remaining))  # type: ignore # there is no type on the received exception from lib
+                # add 2 seconds to the sleep to avoid resending before window has actually closed (rounding errors)
+                sleeper(int(exception.period_remaining) + 2)  # type: ignore # there is no type on the received exception from lib
 
     return wrapper
