@@ -67,6 +67,8 @@ def llm_message_handler(
                 error_code = temp_handler(mge)
                 if error_code == "CLIError":
                     raise mge
+                else: # ensure we have access to the eexception trace in debug logging before continuing
+                    logging.debug(f"error code: {error_code}", exc_info=True)
             except Exception as e:
                 raise e
             finally:
