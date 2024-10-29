@@ -646,3 +646,19 @@ def test_final_args_rate_limit_overrides_toml() -> None:
         final_args = parse_toml_and_args_into_final_args("config.toml", parsed_args)
 
         assert final_args["rate_limit"] == 2000
+
+def test_args_parsing_empty_config_validate() -> None:
+    cli_command = "validate"
+    parsed_args = parse_args(cast(List[str], cli_command.split()))
+
+    final_args = parse_toml_and_args_into_final_args(None, parsed_args)
+
+    assert final_args, "Expected final_args to be returned"
+
+def test_args_parsing_empty_config_test() -> None:
+    cli_command = "test"
+    parsed_args = parse_args(cast(List[str], cli_command.split()))
+    
+    final_args = parse_toml_and_args_into_final_args(None, parsed_args)
+    
+    assert final_args, "Expected final_args to be returned"

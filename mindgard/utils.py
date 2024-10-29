@@ -106,7 +106,8 @@ def parse_toml_and_args_into_final_args(
     final_args["mode"] = final_args.get("mode") if final_args.get("mode") is not None else "fast"
     final_args["rate_limit"] = final_args.get("rate_limit") if final_args.get("rate_limit") is not None else 3600 # 60rps
 
-    final_args["attack_pack"] = map_mode_to_attack_pack(args.mode)
+    if(args.command == "test"):
+        final_args["attack_pack"] = map_mode_to_attack_pack(args.mode)
 
     if final_args["model_type"] == "image":
         if final_args.get("dataset", "unknown") not in valid_image_datasets:
@@ -118,8 +119,7 @@ def parse_toml_and_args_into_final_args(
         if domain and (domain not in valid_llm_datasets.keys()):
             raise ValueError(f"Domain set in config file ({final_args['domain']}) was invalid! (choices: {[x for x in valid_llm_datasets]})")
 
-        final_args["dataset"] = valid_llm_datasets.get(final_args["domain"], None)
-
+        final_args["dataset"] = valid_llm_datasets.get(domain, None)
 
     if (final_args["model_type"] == 'image'):
         if (toml_args.get('labels') is None):
