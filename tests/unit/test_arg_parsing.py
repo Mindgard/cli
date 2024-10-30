@@ -9,7 +9,7 @@ from unittest.mock import mock_open, patch
 import pytest
 from mindgard.utils import parse_toml_and_args_into_final_args
 from mindgard.types import valid_image_datasets, valid_llm_datasets
-from mindgard.__main__ import main, parse_args
+from mindgard.cli import main, parse_args
 from mindgard.orchestrator import OrchestratorSetupRequest, OrchestratorTestResponse
 
 
@@ -151,9 +151,9 @@ cases = [
 
 
 @pytest.mark.parametrize("test_case", cases, ids=lambda x: x.name)
-@mock.patch("mindgard.__main__.exit")
-@mock.patch("mindgard.__main__.cli_run")
-@mock.patch("mindgard.__main__.model_test_submit_factory")
+@mock.patch("mindgard.cli.exit")
+@mock.patch("mindgard.cli.cli_run")
+@mock.patch("mindgard.cli.model_test_submit_factory")
 def test_orchestrator_setup_request(
     mock_model_test_submit_factory:mock.MagicMock, 
     mock_cli_run: mock.MagicMock, 
