@@ -11,7 +11,7 @@ homepage = "https://github.com/Mindgard/cli"
 Issues = "https://github.com/Mindgard/cli/issues"
 
 [tool.poetry.scripts]
-mindgard = "mindgard.__main__:main"
+mindgard = "mindgard.cli:main"
 
 [tool.poetry.dependencies]
 python = "^3.9"
@@ -62,10 +62,9 @@ mypy_path = ["stubs"]
 known_virtualenvs = ["venv", ".venv", ".test_env"]
 
 
-
 [tool.autopep8]
 max_line_length = 120
-ignore = "E501,W6"  # or ["E501", "W6"]
+ignore = "E501,W6"    # or ["E501", "W6"]
 in-place = true
 recursive = true
 aggressive = 3
