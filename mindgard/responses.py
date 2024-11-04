@@ -19,10 +19,12 @@ def extract_reply(json_response,selector=None, strict=True):
 
 def extract_replies(response, selector=None):
     # Example of spec: https://platform.openai.com/docs/api-reference/streaming
-    if (response.headers.get('Content-Type','').lower() == 'text/event-stream'):
+    content_type = response.headers.get('Content-Type','').lower()
+    if (content_type == 'text/event-stream' or content_type == 'application/x-ndjson'):
         reply = []
         for line in response.iter_lines():
-            line_value = line[len('data: '):].decode("utf-8")
+            ndjson_line = line[len('data: '):] if content_type == 'text/event-stream' else line
+            line_value = ndjson_line.decode("utf-8")
             if len(line_value) < MINIMUM_MESSAGE_SIZE:
                 continue
             line_json = json.loads(line_value)
