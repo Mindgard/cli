@@ -16,10 +16,11 @@ class LabelConfidence(BaseModel):
 
 
 class ImageModelWrapper:
-    def __init__(self, url: str, labels: List[str], api_key: Optional[str] = None) -> None:
+    def __init__(self, url: str, labels: List[str], allow_redirects:bool = True, api_key: Optional[str] = None) -> None:
         self.url = url
         self.api_key = api_key
         self.labels = labels
+        self._allow_redirects = allow_redirects
 
         # TODO: shape validation
         # self.shape = [3, 1, 224, 224]????
@@ -43,7 +44,12 @@ class ImageModelWrapper:
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
 
-        res = requests.post(self.url, headers=headers, data=image)
+        res = requests.post(
+            self.url, 
+            headers=headers,
+            data=image,
+            allow_redirects=self._allow_redirects,
+        )
 
         model_response = [LabelConfidence(label=item.get("label"), score=item.get("score")) for item in res.json()]
 
@@ -79,12 +85,13 @@ def get_image_model_wrapper(
     api_key: Optional[str],
     url: str,
     labels: List[str],
+    allow_redirects: bool = True, # backward compatibility
 ) -> ImageModelWrapper:
 
     # Isn't a concept of presets for image model wrapper as we just bind to HF
     if preset == "huggingface" or preset == None:
         check_expected_args(locals(), ["api_key", "url"])
-        return ImageModelWrapper(api_key=api_key, url=url, labels=labels)
+        return ImageModelWrapper(api_key=api_key, url=url, labels=labels, allow_redirects=allow_redirects)  
     elif preset == "local":
         check_expected_args(locals(), ["url"])
-        return ImageModelWrapper(url=url, labels=labels)
+        return ImageModelWrapper(url=url, labels=labels, allow_redirects=allow_redirects)
