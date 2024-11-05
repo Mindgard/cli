@@ -17,22 +17,36 @@ def extract_reply(json_response,selector=None, strict=True):
     else:
         return json.dumps(json_response)
 
+class NDJsonProcessor:
+    def preprocess_line(self, line:str):
+        return line
+
+    def join_responses(self, responses: list[str]):
+        return "".join(responses)
+
+class EventStreamProcessor:
+    def preprocess_line(self, line:str):
+        return line[len('data: '):]
+
+    def join_responses(self, responses: list[str]):
+        stripped = [response.strip() for response in responses]
+        return " ".join(stripped)
+
 def extract_replies(response, selector=None):
     # Example of spec: https://platform.openai.com/docs/api-reference/streaming
     content_type = response.headers.get('Content-Type','').lower()
     if (content_type == 'text/event-stream' or content_type == 'application/x-ndjson'):
         reply = []
+        content_processor = NDJsonProcessor() if content_type == 'application/x-ndjson' else EventStreamProcessor()
         for line in response.iter_lines():
-            ndjson_line = line[len('data: '):] if content_type == 'text/event-stream' else line
-            line_value = ndjson_line.decode("utf-8")
-            if len(line_value) < MINIMUM_MESSAGE_SIZE:
+            if len(line) < MINIMUM_MESSAGE_SIZE:
                 continue
+            line_value = content_processor.preprocess_line(line).decode("utf-8")
             line_json = json.loads(line_value)
-            extracted = extract_reply(line_json,selector=selector, strict=False).strip()
-            if (len(extracted) > 0):
+            extracted = extract_reply(line_json,selector=selector, strict=False)
+            if len(extracted) > 0:
                 reply.append(extracted)
-
-        return " ".join(reply)
+        return content_processor.join_responses(reply)
     else:
         # Simple RPC
         return extract_reply(response.json(), selector=selector)

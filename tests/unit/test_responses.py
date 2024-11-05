@@ -50,7 +50,7 @@ def test_extract_replies_should_extract_selector_match_with_text_stream() -> Non
     response.headers = {"Content-Type": "application/x-ndjson"}
     response.iter_lines = iter_lines
 
-    assert "Black , with some twink ling stars !" == extract_replies(response, selector="$.message.content")
+    assert "Black, with some twinkling stars!" == extract_replies(response, selector="$.message.content")
 
 def test_extract_replies_should_trim_extraneous_whitespace() -> None:
     input = [
