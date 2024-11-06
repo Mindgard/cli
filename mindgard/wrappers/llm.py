@@ -5,6 +5,7 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple, Union, cast
 from anthropic import Anthropic
 from anthropic.types import MessageParam
+import httpx
 import requests
 from openai import AzureOpenAI, OpenAI, OpenAIError
 import jsonpath_ng
@@ -356,6 +357,7 @@ class OpenAIWrapper(LLMModelWrapper):
         self,
         api_key: str,
         model_name: Optional[str],
+        allow_redirects: bool,
         system_prompt: Optional[str] = None,
         api_url: Optional[str] = None,
     ) -> None:
@@ -363,7 +365,13 @@ class OpenAIWrapper(LLMModelWrapper):
         self.client = (
             OpenAI(api_key=api_key)
             if api_url is None
-            else OpenAI(api_key=api_key, base_url=api_url)
+            else OpenAI(
+                api_key=api_key, 
+                base_url=api_url, 
+                http_client=httpx.Client(
+                    follow_redirects=allow_redirects
+                )
+            )
         )
         self.model_name = model_name or "gpt-3.5-turbo"
         self.system_prompt = system_prompt
@@ -482,7 +490,11 @@ def get_llm_model_wrapper(
         if url[-4:] != "/v1/":
             url += "/v1/"
         return OpenAIWrapper(
-            api_key=api_key, api_url=url, system_prompt=system_prompt, model_name="tgi"
+            api_key=api_key, 
+            api_url=url, 
+            system_prompt=system_prompt, 
+            model_name="tgi",
+            allow_redirects=allow_redirects
         )
     elif preset == "huggingface":
         check_expected_args(locals(), ["api_key", "url", "request_template"])
