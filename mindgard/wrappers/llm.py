@@ -364,7 +364,7 @@ class OpenAIWrapper(LLMModelWrapper):
         self,
         api_key: str,
         model_name: Optional[str],
-        allow_redirects: bool,
+        allow_redirects: bool = True,
         system_prompt: Optional[str] = None,
         api_url: Optional[str] = None,
     ) -> None:
