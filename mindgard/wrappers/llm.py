@@ -229,6 +229,7 @@ class AzureAIStudioWrapper(APIModelWrapper):
         url: str,
         request_template: Optional[str],
         system_prompt: str,
+        allow_redirects: bool,
     ) -> None:
         az_request_template = (
             request_template
@@ -243,6 +244,7 @@ class AzureAIStudioWrapper(APIModelWrapper):
     "top_p": 0.9
 }"""
         )
+        self._allow_redirects = allow_redirects
         super().__init__(
             url,
             request_template=az_request_template,
@@ -252,6 +254,8 @@ class AzureAIStudioWrapper(APIModelWrapper):
                 "Content-Type": "application/json",
             },
             system_prompt=system_prompt,
+            # allow_redirects doesn't actually make any difference here, but added defensively until we can refactor away from this inheritance chain
+            allow_redirects=allow_redirects,
         )
 
     def __call__(self, content: str, with_context: Optional[Context] = None) -> str:
@@ -267,7 +271,10 @@ class AzureAIStudioWrapper(APIModelWrapper):
 
         # Make the API call
         response = requests.post(
-            self.api_url, headers=self.headers, json=request_payload
+            self.api_url, 
+            headers=self.headers, 
+            json=request_payload, 
+            allow_redirects=self._allow_redirects
         )
         if response.status_code == 400:
             try:
@@ -518,6 +525,7 @@ def get_llm_model_wrapper(
             url=url,
             request_template=request_template,
             system_prompt=system_prompt,
+            allow_redirects=allow_redirects,
         )
     elif preset == "openai":
         check_expected_args(locals(), ["api_key"])
