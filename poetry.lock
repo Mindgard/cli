@@ -1646,6 +1646,24 @@ tomli = {version = ">=1", markers = "python_version < \"3.11\""}
 dev = ["argcomplete", "attrs (>=19.2)", "hypothesis (>=3.56)", "mock", "pygments (>=2.7.2)", "requests", "setuptools", "xmlschema"]
 
 [[package]]
+name = "pytest-httpx"
+version = "0.33.0"
+description = "Send responses to httpx."
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "pytest_httpx-0.33.0-py3-none-any.whl", hash = "sha256:bdd1b00a846cfe857194e4d3ba72dc08ba0d163154a4404269c9b971f357c05d"},
+    {file = "pytest_httpx-0.33.0.tar.gz", hash = "sha256:4af9ab0dae5e9c14cb1e27d18af3db1f627b2cf3b11c02b34ddf26aff6b0a24c"},
+]
+
+[package.dependencies]
+httpx = "==0.27.*"
+pytest = "==8.*"
+
+[package.extras]
+testing = ["pytest-asyncio (==0.24.*)", "pytest-cov (==5.*)"]
+
+[[package]]
 name = "pytest-snapshot"
 version = "0.9.0"
 description = "A plugin for snapshot testing with pytest."
@@ -2653,4 +2671,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "jaraco.test", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "ea6e80acd49b6db2a7e245593126abe5b9b323cca353b55dc9dc768dc91b9108"
+content-hash = "e3359dd64449ebbd425f6b68b34f3dc9ae4a1d569a44a9875488c83e0f459579"

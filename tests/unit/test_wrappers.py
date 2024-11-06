@@ -3,6 +3,7 @@ from unittest import mock
 import requests_mock
 import base64
 import pytest
+from pytest_httpx import HTTPXMock
 
 from mindgard.wrappers.image import ImageModelWrapper, LabelConfidence, get_image_model_wrapper
 from mindgard.wrappers.llm import OpenAIWrapper, TestStaticResponder, ContextManager, APIModelWrapper, get_llm_model_wrapper
@@ -335,3 +336,155 @@ def test_llm_local_model_wrapper_default_allow_redirects() -> None:
         assert len(m.request_history) == 2, "default should follow redirects"
         assert m.last_request.url == url_target
 
+def test_llm_huggingfaceopenai_model_wrapper_allow_redirects(httpx_mock: HTTPXMock) -> None:
+    url_redirect = "https://example.com/redirect"
+    url_redirect_expected = "https://example.com/redirect/v1/chat/completions"
+    url_target = "https://example.com/target"
+    url_target_expected = url_target
+    content_redirect = {"nothing":"here"}
+    content_target = {
+        "id": "chatcmpl-123",
+        "object": "chat.completion",
+        "created": 1677652288,
+        "model": "gpt-4o-mini",
+        "system_fingerprint": "fp_44709d6fcb",
+        "choices": [{
+            "index": 0,
+            "message": {
+            "role": "assistant",
+            "content": "my message",
+            },
+            "logprobs": None,
+            "finish_reason": "stop"
+        }],
+        "usage": {
+            "prompt_tokens": 9,
+            "completion_tokens": 12,
+            "total_tokens": 21,
+            "completion_tokens_details": {
+            "reasoning_tokens": 0,
+            "accepted_prediction_tokens": 0,
+            "rejected_prediction_tokens": 0
+            }
+        }
+    }
+    wrapper = get_llm_model_wrapper(
+        preset="huggingface-openai",
+        api_key="test api key",
+        url=url_redirect,
+        headers={},
+        allow_redirects=True,
+    )
+
+    httpx_mock.add_response(
+        url=url_redirect_expected, 
+        method="POST", 
+        status_code=308, 
+        headers={"Location":url_target}, 
+        json=content_redirect
+    )
+    httpx_mock.add_response(
+        url=url_target_expected, 
+        method="POST", 
+        status_code=200, 
+        json=content_target
+    )
+
+    res = wrapper("a")
+    assert res == "my message"
+
+    # we know it's processed the redirect if we got the two requests
+    assert len(httpx_mock.get_requests()) == 2, "default should follow redirects"
+    assert httpx_mock.get_requests()[-1].url == url_target_expected
+
+def test_llm_huggingfaceopenai_model_wrapper_disallow_redirects(httpx_mock: HTTPXMock) -> None:
+    url_redirect = "https://example.com/redirect"
+    url_redirect_expected = "https://example.com/redirect/v1/chat/completions"
+    url_target = "https://example.com/target"
+    content_redirect = {"nothing":"here"}
+    wrapper = get_llm_model_wrapper(
+        preset="huggingface-openai",
+        api_key="test api key",
+        url=url_redirect,
+        headers={},
+        allow_redirects=False,
+    )
+
+    httpx_mock.add_response(
+        url=url_redirect_expected, 
+        method="POST", 
+        status_code=308, 
+        headers={"Location":url_target}, 
+        json=content_redirect
+    )
+
+    # TODO: while implementing this we were not sure what the error type or message should be
+    with pytest.raises(
+        Exception, 
+        match=re.escape("Error specifics unknown")
+    ):
+        wrapper("a")
+
+    # we know it's processed the redirect if we got the two requests
+    assert len(httpx_mock.get_requests()) == 1, "default should follow redirects"
+    assert httpx_mock.get_requests()[-1].url == url_redirect_expected
+
+def test_llm_huggingfaceopenai_model_wrapper_default_allow_redirects(httpx_mock: HTTPXMock) -> None:
+    url_redirect = "https://example.com/redirect"
+    url_redirect_expected = "https://example.com/redirect/v1/chat/completions"
+    url_target = "https://example.com/target"
+    url_target_expected = url_target
+    content_redirect = {"nothing":"here"}
+    content_target = {
+        "id": "chatcmpl-123",
+        "object": "chat.completion",
+        "created": 1677652288,
+        "model": "gpt-4o-mini",
+        "system_fingerprint": "fp_44709d6fcb",
+        "choices": [{
+            "index": 0,
+            "message": {
+            "role": "assistant",
+            "content": "my message",
+            },
+            "logprobs": None,
+            "finish_reason": "stop"
+        }],
+        "usage": {
+            "prompt_tokens": 9,
+            "completion_tokens": 12,
+            "total_tokens": 21,
+            "completion_tokens_details": {
+            "reasoning_tokens": 0,
+            "accepted_prediction_tokens": 0,
+            "rejected_prediction_tokens": 0
+            }
+        }
+    }
+    wrapper = get_llm_model_wrapper(
+        preset="huggingface-openai",
+        api_key="test api key",
+        url=url_redirect,
+        headers={},
+    )
+
+    httpx_mock.add_response(
+        url=url_redirect_expected, 
+        method="POST", 
+        status_code=308, 
+        headers={"Location":url_target}, 
+        json=content_redirect
+    )
+    httpx_mock.add_response(
+        url=url_target_expected, 
+        method="POST", 
+        status_code=200, 
+        json=content_target
+    )
+
+    res = wrapper("a")
+    assert res == "my message"
+
+    # we know it's processed the redirect if we got the two requests
+    assert len(httpx_mock.get_requests()) == 2, "default should follow redirects"
+    assert httpx_mock.get_requests()[-1].url == url_target_expected
