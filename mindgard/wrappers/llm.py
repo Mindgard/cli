@@ -111,6 +111,7 @@ class APIModelWrapper(LLMModelWrapper):
     def __init__(
         self,
         api_url: str,
+        allow_redirects: bool = True,
         request_template: Optional[str] = None,
         selector: Optional[str] = None,
         system_prompt: Optional[str] = None,
@@ -118,6 +119,7 @@ class APIModelWrapper(LLMModelWrapper):
         headers: Optional[Dict[str, str]] = None,
         rate_limit: int = 3600,
     ) -> None:
+        self._allow_redirects = allow_redirects
         self.context_manager = ContextManager()
         self.api_url = api_url
         self.throttled_call_llm = throttle(self._call_llm, rate_limit=rate_limit)
@@ -205,7 +207,7 @@ class APIModelWrapper(LLMModelWrapper):
         # Make the API call
         try:
             response = requests.post(
-                self.api_url, headers=self.headers, json=request_payload
+                self.api_url, headers=self.headers, json=request_payload, allow_redirects=self._allow_redirects
             )
             response.raise_for_status()
         except requests.exceptions.ConnectionError as cerr:
@@ -468,7 +470,8 @@ def get_llm_model_wrapper(
     selector: Optional[str] = None,
     request_template: Optional[str] = None,
     tokenizer: Optional[str] = None,
-    rate_limit: int = 60000
+    rate_limit: int = 60000,
+    allow_redirects: bool = True,
 ) -> LLMModelWrapper:
     # Create model based on preset
     if preset == "huggingface-openai":
@@ -545,6 +548,7 @@ def get_llm_model_wrapper(
         if headers:
             return APIModelWrapper(
                 api_url=url,
+                allow_redirects=allow_redirects,
                 selector=selector,
                 request_template=request_template,
                 system_prompt=system_prompt,
@@ -555,6 +559,7 @@ def get_llm_model_wrapper(
         else:
             return APIModelWrapper(
                 api_url=url,
+                allow_redirects=allow_redirects,
                 selector=selector,
                 request_template=request_template,
                 system_prompt=system_prompt,
