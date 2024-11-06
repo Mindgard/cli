@@ -1,3 +1,4 @@
+import re
 from unittest import mock
 import requests_mock
 import base64
@@ -252,6 +253,83 @@ def test_image_local_model_wrapper_default_allow_redirects() -> None:
 
         res = wrapper(b'a')
         assert res == [LabelConfidence(label='my label', score=0.5)]
+
+        # we know it's processed the redirect if we got the two requests
+        assert len(m.request_history) == 2, "default should follow redirects"
+        assert m.last_request.url == url_target
+
+
+
+
+
+def test_llm_local_model_wrapper_allow_redirects() -> None:
+    url_redirect = "https://example.com/redirect"
+    url_target = "https://example.com/target"
+    content_redirect = {"nothing":"here"}
+    content_target = {"message":"my message"}
+    wrapper = get_llm_model_wrapper(
+        preset="local",
+        url=url_redirect,
+        selector="$.message",
+        headers={},
+        allow_redirects=True,
+    )
+
+    with requests_mock.mock() as m:
+        m.post(url_redirect, json=content_redirect, status_code=308, headers={"Location":url_target})
+        m.post(url_target, json=content_target, status_code=200)
+
+        res = wrapper("a")
+        assert res == "my message"
+
+        # we know it's processed the redirect if we got the two requests
+        assert len(m.request_history) == 2, "default should follow redirects"
+        assert m.last_request.url == url_target
+
+def test_llm_local_model_wrapper_disallow_redirects() -> None:
+    url_redirect = "https://example.com/redirect"
+    url_target = "https://example.com/target"
+    content_redirect = {"nothing":"here"}
+    wrapper = get_llm_model_wrapper(
+        preset="local",
+        url=url_redirect,
+        selector="$.message",
+        headers={},
+        allow_redirects=False,
+    )
+
+    with requests_mock.mock() as m:
+        m.post(url_redirect, json=content_redirect, status_code=308, headers={"Location":url_target})
+
+        # TODO: should we even be attempting to process the response when the response code is non 2xx?
+        with pytest.raises(
+            Exception, 
+            match=re.escape("Selector $.message did not match any elements in the response. json_response={'nothing': 'here'}")
+        ):
+            wrapper("a")
+        
+        # we know it's processed the redirect if we got the two requests
+        assert len(m.request_history) == 1, "should not follow redirects"
+        assert m.last_request.url == url_redirect
+
+def test_llm_local_model_wrapper_default_allow_redirects() -> None:
+    url_redirect = "https://example.com/redirect"
+    url_target = "https://example.com/target"
+    content_redirect = {"nothing":"here"}
+    content_target = {"message":"my message"}
+    wrapper = get_llm_model_wrapper(
+        preset="local",
+        url=url_redirect,
+        selector="$.message",
+        headers={},
+    )
+
+    with requests_mock.mock() as m:
+        m.post(url_redirect, json=content_redirect, status_code=308, headers={"Location":url_target})
+        m.post(url_target, json=content_target, status_code=200)
+
+        res = wrapper("a")
+        assert res == "my message"
 
         # we know it's processed the redirect if we got the two requests
         assert len(m.request_history) == 2, "default should follow redirects"
