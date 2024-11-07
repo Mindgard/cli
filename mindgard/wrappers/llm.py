@@ -324,6 +324,7 @@ class HuggingFaceWrapper(APIModelWrapper):
         api_key: str,
         api_url: str,
         request_template: str,
+        allow_redirects: bool,
         system_prompt: Optional[str] = None,
         rate_limit: Optional[str] = 60000,
     ) -> None:
@@ -333,7 +334,8 @@ class HuggingFaceWrapper(APIModelWrapper):
             selector='[0]["generated_text"]',
             headers={"Authorization": f"Bearer {api_key}"},
             system_prompt=system_prompt,
-            rate_limit=rate_limit
+            rate_limit=rate_limit,
+            allow_redirects=allow_redirects,
         )
 
 
@@ -518,6 +520,7 @@ def get_llm_model_wrapper(
             system_prompt=system_prompt,
             request_template=request_template,
             rate_limit=rate_limit,
+            allow_redirects=allow_redirects,
         )
     elif preset == "azure-aistudio":
         check_expected_args(locals(), ["api_key", "url", "system_prompt"])
