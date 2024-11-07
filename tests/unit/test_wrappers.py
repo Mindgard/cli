@@ -714,3 +714,81 @@ def test_llm_azureopenai_model_wrapper_default_allow_redirects(httpx_mock: HTTPX
     # we know it's processed the redirect if we got the two requests
     assert len(httpx_mock.get_requests()) == 2, "default should follow redirects"
     assert httpx_mock.get_requests()[-1].url == url_target
+
+
+def test_llm_huggingface_model_wrapper_allow_redirects() -> None:
+    url_redirect = "https://example.com/redirect"
+    url_target = "https://example.com/target"
+    content_redirect = {"nothing":"here"}
+    content_target = [{"generated_text":"my message"}]
+    wrapper = get_llm_model_wrapper(
+        preset="huggingface",
+        url=url_redirect,
+        api_key="test api key",
+        request_template='{"something":"{prompt}{system_prompt}"}',
+        headers={},
+        allow_redirects=True,
+    )
+
+    with requests_mock.mock() as m:
+        m.post(url_redirect, json=content_redirect, status_code=308, headers={"Location":url_target})
+        m.post(url_target, json=content_target, status_code=200)
+
+        res = wrapper("a")
+        assert res == "my message"
+
+        # we know it's processed the redirect if we got the two requests
+        assert len(m.request_history) == 2, "default should follow redirects"
+        assert m.last_request.url == url_target
+
+def test_llm_huggingface_model_wrapper_disallow_redirects() -> None:
+    url_redirect = "https://example.com/redirect"
+    url_target = "https://example.com/target"
+    content_redirect = {"nothing":"here"}
+    wrapper = get_llm_model_wrapper(
+        preset="huggingface",
+        url=url_redirect,
+        api_key="test api key",
+        request_template='{"something":"{prompt}{system_prompt}"}',
+        headers={},
+        allow_redirects=False,
+    )
+
+    with requests_mock.mock() as m:
+        m.post(url_redirect, json=content_redirect, status_code=308, headers={"Location":url_target})
+
+        with pytest.raises(
+            Exception, 
+        ) as e:
+            wrapper("a")
+
+        # we know it's processed the redirect if we got the two requests
+        assert len(m.request_history) == 1, "should not follow redirects"
+        assert m.last_request.url == url_redirect
+        # TODO: the error message comes from inside jsonpathng and is not very informative
+        #       we should wrap this error to be more informative
+        assert e.match("0")
+
+def test_llm_huggingface_model_wrapper_default_allow_redirects() -> None:
+    url_redirect = "https://example.com/redirect"
+    url_target = "https://example.com/target"
+    content_redirect = {"nothing":"here"}
+    content_target = [{"generated_text":"my message"}]
+    wrapper = get_llm_model_wrapper(
+        preset="huggingface",
+        url=url_redirect,
+        api_key="test api key",
+        request_template='{"something":"{prompt}{system_prompt}"}',
+        headers={},
+    )
+
+    with requests_mock.mock() as m:
+        m.post(url_redirect, json=content_redirect, status_code=308, headers={"Location":url_target})
+        m.post(url_target, json=content_target, status_code=200)
+
+        res = wrapper("a")
+        assert res == "my message"
+
+        # we know it's processed the redirect if we got the two requests
+        assert len(m.request_history) == 2, "default should follow redirects"
+        assert m.last_request.url == url_target
