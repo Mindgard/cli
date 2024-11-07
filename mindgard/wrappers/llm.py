@@ -7,7 +7,7 @@ from anthropic import Anthropic
 from anthropic.types import MessageParam
 import httpx
 import requests
-from openai import AzureOpenAI, OpenAI, OpenAIError
+from openai import APIStatusError, AzureOpenAI, OpenAI, OpenAIError
 import jsonpath_ng
 
 # Utils
@@ -220,6 +220,9 @@ class APIModelWrapper(LLMModelWrapper):
             # everything else
             raise e
 
+        if response.status_code == 308:
+            raise Uncontactable("Failed to contact model: model returned a redirect but redirects are disabled")
+        
         return extract_replies(response, self.selector)
 
 class AzureAIStudioWrapper(APIModelWrapper):
@@ -284,6 +287,8 @@ class AzureAIStudioWrapper(APIModelWrapper):
                     return cast(str, err_message)
             except Exception:
                 raise status_code_to_exception(400)
+        elif response.status_code == 308:
+            raise Uncontactable("Failed to contact model: model returned a redirect but redirects are disabled")
         elif response.status_code != 200:
             # Handle other types of API error
             message = (
@@ -417,6 +422,8 @@ def openai_call(
         response = chat.choices[0].message.content
         if not response:
             raise EmptyResponse("Model returned an empty response.")
+    except APIStatusError as e:
+        raise Uncontactable("Failed to contact model: model returned a redirect but redirects are disabled")
     except OpenAIError as e:
         raise openai_exception_to_exception(e)
 
