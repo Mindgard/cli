@@ -5,6 +5,7 @@ import base64
 import pytest
 from pytest_httpx import HTTPXMock
 
+from mindgard.exceptions import Uncontactable
 from mindgard.wrappers.image import ImageModelWrapper, LabelConfidence, get_image_model_wrapper
 from mindgard.wrappers.llm import OpenAIWrapper, TestStaticResponder, ContextManager, APIModelWrapper, get_llm_model_wrapper
 
@@ -259,10 +260,6 @@ def test_image_local_model_wrapper_default_allow_redirects() -> None:
         assert len(m.request_history) == 2, "default should follow redirects"
         assert m.last_request.url == url_target
 
-
-
-
-
 def test_llm_local_model_wrapper_allow_redirects() -> None:
     url_redirect = "https://example.com/redirect"
     url_target = "https://example.com/target"
@@ -302,10 +299,9 @@ def test_llm_local_model_wrapper_disallow_redirects() -> None:
     with requests_mock.mock() as m:
         m.post(url_redirect, json=content_redirect, status_code=308, headers={"Location":url_target})
 
-        # TODO: should we even be attempting to process the response when the response code is non 2xx?
         with pytest.raises(
-            Exception, 
-            match=re.escape("Selector $.message did not match any elements in the response. json_response={'nothing': 'here'}")
+            Uncontactable, 
+            match=re.escape("Failed to contact model: model returned a redirect but redirects are disabled")
         ):
             wrapper("a")
         
@@ -418,10 +414,9 @@ def test_llm_huggingfaceopenai_model_wrapper_disallow_redirects(httpx_mock: HTTP
         json=content_redirect
     )
 
-    # TODO: while implementing this we were not sure what the error type or message should be
     with pytest.raises(
-        Exception, 
-        match=re.escape("Error specifics unknown")
+        Uncontactable, 
+        match=re.escape("Failed to contact model: model returned a redirect but redirects are disabled")
     ):
         wrapper("a")
 
@@ -542,10 +537,9 @@ def test_llm_azureaistudio_model_wrapper_disallow_redirects() -> None:
     with requests_mock.mock() as m:
         m.post(url_redirect, json=content_redirect, status_code=308, headers={"Location":url_target})
 
-        # TODO: while implementing this we were not sure what the error type or message should be
         with pytest.raises(
-            Exception, 
-            match=re.escape("Error specifics unknown")
+            Uncontactable, 
+            match=re.escape("Failed to contact model: model returned a redirect but redirects are disabled")
         ):
             wrapper("a")
         
@@ -658,10 +652,9 @@ def test_llm_azureopenai_model_wrapper_disallow_redirects(httpx_mock: HTTPXMock)
         json=content_redirect
     )
 
-    # TODO: while implementing this we were not sure what the error type or message should be
     with pytest.raises(
-        Exception, 
-        match=re.escape("Error specifics unknown")
+        Uncontactable, 
+        match=re.escape("Failed to contact model: model returned a redirect but redirects are disabled")
     ):
         wrapper("a")
 
@@ -758,16 +751,14 @@ def test_llm_huggingface_model_wrapper_disallow_redirects() -> None:
         m.post(url_redirect, json=content_redirect, status_code=308, headers={"Location":url_target})
 
         with pytest.raises(
-            Exception, 
-        ) as e:
+            Uncontactable, 
+            match=re.escape("Failed to contact model: model returned a redirect but redirects are disabled")
+        ):
             wrapper("a")
 
         # we know it's processed the redirect if we got the two requests
         assert len(m.request_history) == 1, "should not follow redirects"
         assert m.last_request.url == url_redirect
-        # TODO: the error message comes from inside jsonpathng and is not very informative
-        #       we should wrap this error to be more informative
-        assert e.match("0")
 
 def test_llm_huggingface_model_wrapper_default_allow_redirects() -> None:
     url_redirect = "https://example.com/redirect"
