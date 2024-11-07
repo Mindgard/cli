@@ -586,3 +586,131 @@ def test_llm_azureaistudio_model_wrapper_default_allow_redirects() -> None:
         # we know it's processed the redirect if we got the two requests
         assert len(m.request_history) == 2, "default should follow redirects"
         assert m.last_request.url == url_target
+
+
+def test_llm_azureopenai_model_wrapper_allow_redirects(httpx_mock: HTTPXMock) -> None:
+    url_redirect = "https://example.com/redirect"
+    url_redirect_expected = "https://example.com/redirect/openai/deployments/model-name/chat/completions?api-version=a-version"
+    url_target = "https://example.com/target"
+    content_redirect = {"nothing":"here"}
+    content_target = {
+        "choices": [{
+            "index": 0,
+            "message": {
+                "role": "assistant",
+                "content": "my message",
+            },
+            "logprobs": None,
+            "finish_reason": "stop"
+        }],
+    }
+    wrapper = get_llm_model_wrapper(
+        preset="azure-openai",
+        api_key="test api key",
+        url=url_redirect,
+        model_name="model-name",
+        az_api_version="a-version",
+        headers={},
+        allow_redirects=True,
+    )
+
+    httpx_mock.add_response(
+        url=url_redirect_expected, 
+        method="POST", 
+        status_code=308, 
+        headers={"Location":url_target}, 
+        json=content_redirect
+    )
+    httpx_mock.add_response(
+        url=url_target, 
+        method="POST", 
+        status_code=200, 
+        json=content_target
+    )
+
+    res = wrapper("a")
+    assert res == "my message"
+
+    # we know it's processed the redirect if we got the two requests
+    assert len(httpx_mock.get_requests()) == 2, "default should follow redirects"
+    assert httpx_mock.get_requests()[-1].url == url_target
+
+def test_llm_azureopenai_model_wrapper_disallow_redirects(httpx_mock: HTTPXMock) -> None:
+    url_redirect = "https://example.com/redirect"
+    url_redirect_expected = "https://example.com/redirect/openai/deployments/model-name/chat/completions?api-version=a-version"
+    url_target = "https://example.com/target"
+    content_redirect = {"nothing":"here"}
+    wrapper = get_llm_model_wrapper(
+        preset="azure-openai",
+        api_key="test api key",
+        url=url_redirect,
+        model_name="model-name",
+        az_api_version="a-version",
+        headers={},
+        allow_redirects=False,
+    )
+
+    httpx_mock.add_response(
+        url=url_redirect_expected, 
+        method="POST", 
+        status_code=308, 
+        headers={"Location":url_target}, 
+        json=content_redirect
+    )
+
+    # TODO: while implementing this we were not sure what the error type or message should be
+    with pytest.raises(
+        Exception, 
+        match=re.escape("Error specifics unknown")
+    ):
+        wrapper("a")
+
+    # we know it's processed the redirect if we got the two requests
+    assert len(httpx_mock.get_requests()) == 1, "default should follow redirects"
+    assert httpx_mock.get_requests()[-1].url == url_redirect_expected
+
+def test_llm_azureopenai_model_wrapper_default_allow_redirects(httpx_mock: HTTPXMock) -> None:
+    url_redirect = "https://example.com/redirect"
+    url_redirect_expected = "https://example.com/redirect/openai/deployments/model-name/chat/completions?api-version=a-version"
+    url_target = "https://example.com/target"
+    content_redirect = {"nothing":"here"}
+    content_target = {
+        "choices": [{
+            "index": 0,
+            "message": {
+                "role": "assistant",
+                "content": "my message",
+            },
+            "logprobs": None,
+            "finish_reason": "stop"
+        }],
+    }
+    wrapper = get_llm_model_wrapper(
+        preset="azure-openai",
+        api_key="test api key",
+        url=url_redirect,
+        model_name="model-name",
+        az_api_version="a-version",
+        headers={},
+    )
+
+    httpx_mock.add_response(
+        url=url_redirect_expected, 
+        method="POST", 
+        status_code=308, 
+        headers={"Location":url_target}, 
+        json=content_redirect
+    )
+    httpx_mock.add_response(
+        url=url_target, 
+        method="POST", 
+        status_code=200, 
+        json=content_target
+    )
+
+    res = wrapper("a")
+    assert res == "my message"
+
+    # we know it's processed the redirect if we got the two requests
+    assert len(httpx_mock.get_requests()) == 2, "default should follow redirects"
+    assert httpx_mock.get_requests()[-1].url == url_target

@@ -346,12 +346,16 @@ class AzureOpenAIWrapper(LLMModelWrapper):
         model_name: str,
         az_api_version: str,
         url: str,
+        allow_redirects: bool,
         system_prompt: Optional[str] = None,
     ) -> None:
         self.api_key = api_key
         self.model_name = model_name
         self.client = AzureOpenAI(
-            api_key=api_key, api_version=az_api_version, azure_endpoint=url
+            api_key=api_key, 
+            api_version=az_api_version, 
+            azure_endpoint=url,
+            http_client=httpx.Client(follow_redirects=allow_redirects)
         )
         self.system_prompt = system_prompt
 
@@ -546,6 +550,7 @@ def get_llm_model_wrapper(
             az_api_version=az_api_version,
             url=url,
             system_prompt=system_prompt,
+            allow_redirects=allow_redirects,
         )
     elif preset == "anthropic":
         if not api_key:
