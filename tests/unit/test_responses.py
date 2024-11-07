@@ -1,4 +1,3 @@
-import requests_mock
 import json
 from mindgard.responses import extract_reply, extract_replies
 from pytest import fail
@@ -30,6 +29,30 @@ def test_extract_replies_should_extract_selector_match_with_text_stream() -> Non
 
     assert "hello world" == extract_replies(response, selector="$.message")
 
+
+def test_extract_replies_should_extract_selector_match_with_ndjson_stream() -> None:
+    # Originally based on Ollama streaming responses
+    input = [
+        '{"model":"llama3.2","created_at":"2024-11-04T15:28:14.362203Z","message":{"role":"assistant","content":"Black"},"done":false}'.encode("utf-8"),
+        '{"model":"llama3.2","created_at":"2024-11-04T15:28:14.389563Z","message":{"role":"assistant","content":","},"done":false}'.encode("utf-8"),
+        '{"model":"llama3.2","created_at":"2024-11-04T15:28:14.417311Z","message":{"role":"assistant","content":" with"},"done":false}'.encode("utf-8"),
+        '{"model":"llama3.2","created_at":"2024-11-04T15:28:14.445099Z","message":{"role":"assistant","content":" some"},"done":false}'.encode("utf-8"),
+        '{"model":"llama3.2","created_at":"2024-11-04T15:28:14.472483Z","message":{"role":"assistant","content":" twink"},"done":false}'.encode("utf-8"),
+        '{"model":"llama3.2","created_at":"2024-11-04T15:28:14.499488Z","message":{"role":"assistant","content":"ling"},"done":false}'.encode("utf-8"),
+        '{"model":"llama3.2","created_at":"2024-11-04T15:28:14.526053Z","message":{"role":"assistant","content":" stars"},"done":false}'.encode("utf-8"),
+        '{"model":"llama3.2","created_at":"2024-11-04T15:28:14.526053Z","message":{"role":"assistant","content":"\\n"},"done":false}'.encode("utf-8"),
+        '{"model":"llama3.2","created_at":"2024-11-04T15:28:14.55277Z","message":{"role":"assistant","content":"!"},"done":false}'.encode("utf-8"),
+        '{"model":"llama3.2","created_at":"2024-11-04T15:28:14.579312Z","message":{"role":"assistant","content":""},"done_reason":"stop","done":true,"total_duration":434427250,"load_duration":29353875,"prompt_eval_count":44,"prompt_eval_duration":185878000,"eval_count":9,"eval_duration":217092000}'.encode("utf-8"),
+    ]
+    def iter_lines():
+        return input
+
+    response = Mock(spec=Response)
+    response.headers = {"Content-Type": "application/x-ndjson"}
+    response.iter_lines = iter_lines
+
+    assert "Black, with some twinkling stars\n!" == extract_replies(response, selector="$.message.content")
+
 def test_extract_replies_should_trim_extraneous_whitespace() -> None:
     input = [
         'data: {"message": "hello "}'.encode("utf-8"),
@@ -44,27 +67,14 @@ def test_extract_replies_should_trim_extraneous_whitespace() -> None:
 
     assert "hello world" == extract_replies(response, selector="$.message")
 
-def test_extract_replies_should_ignore_empty_lines() -> None:
+
+def test_extract_replies_should_tolerate_unprocessable_events() -> None:
     input = [
         'data: {"message": "hello"}'.encode("utf-8"),
-        ''.encode("utf-8"),
-        'data: {}'.encode("utf-8"),
-        'data: {"message": "world"}'.encode("utf-8")
-    ]
-    def iter_lines():
-        return input
-
-    response = Mock(spec=Response)
-    response.headers = {"Content-Type": "text/event-stream"}
-    response.iter_lines = iter_lines
-
-    assert "hello world" == extract_replies(response, selector="$.message")
-
-def test_extract_replies_should_tolerate_selector_mismatches() -> None:
-    input = [
-        'data: {"message": "hello"}'.encode("utf-8"),
+        # different forms of response from which we cannot extract a message
         ''.encode("utf-8"),
         'data: {"another":"message","type":"ignore"}'.encode("utf-8"),
+        'data: {}'.encode("utf-8"),
         'data: {"message": "world"}'.encode("utf-8")
     ]
     def iter_lines():
