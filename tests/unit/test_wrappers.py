@@ -4,7 +4,7 @@ import base64
 import pytest
 
 from mindgard.wrappers.image import ImageModelWrapper, LabelConfidence
-from mindgard.wrappers.llm import TestStaticResponder, ContextManager, APIModelWrapper
+from mindgard.wrappers.llm import OpenAIWrapper, TestStaticResponder, ContextManager, APIModelWrapper, get_llm_model_wrapper
 
 def test_static_responder_no_context() -> None:
     wrapper = TestStaticResponder(
@@ -35,6 +35,12 @@ def test_static_responder_with_context() -> None:
     assert wrapper(message1c2, with_context=context2) == "TEST. prompted with: request='[start]sys: mysysprompt; next: myprompt-message1c2[end]'"
     assert wrapper(message1cnull, with_context=contextnull) == "TEST. prompted with: request='[start]sys: mysysprompt; next: myprompt-message1cnull[end]'"
     assert wrapper(message2c1, with_context=context1) == "TEST. prompted with: request=\"[start]sys: mysysprompt; user: myprompt-message1c1; assistant: TEST. prompted with: request='[start]sys: mysysprompt; next: myprompt-message1c1[end]'; next: myprompt-message2c1[end]\""
+
+def test_get_llm_model_wrapper_preset_openai() -> None:
+    wrapper = get_llm_model_wrapper(headers={}, preset="openai", api_key="test api key")
+    assert isinstance(wrapper, OpenAIWrapper) 
+    
+
 
 def test_api_model_wrapper_no_context_no_settings_no_system_prompt() -> None:
     url = "https://example.com/somewhere"
