@@ -1,13 +1,17 @@
 import re
 from unittest import mock
+from httpx import Response
+from openai import OpenAIError, APIStatusError
 import requests_mock
 import base64
 import pytest
 from pytest_httpx import HTTPXMock
 
-from mindgard.exceptions import Uncontactable
+from mindgard.exceptions import Uncontactable, UnprocessableEntity, EmptyResponse
 from mindgard.wrappers.image import ImageModelWrapper, LabelConfidence, get_image_model_wrapper
 from mindgard.wrappers.llm import OpenAIWrapper, TestStaticResponder, ContextManager, APIModelWrapper, get_llm_model_wrapper
+
+_EXPECTED_308_MESSAGE = "Failed to contact model: model returned a 308 redirect that couldn't be followed."
 
 def test_static_responder_no_context() -> None:
     wrapper = TestStaticResponder(
@@ -301,7 +305,7 @@ def test_llm_local_model_wrapper_disallow_redirects() -> None:
 
         with pytest.raises(
             Uncontactable, 
-            match=re.escape("Failed to contact model: model returned a redirect but redirects are disabled")
+            match=re.escape(_EXPECTED_308_MESSAGE)
         ):
             wrapper("a")
         
@@ -416,7 +420,7 @@ def test_llm_huggingfaceopenai_model_wrapper_disallow_redirects(httpx_mock: HTTP
 
     with pytest.raises(
         Uncontactable, 
-        match=re.escape("Failed to contact model: model returned a redirect but redirects are disabled")
+        match=re.escape(_EXPECTED_308_MESSAGE)
     ):
         wrapper("a")
 
@@ -539,7 +543,7 @@ def test_llm_azureaistudio_model_wrapper_disallow_redirects() -> None:
 
         with pytest.raises(
             Uncontactable, 
-            match=re.escape("Failed to contact model: model returned a redirect but redirects are disabled")
+            match=re.escape(_EXPECTED_308_MESSAGE)
         ):
             wrapper("a")
         
@@ -654,13 +658,89 @@ def test_llm_azureopenai_model_wrapper_disallow_redirects(httpx_mock: HTTPXMock)
 
     with pytest.raises(
         Uncontactable, 
-        match=re.escape("Failed to contact model: model returned a redirect but redirects are disabled")
+        match=re.escape(_EXPECTED_308_MESSAGE)
     ):
         wrapper("a")
 
     # we know it's processed the redirect if we got the two requests
     assert len(httpx_mock.get_requests()) == 1, "default should follow redirects"
     assert httpx_mock.get_requests()[-1].url == url_redirect_expected
+
+def test_llm_azureopenai_model_wrapper_unprocessable_entity_exception(httpx_mock: HTTPXMock) -> None:
+    url = "https://example.com/redirect"
+    url_expected = "https://example.com/redirect/openai/deployments/model-name/chat/completions?api-version=a-version"
+    expected_error_detail = "<none>"
+    wrapper = get_llm_model_wrapper(
+        preset="azure-openai",
+        api_key="test api key",
+        url=url,
+        model_name="model-name",
+        az_api_version="a-version",
+        headers={},
+    )
+
+    httpx_mock.add_response(
+        url=url_expected, 
+        method="POST", 
+        status_code=422,
+        text="some garbage"
+    )
+
+    with pytest.raises(
+        UnprocessableEntity, 
+        match=re.escape(f"Received 422 from provider: {expected_error_detail}")
+    ):
+        wrapper("a")
+
+@mock.patch("mindgard.wrappers.llm.AzureOpenAI", return_value=mock.MagicMock())
+def test_llm_azureopenai_model_wrapper_unprocessable_entity_exception_with_message(mock_azureopenai: mock.MagicMock) -> None:
+
+    expected_error_detail = "hello"
+    content = {"error":expected_error_detail}
+    wrapper = get_llm_model_wrapper(
+        preset="azure-openai",
+        api_key="test api key",
+        url="http://example.com",
+        model_name="model-name",
+        az_api_version="a-version",
+        headers={},
+    )
+
+    mock_response = mock.MagicMock(spec=Response)
+    mock_response.status_code = 422
+    mock_response.headers = {}
+    mock_response.json.return_value = content
+    mock_azureopenai.return_value.chat.completions.create.side_effect = APIStatusError(
+        message="error message",
+        response=mock_response,
+        body="response body"
+    )
+
+    with pytest.raises(
+        UnprocessableEntity, 
+        match=re.escape(f"Received 422 from provider: {expected_error_detail}")
+    ):
+        wrapper("a")
+
+@mock.patch("mindgard.wrappers.llm.AzureOpenAI", return_value=mock.MagicMock())
+def test_llm_azureopenai_model_wrapper_empty_response_exception(mock_azureopenai:mock.MagicMock) -> None:
+    wrapper = get_llm_model_wrapper(
+        preset="azure-openai",
+        api_key="test api key",
+        url="https://example.com/redirect",
+        model_name="model-name",
+        az_api_version="a-version",
+        headers={},
+    )
+
+    mock_azureopenai.return_value.chat.completions.create.side_effect = OpenAIError("blablabla")
+
+    with pytest.raises(
+        EmptyResponse, 
+        match=re.escape("An OpenAI error occurred")
+    ):
+        wrapper("a")
+
 
 def test_llm_azureopenai_model_wrapper_default_allow_redirects(httpx_mock: HTTPXMock) -> None:
     url_redirect = "https://example.com/redirect"
@@ -752,7 +832,7 @@ def test_llm_huggingface_model_wrapper_disallow_redirects() -> None:
 
         with pytest.raises(
             Uncontactable, 
-            match=re.escape("Failed to contact model: model returned a redirect but redirects are disabled")
+            match=re.escape(_EXPECTED_308_MESSAGE)
         ):
             wrapper("a")
 
@@ -783,3 +863,77 @@ def test_llm_huggingface_model_wrapper_default_allow_redirects() -> None:
         # we know it's processed the redirect if we got the two requests
         assert len(m.request_history) == 2, "default should follow redirects"
         assert m.last_request.url == url_target
+
+
+def test_llm_openai_model_wrapper_unprocessable_entity_exception(httpx_mock: HTTPXMock) -> None:
+    url_expected = "https://api.openai.com/v1/chat/completions"
+    expected_error_detail = "<none>"
+    wrapper = get_llm_model_wrapper(
+        preset="openai",
+        api_key="test api key",
+        model_name="model-name",
+        headers={},
+    )
+
+    httpx_mock.add_response(
+        url=url_expected, 
+        method="POST", 
+        status_code=422,
+        text="some garbage"
+    )
+
+    with pytest.raises(
+        UnprocessableEntity, 
+        match=re.escape(f"Received 422 from provider: {expected_error_detail}")
+    ):
+        wrapper("a")
+
+@mock.patch("mindgard.wrappers.llm.OpenAI", return_value=mock.MagicMock())
+def test_llm_openai_model_wrapper_unprocessable_entity_exception_with_message(mock_azureopenai: mock.MagicMock) -> None:
+
+    expected_error_detail = "hello"
+    content = {"error":expected_error_detail}
+    wrapper = get_llm_model_wrapper(
+        preset="openai",
+        api_key="test api key",
+        url="http://example.com",
+        model_name="model-name",
+        az_api_version="a-version",
+        headers={},
+    )
+
+    mock_response = mock.MagicMock(spec=Response)
+    mock_response.status_code = 422
+    mock_response.headers = {}
+    mock_response.json.return_value = content
+    mock_azureopenai.return_value.chat.completions.create.side_effect = APIStatusError(
+        message="error message",
+        response=mock_response,
+        body="response body"
+    )
+
+    with pytest.raises(
+        UnprocessableEntity, 
+        match=re.escape(f"Received 422 from provider: {expected_error_detail}")
+    ):
+        wrapper("a")
+
+@mock.patch("mindgard.wrappers.llm.OpenAI", return_value=mock.MagicMock())
+def test_llm_openai_model_wrapper_empty_response_exception(mock_azureopenai:mock.MagicMock) -> None:
+    wrapper = get_llm_model_wrapper(
+        preset="openai",
+        api_key="test api key",
+        url="https://example.com/redirect",
+        model_name="model-name",
+        az_api_version="a-version",
+        headers={},
+    )
+
+    mock_azureopenai.return_value.chat.completions.create.side_effect = OpenAIError("blablabla")
+
+    with pytest.raises(
+        EmptyResponse, 
+        match=re.escape("An OpenAI error occurred")
+    ):
+        wrapper("a")
+

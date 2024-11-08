@@ -1,10 +1,6 @@
 import logging
 
 # OpenAI exceptions
-from openai import (
-    OpenAIError,
-    APIStatusError,
-)
 
 # Typing
 from typing import Callable, Dict, Literal, Optional, Type
@@ -108,24 +104,6 @@ def status_code_to_exception(status_code: int) -> HTTPBaseError:
     return _status_code_exception_map.get(
         status_code, HTTPBaseError("Error specifics unknown", -1)
     )
-
-
-def openai_exception_to_exception(exception: OpenAIError) -> MGException:
-    # if its an API error with a status code do this
-    if isinstance(exception, APIStatusError):
-        if exception.status_code == 422:
-            err_message = "<none>"
-            try:
-                err_message = exception.response.json().get("error", err_message)
-            except Exception:
-                pass
-            return UnprocessableEntity(
-                f"Received 422 from provider: {err_message}", 422
-            )
-        return status_code_to_exception(exception.status_code)
-    # otherwise do this, this needs to be refined more
-    else:
-        return EmptyResponse("response was empty or something")
 
 
 ErrorCode = Literal[
