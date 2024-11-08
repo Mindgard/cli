@@ -20,8 +20,8 @@ from mindgard.types import type_model_presets
 # Exceptions
 from mindgard.exceptions import (
     Uncontactable,
+    UnprocessableEntity,
     status_code_to_exception,
-    openai_exception_to_exception,
     EmptyResponse,
     NotImplemented,
 )
@@ -221,7 +221,7 @@ class APIModelWrapper(LLMModelWrapper):
             raise e
 
         if response.status_code == 308:
-            raise Uncontactable("Failed to contact model: model returned a redirect but redirects are disabled")
+            raise Uncontactable("Failed to contact model: model returned a 308 redirect that couldn't be followed.")
         
         return extract_replies(response, self.selector)
 
@@ -288,7 +288,7 @@ class AzureAIStudioWrapper(APIModelWrapper):
             except Exception:
                 raise status_code_to_exception(400)
         elif response.status_code == 308:
-            raise Uncontactable("Failed to contact model: model returned a redirect but redirects are disabled")
+            raise Uncontactable("Failed to contact model: model returned a 308 redirect that couldn't be followed.")
         elif response.status_code != 200:
             # Handle other types of API error
             message = (
@@ -422,10 +422,21 @@ def openai_call(
         response = chat.choices[0].message.content
         if not response:
             raise EmptyResponse("Model returned an empty response.")
-    except APIStatusError as e:
-        raise Uncontactable("Failed to contact model: model returned a redirect but redirects are disabled")
-    except OpenAIError as e:
-        raise openai_exception_to_exception(e)
+    except APIStatusError as exception:
+        if exception.status_code == 308:
+            raise Uncontactable("Failed to contact model: model returned a 308 redirect that couldn't be followed.") from exception
+        if exception.status_code == 422:
+            err_message = "<none>"
+            try:
+                err_message = exception.response.json().get("error", err_message)
+            except Exception:
+                pass
+            raise UnprocessableEntity(
+                f"Received 422 from provider: {err_message}", 422
+            ) from exception
+        raise status_code_to_exception(exception.status_code) from exception
+    except OpenAIError as exception:
+        raise EmptyResponse("An OpenAI error occurred") from exception
 
     if with_context is not None:
         with_context.add(
