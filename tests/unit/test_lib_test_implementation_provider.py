@@ -379,6 +379,13 @@ def test_start_test() -> None:
 
     assert test_id == want_test_id, "should return the correct test id"
 
+def test_start_test_timeout() -> None:
+    group_id = "my group id"
+    mock_wps_client = mock.MagicMock(spec=WebPubSubClient)
+    provider = TestImplementationProvider()
+    with pytest.raises(InternalError, match="Failure: timeout waiting for test to start"):
+        provider.start_test(mock_wps_client, group_id, 0)
+
 def test_poll_test_returns_using_api_token_auth_flow() -> None:
     mock_mindgard_api = mock.MagicMock(spec=MindgardApi)
 
