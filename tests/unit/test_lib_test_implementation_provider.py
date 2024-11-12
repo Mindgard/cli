@@ -93,6 +93,31 @@ def test_init_test(requests_mock: requests_mock.Mocker) -> None:
         "attackPack": config.attack_pack
     }
 
+def test_init_test_with_target_id(requests_mock: requests_mock.Mocker) -> None:
+    # expectations
+    target_id = "my target id"
+
+    # inputs
+    config = _helper_default_config()
+    config.target_id = target_id
+    
+    cli_init_requests = requests_mock.post(
+        "https://test.internal/tests/cli_init",
+        json={
+            "url": "test_url",
+            "groupId": "test_group_id"
+        },
+        status_code=200,
+    )
+
+    # test
+    provider = TestImplementationProvider()
+    provider.init_test(config)
+
+    assert cli_init_requests.call_count == 1
+    assert cli_init_requests.last_request is not None
+    assert cli_init_requests.last_request.json().get("target_id") == target_id
+
 def test_init_test_with_domain(requests_mock: requests_mock.Mocker) -> None:
     # expectations
     dataset_domain = 'some_arbitary_string'

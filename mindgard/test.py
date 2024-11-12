@@ -88,6 +88,7 @@ class TestConfig:
     attack_source: str
     parallelism: int
     model: ModelConfig
+    target_id: Optional[str] = None
     dataset_domain: Optional[str] = None
     attack_pack: str = "sandbox"
     additional_headers: Optional[Dict[str, str]] = None
@@ -105,6 +106,9 @@ class TestConfig:
 
         if self.dataset_domain is not None:
             params['datasetDomain'] = self.dataset_domain
+
+        if self.target_id is not None:
+            params['target_id'] = self.target_id
 
         return params
 
