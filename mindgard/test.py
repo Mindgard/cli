@@ -213,7 +213,7 @@ class TestImplementationProvider():
             
         client.subscribe(CallbackType.GROUP_MESSAGE, callback)
 
-    def start_test(self, client:WebPubSubClient, group_id:str) -> str:
+    def start_test(self, client:WebPubSubClient, group_id:str, timeout:float = 10) -> str:
         logging.info(f"start_test: opening connection and starting test")
         started_condition = Condition()
         test_ids: list[str] = []
@@ -234,7 +234,9 @@ class TestImplementationProvider():
         
         logging.info("start_test: waiting for test_id")
         with started_condition:
-            started_condition.wait_for(lambda: len(test_ids) > 0)
+            found = started_condition.wait_for(lambda: len(test_ids) > 0, timeout=timeout)
+            if not found:
+                raise InternalError("Failure: timeout waiting for test to start")
             test_id = test_ids[0]
             logging.info(f"start_test: received test_id {test_id}")
             return test_id
