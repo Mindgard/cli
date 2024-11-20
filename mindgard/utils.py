@@ -115,11 +115,19 @@ def parse_toml_and_args_into_final_args(
 
     if final_args["model_type"] == "llm":
         domain = final_args.get("domain", None)
+        dataset = final_args.get("dataset", None)
 
-        if domain and (domain not in valid_llm_datasets.keys()):
-            raise ValueError(f"Domain set in config file ({final_args['domain']}) was invalid! (choices: {[x for x in valid_llm_datasets]})")
-
-        final_args["dataset"] = valid_llm_datasets.get(domain, None)
+        if dataset is None:
+            if domain and (domain not in valid_llm_datasets.keys()):
+                raise ValueError(f"Domain set in config file ({final_args['domain']}) was invalid! (choices: {[x for x in valid_llm_datasets]})")
+            final_args["dataset"] = valid_llm_datasets.get(domain, None)
+        else:
+            
+            if not os.path.exists(dataset):
+                raise ValueError(f"Dataset {dataset} not found! Please provide a valid path to a dataset with new line separated prompts.")
+            with open(dataset, "r") as f:
+                lines = [line.rstrip('\n') for line in f]
+                final_args["dataset"] = ','.join(lines)
 
     if (final_args["model_type"] == 'image'):
         if (toml_args.get('labels') is None):

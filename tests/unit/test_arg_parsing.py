@@ -2,6 +2,7 @@ import os
 import sys
 from argparse import Namespace
 from dataclasses import dataclass
+import tempfile
 from typing import Any, Dict, List, Optional, Tuple, cast
 from unittest import mock
 from unittest.mock import mock_open, patch
@@ -528,6 +529,48 @@ def test_passing_domain() -> None:
         final_args = parse_toml_and_args_into_final_args(None, parsed_args)
 
         assert final_args["dataset"] == "MyRandomDataset", 'Domain should be converted to dataset based on valid_llm_datasets'
+
+
+def test_passing_dataset_with_domain_should_fail_invalid_file_for_dataset() -> None:
+    
+    bad_dataset = "my_custom_dataset"
+    cli_command = f"test --domain finance --dataset {bad_dataset}"
+    expected = f"Dataset {bad_dataset} not found! Please provide a valid path to a dataset with new line separated prompts."
+    with pytest.raises(ValueError) as exc_info:
+        parsed_args = parse_args(cast(List[str], cli_command.split()))
+        parse_toml_and_args_into_final_args(None, parsed_args)
+    assert str(exc_info.value) == expected
+
+def test_passing_dataset_with_domain_should_be_contents_of_file() -> None:
+    with tempfile.NamedTemporaryFile() as temp_file:
+        
+        cli_command = "test --domain finance --dataset " + temp_file.name
+        content = "Hello world!"
+        temp_file.write(content.encode())
+        temp_file.seek(0)
+
+        parsed_args = parse_args(cast(List[str], cli_command.split()))
+        final_args = parse_toml_and_args_into_final_args(None, parsed_args)
+        
+        assert final_args["dataset"] == content
+
+def test_passing_dataset_with_domain_should_be_contents_of_multiline_file() -> None:
+    with tempfile.NamedTemporaryFile(mode="w+t") as temp_file:
+        
+        cli_command = "test --domain finance --dataset " + temp_file.name
+        content1 = "Hello world!"
+        content2 = "See ya!"
+        thingtoWrite1 = f"{content1}\n"
+        thingtoWrite2 = f"{content2}"
+        temp_file.write(thingtoWrite1)
+        temp_file.write(thingtoWrite2)
+        temp_file.seek(0)
+
+        parsed_args = parse_args(cast(List[str], cli_command.split()))
+        final_args = parse_toml_and_args_into_final_args(None, parsed_args)
+        
+        assert final_args["dataset"] == f"{content1},{content2}"
+
 
 
 
