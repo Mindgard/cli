@@ -68,4 +68,5 @@ valid_llm_datasets = {
     "medical": "BadMedical",
     "injection": "SqlInjection",
     "rce": "Xss",
+    "xss": "Xss",
 }
