@@ -542,36 +542,31 @@ def test_passing_dataset_with_domain_should_fail_invalid_file_for_dataset() -> N
     assert str(exc_info.value) == expected
 
 def test_passing_dataset_with_domain_should_be_contents_of_file() -> None:
-    with tempfile.NamedTemporaryFile() as temp_file:
-        
-        cli_command = "test --domain finance --dataset " + temp_file.name
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_file = os.path.join(temp_dir, "temp.txt")
+        cli_command = "test --domain finance --dataset " + temp_file
         content = "Hello world!"
-        temp_file.write(content.encode())
-        temp_file.seek(0)
-
+        with open(temp_file, "w") as f:
+            f.write(content)
         parsed_args = parse_args(cast(List[str], cli_command.split()))
         final_args = parse_toml_and_args_into_final_args(None, parsed_args)
         
-        assert final_args["dataset"] == content
+        assert final_args["dataset"] == content        
+        
 
 def test_passing_dataset_with_domain_should_be_contents_of_multiline_file() -> None:
-    with tempfile.NamedTemporaryFile(mode="w+t") as temp_file:
-        
-        cli_command = "test --domain finance --dataset " + temp_file.name
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_file = os.path.join(temp_dir, "temp.txt")
+        cli_command = "test --domain finance --dataset " + temp_file
         content1 = "Hello world!"
         content2 = "See ya!"
-        thingtoWrite1 = f"{content1}\n"
-        thingtoWrite2 = f"{content2}"
-        temp_file.write(thingtoWrite1)
-        temp_file.write(thingtoWrite2)
-        temp_file.seek(0)
-
+        with open(temp_file, "w") as f:
+            f.write(content1 + "\n")
+            f.write(content2)
         parsed_args = parse_args(cast(List[str], cli_command.split()))
         final_args = parse_toml_and_args_into_final_args(None, parsed_args)
         
         assert final_args["dataset"] == f"{content1},{content2}"
-
-
 
 
 @dataclass
