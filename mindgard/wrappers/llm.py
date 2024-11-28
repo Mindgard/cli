@@ -233,6 +233,7 @@ class AzureAIStudioWrapper(APIModelWrapper):
         request_template: Optional[str],
         system_prompt: str,
         allow_redirects: bool,
+        rate_limit: Optional[int] = 60000
     ) -> None:
         az_request_template = (
             request_template
@@ -248,6 +249,7 @@ class AzureAIStudioWrapper(APIModelWrapper):
 }"""
         )
         self._allow_redirects = allow_redirects
+        self.throttled_call_llm = throttle(self._call_llm, rate_limit=rate_limit)
         super().__init__(
             url,
             request_template=az_request_template,
@@ -259,9 +261,12 @@ class AzureAIStudioWrapper(APIModelWrapper):
             system_prompt=system_prompt,
             # allow_redirects doesn't actually make any difference here, but added defensively until we can refactor away from this inheritance chain
             allow_redirects=allow_redirects,
+            rate_limit=rate_limit
         )
 
     def __call__(self, content: str, with_context: Optional[Context] = None) -> str:
+        return self.throttled_call_llm(content, with_context)
+    def _call_llm(self, content: str, with_context: Optional[Context] = None) -> str:
         if with_context is not None:
             logging.debug(
                 "APIModelWrapper is temporarily incompatible with chat completions history. Attacks that require chat completions history fail."
@@ -331,7 +336,7 @@ class HuggingFaceWrapper(APIModelWrapper):
         request_template: str,
         allow_redirects: bool,
         system_prompt: Optional[str] = None,
-        rate_limit: Optional[str] = 60000,
+        rate_limit: Optional[int] = 60000,
     ) -> None:
         super().__init__(
             api_url,
@@ -355,6 +360,7 @@ class AzureOpenAIWrapper(LLMModelWrapper):
         url: str,
         allow_redirects: bool,
         system_prompt: Optional[str] = None,
+        rate_limit: Optional[int] = 60000
     ) -> None:
         self.api_key = api_key
         self.model_name = model_name
@@ -365,10 +371,12 @@ class AzureOpenAIWrapper(LLMModelWrapper):
             http_client=httpx.Client(follow_redirects=allow_redirects)
         )
         self.system_prompt = system_prompt
+        self.throttled_call_llm = throttle(self._call_llm, rate_limit=rate_limit)
 
     def __call__(self, content: str, with_context: Optional[Context] = None) -> str:
+        return self.throttled_call_llm(content, with_context)
+    def _call_llm(self, content: str, with_context: Optional[Context] = None) -> str:
         return openai_call(wrapper=self, content=content, with_context=with_context)
-
 
 class OpenAIWrapper(LLMModelWrapper):
     def __init__(
@@ -378,6 +386,7 @@ class OpenAIWrapper(LLMModelWrapper):
         allow_redirects: bool = True,
         system_prompt: Optional[str] = None,
         api_url: Optional[str] = None,
+        rate_limit: Optional[int] = 60000
     ) -> None:
         self.api_key = api_key
         self.client = (
@@ -393,8 +402,10 @@ class OpenAIWrapper(LLMModelWrapper):
         )
         self.model_name = model_name or "gpt-3.5-turbo"
         self.system_prompt = system_prompt
-
+        self.throttled_call_llm = throttle(self._call_llm, rate_limit=rate_limit)
     def __call__(self, content: str, with_context: Optional[Context] = None) -> str:
+        return self.throttled_call_llm(content, with_context)
+    def _call_llm(self, content: str, with_context: Optional[Context] = None) -> str:
         return openai_call(wrapper=self, content=content, with_context=with_context)
 
 
@@ -454,16 +465,20 @@ class AnthropicWrapper(LLMModelWrapper):
         api_key: str,
         model_name: Optional[str],
         system_prompt: Optional[str] = None,
+        rate_limit: Optional[int] = 60000
     ) -> None:
         self.api_key = api_key
         self.client = Anthropic(api_key=api_key)
         self.model_name = model_name or "claude-3-opus-20240229"
         self.system_prompt = system_prompt
+        self.throttled_call_llm = throttle(self._call_llm, rate_limit=rate_limit)
 
     def __call__(self, content: str, with_context: Optional[Context] = None) -> str:
+        return self.throttled_call_llm(content, with_context)
+
+    def _call_llm(self, content: str, with_context: Optional[Context] = None) -> str:
         messages: List[MessageParam] = []
 
-        messages = []
         if with_context:
             for prompt_response in with_context.turns:
                 messages.append({"role": "user", "content": prompt_response.prompt})
@@ -525,7 +540,8 @@ def get_llm_model_wrapper(
             api_url=url, 
             system_prompt=system_prompt, 
             model_name="tgi",
-            allow_redirects=allow_redirects
+            allow_redirects=allow_redirects,
+            rate_limit=rate_limit
         )
     elif preset == "huggingface":
         check_expected_args(locals(), ["api_key", "url", "request_template"])
@@ -551,12 +567,13 @@ def get_llm_model_wrapper(
             request_template=request_template,
             system_prompt=system_prompt,
             allow_redirects=allow_redirects,
+            rate_limit=rate_limit
         )
     elif preset == "openai":
         check_expected_args(locals(), ["api_key"])
         api_key = cast(str, api_key)
         return OpenAIWrapper(
-            api_key=api_key, model_name=model_name, system_prompt=system_prompt
+            api_key=api_key, model_name=model_name, system_prompt=system_prompt, rate_limit=rate_limit
         )
     elif preset == "azure-openai":
         check_expected_args(
@@ -572,6 +589,7 @@ def get_llm_model_wrapper(
             url=url,
             system_prompt=system_prompt,
             allow_redirects=allow_redirects,
+            rate_limit=rate_limit
         )
     elif preset == "anthropic":
         if not api_key:
@@ -579,7 +597,7 @@ def get_llm_model_wrapper(
                 "`--api-key` argument is required when using the 'anthropic' preset."
             )
         return AnthropicWrapper(
-            api_key=api_key, model_name=model_name, system_prompt=system_prompt
+            api_key=api_key, model_name=model_name, system_prompt=system_prompt, rate_limit=rate_limit
         )
     elif preset == "tester":
         if not system_prompt:
