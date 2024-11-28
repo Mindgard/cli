@@ -428,6 +428,96 @@ def test_llm_huggingfaceopenai_model_wrapper_disallow_redirects(httpx_mock: HTTP
     assert len(httpx_mock.get_requests()) == 1, "default should follow redirects"
     assert httpx_mock.get_requests()[-1].url == url_redirect_expected
 
+@mock.patch("mindgard.wrappers.llm.throttle", return_value=mock.MagicMock())
+def test_huggingface_openai_model_respects_rate_limits(mock_throttle: mock.MagicMock) -> None:
+    wrapper = get_llm_model_wrapper(
+        preset="huggingface-openai",
+        api_key="test api key",
+        url="https://example.com/target",
+        headers={},
+        allow_redirects=False,
+        rate_limit=10
+    )
+    mock_throttle.assert_called_once_with(mock.ANY, rate_limit=10)
+
+    ret = wrapper("myprompt", with_context=None)
+    mock_throttle.return_value.assert_called_once_with("myprompt", None)
+    assert ret == mock_throttle.return_value.return_value
+
+@mock.patch("mindgard.wrappers.llm.throttle", return_value=mock.MagicMock())
+def test_azure_openai_model_respects_rate_limits(mock_throttle: mock.MagicMock) -> None:
+    wrapper = get_llm_model_wrapper(
+        preset="azure-openai",
+        api_key="test api key",
+        model_name="gpt-4o",
+        az_api_version="1",
+        headers={},
+        url="https://example.com/target",
+        rate_limit=10
+    )
+    mock_throttle.assert_called_once_with(mock.ANY, rate_limit=10)
+
+    ret = wrapper("myprompt", with_context=None)
+    mock_throttle.return_value.assert_called_once_with("myprompt", None)
+    assert ret == mock_throttle.return_value.return_value
+
+@mock.patch("mindgard.wrappers.llm.throttle", return_value=mock.MagicMock())
+def test_azure_ai_studio_model_respects_rate_limits(mock_throttle: mock.MagicMock) -> None:
+    wrapper = get_llm_model_wrapper(
+        preset="azure-aistudio",
+        api_key="test api key",
+        model_name="gpt-4o",
+        system_prompt="system prompt",
+        az_api_version="1",
+        headers={},
+        url="https://example.com/target",
+        rate_limit=10
+    )
+
+    mock_throttle.assert_called_with(mock.ANY, rate_limit=10)
+
+    ret = wrapper("myprompt", with_context=None)
+    mock_throttle.return_value.assert_called_once_with("myprompt", None)
+    assert ret == mock_throttle.return_value.return_value
+
+@mock.patch("mindgard.wrappers.llm.throttle", return_value=mock.MagicMock())
+def test_openai_model_respects_rate_limits(mock_throttle: mock.MagicMock) -> None:
+    wrapper = get_llm_model_wrapper(
+        preset="openai",
+        api_key="test api key",
+        model_name="gpt-4o",
+        system_prompt="system prompt",
+        headers={},
+        url="https://example.com/target",
+        rate_limit=10
+    )
+
+    mock_throttle.assert_called_once_with(mock.ANY, rate_limit=10)
+
+    ret = wrapper("myprompt", with_context=None)
+    mock_throttle.return_value.assert_called_once_with("myprompt", None)
+    assert ret == mock_throttle.return_value.return_value
+
+@mock.patch("mindgard.wrappers.llm.throttle", return_value=mock.MagicMock())
+def test_anthropic_model_respects_rate_limits(mock_throttle: mock.MagicMock) -> None:
+    wrapper = get_llm_model_wrapper(
+        preset="anthropic",
+        api_key="test api key",
+        model_name="claude",
+        system_prompt="system prompt",
+        headers={},
+        url="https://example.com/target",
+        rate_limit=10
+    )
+
+    mock_throttle.assert_called_once_with(mock.ANY, rate_limit=10)
+
+    ret = wrapper("myprompt", with_context=None)
+    mock_throttle.return_value.assert_called_once_with("myprompt", None)
+    assert ret == mock_throttle.return_value.return_value
+
+
+
 def test_llm_huggingfaceopenai_model_wrapper_default_allow_redirects(httpx_mock: HTTPXMock) -> None:
     url_redirect = "https://example.com/redirect"
     url_redirect_expected = "https://example.com/redirect/v1/chat/completions"
