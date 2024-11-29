@@ -151,6 +151,7 @@ def run_cli() -> None:
                             parallelism=int(final_args["parallelism"]),
                             system_prompt=final_args["system_prompt"],
                             dataset=final_args["dataset"],
+                            custom_dataset=final_args["dataset"],
                             modelType=final_args["model_type"],
                             attackSource="user",
                             attackPack=final_args["attack_pack"],

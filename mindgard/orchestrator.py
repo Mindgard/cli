@@ -31,6 +31,7 @@ class OrchestratorSetupRequest(BaseModel):
     modelType: str
     system_prompt: Optional[str] = None
     dataset: Optional[str] = None
+    custom_dataset: Optional[str] = None
     attackPack: Optional[str] = None
     attackSource: str
     parallelism: int
