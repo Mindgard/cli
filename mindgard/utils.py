@@ -1,4 +1,5 @@
 from argparse import Namespace
+import csv
 import os
 import sys
 import json
@@ -125,9 +126,21 @@ def parse_toml_and_args_into_final_args(
             
             if not os.path.exists(dataset):
                 raise ValueError(f"Dataset {dataset} not found! Please provide a valid path to a dataset with new line separated prompts.")
-            with open(dataset, "r") as f:
-                lines = [line.rstrip('\n') for line in f]
-                final_args["dataset"] = ','.join(lines)
+            
+            if not dataset.endswith('.csv'):
+                raise ValueError("The uploaded file must be a CSV.")
+            
+            with open(dataset, "r") as datasets_file:
+                try:
+                    datasets = csv.reader(datasets_file)
+                    lines = [', '.join(line).strip() for line in datasets if any(field.strip() for field in line)]
+                except csv.Error:
+                    raise ValueError(f"{dataset} is not a valid CSV file!")
+                
+                if len(lines) > 1000 or len(lines) < 3:
+                    raise ValueError(f"Custom dataset must be valid with size (3 < n <= 1000)")
+
+                final_args["dataset"] = json.dumps(lines)
 
     if (final_args["model_type"] == 'image'):
         if (toml_args.get('labels') is None):

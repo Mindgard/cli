@@ -531,7 +531,7 @@ def test_passing_domain() -> None:
         assert final_args["dataset"] == "MyRandomDataset", 'Domain should be converted to dataset based on valid_llm_datasets'
 
 
-def test_passing_dataset_with_domain_should_fail_invalid_file_for_dataset() -> None:
+def test_passing_dataset_with_domain_should_fail_for_file_not_found_for_dataset() -> None:
     
     bad_dataset = "my_custom_dataset"
     cli_command = f"test --domain finance --dataset {bad_dataset}"
@@ -541,32 +541,67 @@ def test_passing_dataset_with_domain_should_fail_invalid_file_for_dataset() -> N
         parse_toml_and_args_into_final_args(None, parsed_args)
     assert str(exc_info.value) == expected
 
-def test_passing_dataset_with_domain_should_be_contents_of_file() -> None:
+def test_passing_dataset_with_domain_should_fail_for_non_csv_files() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_file = os.path.join(temp_dir, "temp.txt")
         cli_command = "test --domain finance --dataset " + temp_file
-        content = "Hello world!"
+        content1 = "Hello world!"
         with open(temp_file, "w") as f:
-            f.write(content)
-        parsed_args = parse_args(cast(List[str], cli_command.split()))
-        final_args = parse_toml_and_args_into_final_args(None, parsed_args)
+            f.write(content1 + "\n")
+            
+        expected = "The uploaded file must be a CSV."
         
-        assert final_args["dataset"] == content        
-        
+        with pytest.raises(ValueError) as exc_info:
+            parsed_args = parse_args(cast(List[str], cli_command.split()))
+            parse_toml_and_args_into_final_args(None, parsed_args)
+        assert str(exc_info.value) == expected
 
-def test_passing_dataset_with_domain_should_be_contents_of_multiline_file() -> None:
+def test_passing_dataset_with_domain_should_fail_for_dataset_size_less_than_3() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
-        temp_file = os.path.join(temp_dir, "temp.txt")
+        temp_file = os.path.join(temp_dir, "temp.csv")
         cli_command = "test --domain finance --dataset " + temp_file
         content1 = "Hello world!"
         content2 = "See ya!"
         with open(temp_file, "w") as f:
             f.write(content1 + "\n")
             f.write(content2)
+            
+        expected = "Custom dataset must be valid with size (3 < n <= 1000)"
+        with pytest.raises(ValueError) as exc_info:
+            parsed_args = parse_args(cast(List[str], cli_command.split()))
+            parse_toml_and_args_into_final_args(None, parsed_args)
+        assert str(exc_info.value) == expected
+        
+def test_passing_dataset_with_domain_should_fail_for_dataset_size_greater_than_1000() -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_file = os.path.join(temp_dir, "temp.csv")
+        cli_command = "test --domain finance --dataset " + temp_file
+        content1 = "Hello world!"
+        with open(temp_file, "w") as f:
+            for _ in range(0, 1001):
+                f.write(content1 + "\n")
+            
+        expected = "Custom dataset must be valid with size (3 < n <= 1000)"
+        with pytest.raises(ValueError) as exc_info:
+            parsed_args = parse_args(cast(List[str], cli_command.split()))
+            parse_toml_and_args_into_final_args(None, parsed_args)
+        assert str(exc_info.value) == expected
+        
+
+def test_passing_dataset_with_domain_should_be_contents_of_multiline_file() -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_file = os.path.join(temp_dir, "temp.csv")
+        cli_command = "test --domain finance --dataset " + temp_file
+        content1 = "Hello world!"
+        content2 = "See ya!"
+        content3 = "See ya!"
+        with open(temp_file, "w") as f:
+            f.write(content1 + "\n")
+            f.write(content2 + "\n")
+            f.write(content3)
         parsed_args = parse_args(cast(List[str], cli_command.split()))
         final_args = parse_toml_and_args_into_final_args(None, parsed_args)
-        
-        assert final_args["dataset"] == f"{content1},{content2}"
+        assert final_args["dataset"] == f'["{content1}", "{content2}", "{content3}"]'
 
 
 @dataclass
