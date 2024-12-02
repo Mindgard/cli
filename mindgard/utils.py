@@ -130,10 +130,11 @@ def parse_toml_and_args_into_final_args(
             with open(dataset, "r") as datasets_file:
                 try:
                     datasets = csv.reader(datasets_file)
-                    lines = [', '.join(line).strip() for line in datasets if any(field.strip() for field in line)]
+                    all_rows = [line for line in datasets]
+                    lines = [line[0].strip() for line in all_rows]
                 except csv.Error:
                     raise ValueError(f"{dataset} is not a valid CSV file!")
-
+                
                 final_args["dataset"] = json.dumps(lines)
 
     if (final_args["model_type"] == 'image'):
