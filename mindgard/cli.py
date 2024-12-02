@@ -1,4 +1,5 @@
 import argparse
+import textwrap
 import os
 import sys
 import traceback
@@ -80,11 +81,14 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     list_test_parser.add_argument('--json', action="store_true", help='Return json output', required=False)
     list_test_parser.add_argument('--id', type=str, help='Get the details of a specific test.', required=False)
 
-    test_parser = subparsers.add_parser("test", help="Attacks command")
+    test_parser = subparsers.add_parser("test", help="Attacks command", formatter_class=argparse.RawTextHelpFormatter)
     shared_arguments(test_parser)
     test_parser.add_argument('--parallelism', type=int, help='The maximum number of parallel requests that can be made to the API.', required=False)
     test_parser.add_argument('--rate-limit', type=int, help='The maximum number of requests to make to model in one minute (default: 3600)', required=False)
-    test_parser.add_argument('--dataset', type=str, help='The dataset to be used for running the attacks on the given model.', required=False)
+    test_parser.add_argument('--dataset', type=str, help=textwrap.dedent(f'''
+                                                                         The dataset to be used for running the attacks on the given model. 
+                                                                         For image models use the following values: {valid_image_datasets}
+                                                                         For LLM models this should be a csv formatted file path, with each prompt on a new line'''), required=False)
     test_parser.add_argument('--domain', type=str, help='The domain to inform the dataset used for LLMs.', choices=valid_llm_datasets, required=False)
     test_parser.add_argument('--mode', type=str, help='Specify the number of samples to use during attacks; contact Mindgard for access to \'thorough\' or \'exhaustive\' test', choices=['fast', 'thorough', 'exhaustive'], required=False)
 
