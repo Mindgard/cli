@@ -135,7 +135,7 @@ def parse_toml_and_args_into_final_args(
                 except csv.Error:
                     raise ValueError(f"{dataset} is not a valid CSV file!")
                 
-                final_args["dataset"] = json.dumps(lines)
+                final_args["custom_dataset"] = json.dumps(lines)
 
     if (final_args["model_type"] == 'image'):
         if (toml_args.get('labels') is None):
