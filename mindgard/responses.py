@@ -1,5 +1,6 @@
 from typing import Optional
 import jsonpath_ng
+import jsonpath_ng.ext
 import json
 
 from requests import Response
@@ -9,7 +10,7 @@ MINIMUM_MESSAGE_SIZE = 10
 
 def extract_reply(json_response,selector:Optional[str]=None, strict=True):
     if selector:
-        jsonpath_expr = jsonpath_ng.parse(selector)
+        jsonpath_expr = jsonpath_ng.ext.parse(selector)
         match = jsonpath_expr.find(json_response)
         if match:
             return str(match[0].value)
