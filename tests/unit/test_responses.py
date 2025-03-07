@@ -109,3 +109,9 @@ def test_extract_reply_should_extract_selector_match() -> None:
     input = '{"hello": "world"}'
 
     assert "world" == extract_reply(json.loads(input), selector="$.hello")
+
+
+def test_extract_reply_should_allow_for_removing_input_from_output() -> None:
+    input = '{"hello": "[inst]Please reply with world[/inst]world"}'
+
+    assert "world" == extract_reply(json.loads(input), selector='$.hello.`sub(/.*inst\\]/, )`')
