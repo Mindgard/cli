@@ -4,7 +4,7 @@ from typing import Optional
 from .run_poll_display import type_ui_task_map
 
 # Orchestrator
-from .orchestrator import ListAttacksResponse, OrchestratorTestResponse, TestResponse, get_test_by_id
+from .orchestrator import ListTestAttacksResponse, OrchestratorTestResponse, TestResponse, get_test_by_id
 
 # Constants
 from .constants import DASHBOARD_URL
@@ -18,8 +18,8 @@ def poll_and_display_test(
     access_token: str,
     ui_task_map: type_ui_task_map,
     ui_task_progress: Progress,
-    initial_test: ListAttacksResponse,
-) -> Optional[ListAttacksResponse]:
+    initial_test: ListTestAttacksResponse,
+) -> Optional[ListTestAttacksResponse]:
     test = get_test_by_id(access_token=access_token, test_id=initial_test.test.id)
 
     if len(ui_task_map.keys()) == 0:
@@ -46,7 +46,7 @@ def poll_and_display_test(
 
 def output_test_table(
     json_out: bool,
-    test: ListAttacksResponse,
+    test: ListTestAttacksResponse,
     risk_threshold: int,
 ) -> Optional[Table]:
     if json_out:
@@ -64,9 +64,15 @@ def output_test_table(
                 risk_str = "n/a"
                 emoji = "❗️"
             else:
+
+                try:
+                    flagged_to_total_ratio = attack_result_pair.attack.flagged_events / attack_result_pair.attack.total_events
+                except ZeroDivisionError:
+                    flagged_to_total_ratio = 0
+
                 name = attack_result_pair.attack.attack_name
                 risk_str = f"{attack_result_pair.attack.flagged_events} / {attack_result_pair.attack.total_events}"
-                emoji = "❌‍" if (attack_result_pair.attack.flagged_events / attack_result_pair.attack.total_events) > 0.5 else "✅️"
+                emoji = "❌‍" if flagged_to_total_ratio > 0.5 else "✅️"
 
             table.add_row(emoji, name, risk_str)
 

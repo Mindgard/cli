@@ -1,7 +1,7 @@
 from mindgard.wrappers.image import ImageModelWrapper
 from mindgard.wrappers.llm import LLMModelWrapper
 from ..orchestrator import (
-    ListAttacksResponse,
+    ListTestAttacksResponse,
     TestResponse,
     setup_orchestrator_webpubsub_request,
     OrchestratorSetupRequest,
@@ -104,10 +104,10 @@ def model_test_submit_factory(
 
 def model_test_polling(
     access_token: str,
-    initial_test: ListAttacksResponse,
+    initial_test: ListTestAttacksResponse,
     ui_task_map: type_ui_task_map,
     ui_task_progress: Progress,
-) -> Optional[ListAttacksResponse]:
+) -> Optional[ListTestAttacksResponse]:
     return poll_and_display_test(
         access_token,
         ui_task_map,
@@ -118,7 +118,7 @@ def model_test_polling(
 
 def model_test_output_factory(risk_threshold: int) -> type_output_func:
     def list_llm_test_output(
-        test: ListAttacksResponse, json_out: bool
+        test: ListTestAttacksResponse, json_out: bool
     ) -> Optional[Table]:
         return output_test_table(
             json_out=json_out, test=test, risk_threshold=risk_threshold

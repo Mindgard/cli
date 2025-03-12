@@ -106,7 +106,7 @@ class AttackResponsePair(BaseModel):
     attack: Attack
     result: Optional[Any] = None
 
-class ListAttacksResponse(BaseModel):
+class ListTestAttacksResponse(BaseModel):
     items: List[AttackResponsePair]
     test: TestResponse
 
@@ -115,7 +115,7 @@ def submit_sandbox_test(
     target_name: str,
     post_request_function: type_post_request_function = api_post,
     get_request_function: type_get_request_function = api_get,
-) -> OrchestratorTestResponse:
+) -> ListTestAttacksResponse:
     url = f"{API_BASE}/assessments"
     post_body = {"mindgardModelName": target_name}
     res = post_request_function(url, access_token, post_body)
@@ -128,7 +128,7 @@ def submit_sandbox_test(
 def get_tests(
     access_token: str, request_function: type_get_request_function = api_get
 ) -> ListTestsResponse:
-    url = f"{API_BASE}/tests"
+    url = f"{API_BASE}/tests?populate_attacks=true"
 
     try:
         response = request_function(url, access_token)
@@ -145,18 +145,20 @@ def get_test_by_id(
     test_id: str,
     access_token: str,
     request_function: type_get_request_function = api_get,
-) -> ListAttacksResponse:
+) -> ListTestAttacksResponse:
     test_url = f"{API_BASE}/tests/{test_id}/attacks"
 
     try:
         response = request_function(test_url, access_token)
-        attacks = [AttackResponsePair(**attack, test_url = f"{DASHBOARD_URL}/r/test/{test_id}") for attack in response.json()["items"]]
+        attacks = [AttackResponsePair(**attack) for attack in response.json()["items"]]
 
         d = response.json()["test"]
-        d["mindgard_model_name"] = d["model_name"]
-        d["is_owned"] = True
+        # TODO - FIX AHHHHHH
+        # d["mindgard_model_name"] = d["model_name"]
+        # d["is_owned"] = True
+        d["test_url"] = f"{DASHBOARD_URL}/r/test/{test_id}"
 
-        return ListAttacksResponse(items=attacks, test=TestResponse(**d, test_url=f"{DASHBOARD_URL}/r/test/{test_id}"))
+        return ListTestAttacksResponse(items=attacks, test=TestResponse(**d))
 
     except HTTPError as httpe:
         if httpe.response.status_code == 404:

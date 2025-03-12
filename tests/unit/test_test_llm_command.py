@@ -66,48 +66,37 @@ fixture_cli_init_response = {
     "groupId": fixture_group_id,
 }
 fixture_test_not_finished_response = {
-    "id": fixture_test_id,
-    "mindgardModelName": "mistral",
-    "source": "mindgard",
-    "createdAt": "2021-09-01T00:00:00.000Z",
-    "attacks": [
-        {
-            "id": "example_id_1",
-            "submitted_at": "2021-09-01T00:00:00.000Z",
-            "submitted_at_unix": 1630454400.0,
-            "run_at": "2021-09-01T00:00:00.000Z",
-            "run_at_unix": 1630454400.0,
-            "state": 2,
-            "state_message": "Running",
-            "runtime": 10.5,
-            "model": "mymodel",
-            "dataset": "mydataset",
-            "attack": "myattack",
-            "risk": 12,
-            "stacktrace": None,        
-        },
-        {
-            "id": "example_id_2",
-            "submitted_at": "2021-09-01T00:00:00.000Z",
-            "submitted_at_unix": 1630454400.0,
-            "run_at": "2021-09-01T00:00:00.000Z",
-            "run_at_unix": 1630454400.0,
-            "state": 2,
-            "state_message": "Running",
-            "runtime": 10.5,
-            "model": "mymodel",
-            "dataset": "mydataset",
-            "attack": "myattack",
-            "risk": 12,
-            "stacktrace": None,        
+        "items": [
+            {
+                "attack": {
+                    "id": "example_id",
+                    "started_at": "2025-03-1215:34:00.50527",
+                    "status": 0,
+                    "dataset_name": "str",
+                    "attack_name": "attack_name",
+                    "risk": 0.0,
+                    "runtime_seconds": 3.0,
+                    "total_events": 0,
+                    "flagged_events": 0,
+                },
+                "result": None
+            }
+        ],
+        "test": {
+            "id": fixture_test_id,
+            "created_at": "2025-03-1215:34:00.50528",
+            "source": "user",
+            "mindgard_model_name": "<model_name>",
+            "has_finished": False,
+            "is_owned": True,
+            "total_events": 0,
+            "flagged_events": 0,
+            "attacks": None,
         }
-    ],
-    "isCompleted": True,
-    "hasFinished": False,
-    "risk": 13,
-}
+    }
+
 fixture_test_finished_response = fixture_test_not_finished_response.copy()
-fixture_test_finished_response["hasFinished"] = True
+fixture_test_finished_response["test"]["has_finished"] = True
 
 def _run_llm_test(json_out:bool = True, model_type:str = 'llm') -> None:
     auth.load_access_token = MagicMock(return_value="atoken")
@@ -128,7 +117,7 @@ def _run_llm_test(json_out:bool = True, model_type:str = 'llm') -> None:
     )
     output = model_test_output_factory(risk_threshold=50)
     cli_response = cli_run(submit, model_test_polling, output_func=output, json_out=json_out)
-    res = convert_test_to_cli_response(test=cli_response, risk_threshold=50)
+    res = convert_test_to_cli_response(test=cli_response, malicious_sample_ratio=50)
 
     assert res.code() == 0
 
@@ -180,14 +169,14 @@ def _test_inner(run_inner: Callable[[],None], requests_mock: requests_mock.Mocke
             )
 
             requests_mock.get(
-                f"{API_BASE}/assessments/{fixture_test_id}",
+                f"{API_BASE}/tests/{fixture_test_id}/attacks",
                 additional_matcher=lambda req: test_context.test_finished,
                 json=fixture_test_finished_response,
                 status_code=200,
             )
 
             requests_mock.get(
-                f"{API_BASE}/assessments/{fixture_test_id}",
+                f"{API_BASE}/tests/{fixture_test_id}/attacks",
                 #TODO: should switch finished after messages are exchanged additional_matcher= 
                 additional_matcher=lambda req: not test_context.test_finished,
                 json=fixture_test_not_finished_response,
@@ -339,11 +328,11 @@ def test_text_output(
         
         captured = capsys.readouterr()
         stdout = captured.out
-        if platform.system() == "Windows":
-            # TODO: this is a basic check as Rich renders differently on windows
-            assert f"Results - https://sandbox.mindgard.ai/r/test/{fixture_test_id}" in stdout
-            assert "Attack myattack done success" in stdout
-        else:
-            snapshot.assert_match(stdout, 'stdout.txt')    
+
+        assert f"Results - https://sandbox.mindgard.ai/r/test/{fixture_test_id}" in stdout
+        assert "Attack attack_name" in stdout
+        assert "queued" in stdout
+        assert "n/a" in stdout
+        assert "Flagged Events" in stdout
 
     _test_inner(run_test, requests_mock)

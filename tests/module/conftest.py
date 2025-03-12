@@ -7,7 +7,8 @@ from .utils import suppress_output
 
 from mindgard.config import get_token_file
 from mindgard.auth import load_access_token
-from mindgard.orchestrator import get_tests
+from mindgard.orchestrator import get_tests, ListTestsResponse
+
 
 class ExampleIds(TypedDict):
     test_id: str
@@ -24,10 +25,10 @@ def pytest_configure(config: Config) -> None:
     try:
         with suppress_output():
             access_token = load_access_token()
-            tests = get_tests(str(access_token))
+            tests: ListTestsResponse = get_tests(str(access_token))
 
-        test_id = tests[0].id
-        attack_id = tests[0].attacks[0].id
+        test_id = tests.items[0].id
+        attack_id = tests.items[0].attacks[0].id
         global example_ids
         example_ids = {"test_id": test_id, "attack_id": attack_id}
 

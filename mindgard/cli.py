@@ -127,7 +127,7 @@ def run_cli() -> None:
         submit_sandbox_output = model_test_output_factory(risk_threshold=100)
 
         cli_response = cli_run(submit_func=submit_sandbox_submit, polling_func=submit_sandbox_polling, output_func=submit_sandbox_output, json_out=args.json)
-        exit(convert_test_to_cli_response(test=cli_response, risk_threshold=100).code())
+        exit(convert_test_to_cli_response(test=cli_response, malicious_sample_ratio=100).code())
 
     elif args.command == "validate" or args.command == "test":
         console = Console()
@@ -184,7 +184,7 @@ def run_cli() -> None:
 
                     output = model_test_output_factory(risk_threshold=int(final_args["risk_threshold"]))
                     cli_response = cli_run(submit, model_test_polling, output_func=output, json_out=final_args["json"])
-                    exit(convert_test_to_cli_response(test=cli_response, risk_threshold=int(final_args["risk_threshold"])).code()) # type: ignore
+                    exit(convert_test_to_cli_response(test=cli_response, malicious_sample_ratio=int(final_args["risk_threshold"])).code()) # type: ignore
 
         else:
             exit(CliResponse(1).code())

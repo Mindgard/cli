@@ -1,4 +1,4 @@
-target = "my-model-name"
+target = "stefan-cli-model-test"
 preset = "openai"
 api_key = "CHANGE_THIS_TO_YOUR_OPENAI_API_KEY"
 system-prompt = '''

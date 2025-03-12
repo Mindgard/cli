@@ -11,17 +11,33 @@ import pytest
 from mindgard.utils import parse_toml_and_args_into_final_args
 from mindgard.types import valid_image_datasets, valid_llm_datasets
 from mindgard.cli import main, parse_args
-from mindgard.orchestrator import OrchestratorSetupRequest, OrchestratorTestResponse
+from mindgard.orchestrator import OrchestratorSetupRequest, OrchestratorTestResponse, TestResponse, \
+    ListTestAttacksResponse
 
 
-
+def helper_make_list_test_attacks_response() -> ListTestAttacksResponse:
+    return ListTestAttacksResponse(
+        items = [],
+        test = TestResponse(
+            id="123",
+            mindgard_model_name="model",
+            source="user",
+            created_at="2022-01-01",
+            has_finished=True,
+            test_url="http://example.com",
+            is_owned = True,
+            total_events=10,
+            flagged_events=4,
+            attacks = None
+        )
+    )
 
 @dataclass
 class Case:
     name: str
     input_args: list[str]
     expected_request: OrchestratorSetupRequest
-    cli_run_response: OrchestratorTestResponse
+    cli_run_response: ListTestAttacksResponse
     expected_exit_code: int
 
 cases = [
@@ -42,17 +58,7 @@ cases = [
             parallelism=4,
             labels=None
         ),
-        cli_run_response=OrchestratorTestResponse(
-            id="123",
-            mindgardModelName="model",
-            source="user",
-            createdAt="2022-01-01",
-            attacks=[],
-            isCompleted=True,
-            hasFinished=True,
-            risk=12,
-            test_url="http://example.com"
-        ),
+        cli_run_response=helper_make_list_test_attacks_response(),
         expected_exit_code=0,
     ),
     Case(
@@ -73,17 +79,7 @@ cases = [
             parallelism=4,
             labels=None
         ),
-        cli_run_response=OrchestratorTestResponse(
-            id="123",
-            mindgardModelName="model",
-            source="user",
-            createdAt="2022-01-01",
-            attacks=[],
-            isCompleted=True,
-            hasFinished=True,
-            risk=12,
-            test_url="http://example.com"
-        ),
+        cli_run_response=helper_make_list_test_attacks_response(),
         expected_exit_code=0,
     ),
     Case(
@@ -104,17 +100,7 @@ cases = [
             parallelism=4,
             labels=None
         ),
-        cli_run_response=OrchestratorTestResponse(
-            id="123",
-            mindgardModelName="model",
-            source="user",
-            createdAt="2022-01-01",
-            attacks=[],
-            isCompleted=True,
-            hasFinished=True,
-            risk=12,
-            test_url="http://example.com"
-        ),
+        cli_run_response=helper_make_list_test_attacks_response(),
         expected_exit_code=0,
     ),
     Case(
@@ -135,17 +121,7 @@ cases = [
             parallelism=4,
             labels=None
         ),
-        cli_run_response=OrchestratorTestResponse(
-            id="123",
-            mindgardModelName="model",
-            source="user",
-            createdAt="2022-01-01",
-            attacks=[],
-            isCompleted=True,
-            hasFinished=True,
-            risk=12,
-            test_url="http://example.com"
-        ),
+        cli_run_response=helper_make_list_test_attacks_response(),
         expected_exit_code=0,
     ),
     Case(
@@ -167,17 +143,7 @@ cases = [
             parallelism=5,
             labels=None
         ),
-        cli_run_response=OrchestratorTestResponse(
-            id="123",
-            mindgardModelName="model",
-            source="user",
-            createdAt="2022-01-01",
-            attacks=[],
-            isCompleted=True,
-            hasFinished=True,
-            risk=12,
-            test_url="http://example.com"
-        ),
+        cli_run_response=helper_make_list_test_attacks_response(),
         expected_exit_code=0,
     ),
     Case(
@@ -199,17 +165,7 @@ cases = [
             parallelism=5,
             labels=None
         ),
-        cli_run_response=OrchestratorTestResponse(
-            id="123",
-            mindgardModelName="model",
-            source="user",
-            createdAt="2022-01-01",
-            attacks=[],
-            isCompleted=True,
-            hasFinished=True,
-            risk=12,
-            test_url="http://example.com"
-        ),
+        cli_run_response=helper_make_list_test_attacks_response(),
         expected_exit_code=0,
     ),
     Case(
@@ -232,17 +188,7 @@ cases = [
             parallelism=5,
             labels=None
         ),
-        cli_run_response=OrchestratorTestResponse(
-            id="123",
-            mindgardModelName="model",
-            source="user",
-            createdAt="2022-01-01",
-            attacks=[],
-            isCompleted=True,
-            hasFinished=True,
-            risk=12,
-            test_url="http://example.com"
-        ),
+        cli_run_response=helper_make_list_test_attacks_response(),
         expected_exit_code=0,
     ),
 ]

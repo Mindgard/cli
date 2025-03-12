@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from mindgard.types import valid_image_datasets, valid_llm_datasets
 
 # Data models
-from mindgard.orchestrator import ListAttacksResponse
+from mindgard.orchestrator import ListTestAttacksResponse
 
 # B64 encode decode
 import base64
@@ -34,9 +34,13 @@ class CliResponse:
 
 
 def convert_test_to_cli_response(
-    test: ListAttacksResponse, risk_threshold: int
+    test: ListTestAttacksResponse, malicious_sample_ratio: int
 ) -> CliResponse:
-    if (test.test.flagged_events / test.test.total_events) > risk_threshold:
+    try:
+        flagged_to_total_events_ratio = test.test.flagged_events / test.test.total_events
+    except ZeroDivisionError:
+        flagged_to_total_events_ratio = 0.0
+    if flagged_to_total_events_ratio >= malicious_sample_ratio:
         return CliResponse(1)
     else:
         return CliResponse(0)
