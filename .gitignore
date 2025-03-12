@@ -170,3 +170,5 @@ mindgard*.toml
 
 # something macos likes to make lots of
 .DS_Store
+
+.idea

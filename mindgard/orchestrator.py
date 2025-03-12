@@ -65,6 +65,16 @@ class AttackModel(BaseModel):
     risk: int
     stacktrace: Optional[str]
 
+class Attack(BaseModel):
+    id: str
+    started_at: Optional[str] = None
+    status: Literal[0, 1, 2, -1]
+    dataset_name: str
+    attack_name: str
+    risk: float
+    runtime_seconds: float
+    total_events: int
+    flagged_events: Optional[int] = None
 
 class OrchestratorTestResponse(BaseModel):
     id: str
@@ -77,6 +87,28 @@ class OrchestratorTestResponse(BaseModel):
     risk: int
     test_url: str
 
+class TestResponse(BaseModel):
+    id: str
+    created_at: str
+    source: type_orchestrator_source
+    mindgard_model_name: str
+    has_finished: bool
+    is_owned: bool
+    total_events: int
+    flagged_events: Optional[int] = None
+    attacks: Optional[List[Attack]] = None
+    test_url: str
+
+class ListTestsResponse(BaseModel):
+    items: List[TestResponse]
+
+class AttackResponsePair(BaseModel):
+    attack: Attack
+    result: Optional[Any] = None
+
+class ListAttacksResponse(BaseModel):
+    items: List[AttackResponsePair]
+    test: TestResponse
 
 def submit_sandbox_test(
     access_token: str,
@@ -95,18 +127,16 @@ def submit_sandbox_test(
 
 def get_tests(
     access_token: str, request_function: type_get_request_function = api_get
-) -> List[OrchestratorTestResponse]:
-    url = f"{API_BASE}/assessments?ungrouped=true"
+) -> ListTestsResponse:
+    url = f"{API_BASE}/tests"
 
     try:
         response = request_function(url, access_token)
 
-        return [
-            OrchestratorTestResponse(
-                **data, test_url=f"{API_BASE}/assessments/{data['id']}"
-            )
-            for data in response.json()
-        ]
+        tests = response.json()
+        tests = [TestResponse(**test, test_url=f"{API_BASE}/tests") for test in tests["items"]]
+
+        return ListTestsResponse(items=tests)
     except Exception as e:
         raise e
 
@@ -115,14 +145,18 @@ def get_test_by_id(
     test_id: str,
     access_token: str,
     request_function: type_get_request_function = api_get,
-) -> OrchestratorTestResponse:
-    test_url = f"{API_BASE}/assessments/{test_id}"
+) -> ListAttacksResponse:
+    test_url = f"{API_BASE}/tests/{test_id}/attacks"
 
     try:
         response = request_function(test_url, access_token)
-        test_url = f"{DASHBOARD_URL}/r/test/{test_id}"
+        attacks = [AttackResponsePair(**attack, test_url = f"{DASHBOARD_URL}/r/test/{test_id}") for attack in response.json()["items"]]
 
-        return OrchestratorTestResponse(test_url=test_url, **response.json())
+        d = response.json()["test"]
+        d["mindgard_model_name"] = d["model_name"]
+        d["is_owned"] = True
+
+        return ListAttacksResponse(items=attacks, test=TestResponse(**d, test_url=f"{DASHBOARD_URL}/r/test/{test_id}"))
 
     except HTTPError as httpe:
         if httpe.response.status_code == 404:
