@@ -67,7 +67,7 @@ def test_get_test_by_id(requests_mock: requests_mock.Mocker) -> None:
     attack_id = "blahblahblah"
     api_get.retry.sleep = MagicMock()
 
-    expected_response_obj = build_list_attacks_response(attack_id, test_id)
+    expected_response_obj = build_slightly_different_list_attacks_response(attack_id, test_id)
 
     requests_mock.get(
         f"{API_BASE}/tests/{test_id}/attacks",
@@ -95,6 +95,17 @@ def build_test_response(test_id):
         "attacks": None,
     }
 
+def build_slightly_different_test_response(test_id):
+    return {
+        "id": test_id,
+        "created_at": json.dumps(datetime.now(), default=str),
+        "source": "user",
+        "model_name": "<model_name>",
+        "has_finished": True,
+        "total_events": 0,
+        "flagged_events": 0,
+    }
+
 def build_list_attacks_response(attack_id, test_id):
     return {
         "items": [
@@ -116,6 +127,27 @@ def build_list_attacks_response(attack_id, test_id):
         "test": build_test_response(test_id)
     }
 
+def build_slightly_different_list_attacks_response(attack_id, test_id):
+    return {
+        "items": [
+            {
+                "attack": {
+                    "id": attack_id,
+                    "started_at": json.dumps(datetime.now(), default=str),
+                    "status": 2,
+                    "dataset_name": "str",
+                    "attack_name": "attack_name",
+                    "risk": 0.0,
+                    "runtime_seconds": 3.0,
+                    "total_events": 0,
+                    "flagged_events": 0
+                },
+                "result": None
+            }
+        ],
+        "test": build_slightly_different_test_response(test_id)
+    }
+
 
 def test_submit_sandbox_test(requests_mock: requests_mock.Mocker) -> None:
     test_id = "valid_test_id"
@@ -132,7 +164,7 @@ def test_submit_sandbox_test(requests_mock: requests_mock.Mocker) -> None:
 
     requests_mock.get(
         f"{API_BASE}/tests/{test_id}/attacks",
-        json=build_list_attacks_response(test_id=test_id, attack_id=attack_id),
+        json=build_slightly_different_list_attacks_response(test_id=test_id, attack_id=attack_id),
         status_code=200,
     )
 
@@ -143,4 +175,4 @@ def test_submit_sandbox_test(requests_mock: requests_mock.Mocker) -> None:
     assert len(res.items) == len(test_data["attacks"])
     assert res.items[0].attack.id == attack_id
     assert res.test.id == test_id
-    assert res.test.mindgard_model_name == test_data["mindgardModelName"]
+    assert res.test.model_name == test_data["mindgardModelName"]

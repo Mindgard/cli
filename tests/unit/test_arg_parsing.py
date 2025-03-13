@@ -12,23 +12,21 @@ from mindgard.utils import parse_toml_and_args_into_final_args
 from mindgard.types import valid_image_datasets, valid_llm_datasets
 from mindgard.cli import main, parse_args
 from mindgard.orchestrator import OrchestratorSetupRequest, OrchestratorTestResponse, TestResponse, \
-    ListTestAttacksResponse
+    ListTestAttacksResponse, ListTestsAttacksTestResponse
 
 
 def helper_make_list_test_attacks_response() -> ListTestAttacksResponse:
     return ListTestAttacksResponse(
         items = [],
-        test = TestResponse(
+        test = ListTestsAttacksTestResponse(
             id="123",
-            mindgard_model_name="model",
+            model_name="model",
             source="user",
             created_at="2022-01-01",
             has_finished=True,
             test_url="http://example.com",
-            is_owned = True,
             total_events=10,
             flagged_events=4,
-            attacks = None
         )
     )
 

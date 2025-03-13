@@ -99,6 +99,15 @@ class TestResponse(BaseModel):
     attacks: Optional[List[Attack]] = None
     test_url: str
 
+class ListTestsAttacksTestResponse(BaseModel):
+    id: str
+    model_name: str
+    created_at: str
+    source: str
+    has_finished: bool
+    flagged_events: Optional[int] = None
+    total_events: int
+
 class ListTestsResponse(BaseModel):
     items: List[TestResponse]
 
@@ -108,7 +117,7 @@ class AttackResponsePair(BaseModel):
 
 class ListTestAttacksResponse(BaseModel):
     items: List[AttackResponsePair]
-    test: TestResponse
+    test: ListTestsAttacksTestResponse
 
 def submit_sandbox_test(
     access_token: str,
@@ -158,7 +167,7 @@ def get_test_by_id(
         # d["is_owned"] = True
         d["test_url"] = f"{DASHBOARD_URL}/r/test/{test_id}"
 
-        return ListTestAttacksResponse(items=attacks, test=TestResponse(**d))
+        return ListTestAttacksResponse(items=attacks, test=ListTestsAttacksTestResponse(**d))
 
     except HTTPError as httpe:
         if httpe.response.status_code == 404:

@@ -1,17 +1,46 @@
-import platform
 from unittest.mock import MagicMock
 
 from mindgard.run_functions.external_models import model_test_output_factory
 from mindgard import auth
 import pytest
 from pytest_snapshot.plugin import Snapshot
-# from typing import NamedTuple
-# from unittest.mock import MagicMock
 from mindgard.constants import API_BASE
 from mindgard.run_functions.sandbox_test import submit_sandbox_polling, submit_sandbox_submit_factory
 from mindgard.run_poll_display import cli_run
 from mindgard.utils import convert_test_to_cli_response
 import requests_mock # type: ignore
+
+def build_slightly_different_test_response(test_id: str, flagged_events: int = 0, total_events: int = 0):
+    return {
+        "id": test_id,
+        "created_at": "2025-03-1215:34:00.50528",
+        "source": "user",
+        "model_name": "<model_name>",
+        "has_finished": True,
+        "total_events": total_events,
+        "flagged_events": flagged_events,
+    }
+def build_slightly_different_list_attacks_response(attack_id: str, test_id: str, flagged_events: int = 0, total_events: int = 0):
+    return {
+        "items": [
+            {
+                "attack": {
+                    "id": attack_id,
+                    "started_at": "2025-03-1215:34:00.50527",
+                    "status": 2,
+                    "dataset_name": "str",
+                    "attack_name": "attack_name",
+                    "risk": 0.0,
+                    "runtime_seconds": 3.0,
+                    "total_events": flagged_events,
+                    "flagged_events": total_events,
+                },
+                "result": None
+            }
+        ],
+        "test": build_slightly_different_test_response(test_id)
+    }
+
 
 def test_json_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot, requests_mock: requests_mock.Mocker) -> None:
     # fixture = _helper_fixtures()
@@ -27,10 +56,11 @@ def test_json_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot, requ
     )
 
     test_id = "test_id"
+    attack_id = "example_id"
 
     requests_mock.get(
         f"{API_BASE}/tests/{test_id}/attacks",
-        json=build_get_list_attack_response(test_id),
+        json=build_slightly_different_list_attacks_response(test_id=test_id, attack_id=attack_id),
         status_code=200,
     )
 
@@ -44,38 +74,6 @@ def test_json_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot, requ
     captured = capsys.readouterr()
     stdout = captured.out
     snapshot.assert_match(stdout, 'stdout.json')
-
-
-def build_get_list_attack_response(test_id, flagged_events: int = 0, total_events: int = 0) -> dict:
-    return {
-        "items": [
-            {
-                "attack": {
-                    "id": "example_id",
-                    "started_at": "2025-03-1215:34:00.50527",
-                    "status": 2,
-                    "dataset_name": "str",
-                    "attack_name": "attack_name",
-                    "risk": 0.0,
-                    "runtime_seconds": 3.0,
-                    "total_events": total_events,
-                    "flagged_events": flagged_events,
-                },
-                "result": None
-            }
-        ],
-        "test": {
-            "id": test_id,
-            "created_at": "2025-03-1215:34:00.50528",
-            "source": "user",
-            "mindgard_model_name": "<model_name>",
-            "has_finished": True,
-            "is_owned": True,
-            "total_events": total_events,
-            "flagged_events": flagged_events,
-            "attacks": None,
-        }
-    }
 
 
 def test_text_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot, requests_mock: requests_mock.Mocker) -> None:
@@ -93,7 +91,7 @@ def test_text_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot, requ
 
     requests_mock.get(
         f"{API_BASE}/tests/{test_id}/attacks",
-        json=build_get_list_attack_response(test_id),
+        json=build_slightly_different_list_attacks_response(test_id),
         status_code=200,
     )
 
@@ -133,7 +131,7 @@ def test_risk_threshold(flagged_events: int, total_events: int, risk_threshold: 
 
     requests_mock.get(
         f"{API_BASE}/tests/{test_id}/attacks",
-        json=build_get_list_attack_response(test_id=test_id, flagged_events=flagged_events, total_events=total_events),
+        json=build_slightly_different_list_attacks_response(test_id=test_id, flagged_events=flagged_events, total_events=total_events),
         status_code=200,
     )
 
