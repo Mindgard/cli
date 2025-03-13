@@ -4,7 +4,7 @@ from ..orchestrator import (
     setup_orchestrator_webpubsub_request,
     OrchestratorSetupRequest,
     OrchestratorTestResponse,
-    get_test_by_id,
+    get_test_by_id, GetTestAttacksResponse,
 )
 from ..types import (
     type_ui_task_map,
@@ -43,7 +43,7 @@ def model_test_submit_factory(
         access_token: str,
         ui_exception_map: type_ui_exception_map,
         ui_exception_progress: Progress,
-    ) -> OrchestratorTestResponse:
+    ) -> GetTestAttacksResponse:
         
         response = setup_orchestrator_webpubsub_request(
             access_token=access_token, request=request
@@ -102,10 +102,10 @@ def model_test_submit_factory(
 
 def model_test_polling(
     access_token: str,
-    initial_test: OrchestratorTestResponse,
+    initial_test: GetTestAttacksResponse,
     ui_task_map: type_ui_task_map,
     ui_task_progress: Progress,
-) -> Optional[OrchestratorTestResponse]:
+) -> Optional[GetTestAttacksResponse]:
     return poll_and_display_test(
         access_token,
         ui_task_map,
@@ -116,7 +116,7 @@ def model_test_polling(
 
 def model_test_output_factory(risk_threshold: int) -> type_output_func:
     def list_llm_test_output(
-        test: OrchestratorTestResponse, json_out: bool
+        test: GetTestAttacksResponse, json_out: bool
     ) -> Optional[Table]:
         return output_test_table(
             json_out=json_out, test=test, risk_threshold=risk_threshold
