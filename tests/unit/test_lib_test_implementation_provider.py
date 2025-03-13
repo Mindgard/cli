@@ -140,6 +140,7 @@ def test_init_test_with_domain(requests_mock: requests_mock.Mocker) -> None:
     provider.init_test(config)
 
     assert cli_init_requests.call_count == 1
+    assert cli_init_requests.last_request is not None
     assert cli_init_requests.last_request.json().get('datasetDomain') == dataset_domain
 
 def test_init_test_using_api_key_auth_flow(requests_mock: requests_mock.Mocker) -> None:
@@ -399,8 +400,8 @@ def test_poll_test_returns_using_api_token_auth_flow() -> None:
     # test
     provider = TestImplementationProvider(mock_mindgard_api)
     ret = provider.poll_test(config, test_id)
-    assert ret == mock_mindgard_api.fetch_test_data.return_value, "should return the result of the fetch_test_data call"
-    mock_mindgard_api.fetch_test_data.assert_called_once_with(
+    assert ret == mock_mindgard_api.fetch_test_attacks.return_value, "should return the result of the fetch_test_data call"
+    mock_mindgard_api.fetch_test_attacks.assert_called_once_with(
         api_base="https://test.internal", 
         access_token="my access token", 
         additional_headers=additional_headers, 
@@ -415,7 +416,7 @@ def test_poll_test_bubbles_up_exceptions() -> None:
 
     # test
     provider = TestImplementationProvider(mock_mindgard_api)
-    mock_mindgard_api.fetch_test_data.side_effect = ValueError("test error")
+    mock_mindgard_api.fetch_test_attacks.side_effect = ValueError("test error")
     with pytest.raises(InternalError):
         provider.poll_test(config, test_id)
 
