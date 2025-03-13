@@ -44,6 +44,27 @@ def get_valid_test_data(
         "attacks": [get_valid_attack_data(attack_id)],
     }
 
+def build_tests_attacks_response(test_id):
+    return {
+        "test": {
+            "id": test_id,
+            "has_finished": True,
+            "model_name": "<model_name>",
+            "total_events": 10,
+            "flagged_events": 3
+        },
+        "items": [
+            {
+                "attack": {
+                    "id": "blah",
+                    "attack_name": "blah",
+                    "status": 2,
+                    "total_events": 10,
+                    "flagged_events": 3
+                }
+            }
+        ]
+    }
 
 def test_get_all_tests(requests_mock: requests_mock.Mocker) -> None:
     access_token = "valid_access_token"
@@ -58,22 +79,22 @@ def test_get_all_tests(requests_mock: requests_mock.Mocker) -> None:
     assert len(tests) == 2
 
 
-def test_get_test_by_id(requests_mock: requests_mock.Mocker) -> None:
-    test_id = "test_id"
+def test_get_test_and_attacks_by_id(requests_mock: requests_mock.Mocker) -> None:
+    test_id = "test-id-for-this-test"
     access_token = "valid_access_token"
     api_get.retry.sleep = MagicMock()
 
     requests_mock.get(
-        f"{API_BASE}/assessments/{test_id}",
-        json=get_valid_test_data(id=test_id),
+        f"{API_BASE}/tests/{test_id}/attacks",
+        json=build_tests_attacks_response(test_id=test_id),
         status_code=200,
     )
-    test = get_test_by_id(
+    test_and_attacks = get_test_by_id(
         test_id=test_id, access_token=access_token, request_function=api_get
     )
 
-    assert test.id == test_id
-    assert len(test.attacks) == 1
+    assert test_and_attacks.test.id == test_id
+    assert len(test_and_attacks.items) == 1
 
 
 def test_submit_sandbox_test(requests_mock: requests_mock.Mocker) -> None:
@@ -89,15 +110,15 @@ def test_submit_sandbox_test(requests_mock: requests_mock.Mocker) -> None:
     )
 
     requests_mock.get(
-        f"{API_BASE}/assessments/{test_id}",
-        json=get_valid_test_data(id=test_id),
+        f"{API_BASE}/tests/{test_id}/attacks",
+        json=build_tests_attacks_response(test_id=test_id),
         status_code=200,
     )
 
-    res = submit_sandbox_test(
+    test_and_attacks = submit_sandbox_test(
         access_token=access_token, target_name=test_data["mindgardModelName"]
     )
 
-    assert len(res.attacks) == len(test_data["attacks"])
-    assert res.id == test_id
-    assert res.mindgardModelName == test_data["mindgardModelName"]
+    assert len(test_and_attacks.items) == len(test_data["attacks"])
+    assert test_and_attacks.test.id == test_id
+    assert test_and_attacks.test.model_name == test_data["mindgardModelName"]

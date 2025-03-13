@@ -65,49 +65,32 @@ fixture_cli_init_response = {
     "url": "dsfdfsdf",
     "groupId": fixture_group_id,
 }
-fixture_test_not_finished_response = {
-    "id": fixture_test_id,
-    "mindgardModelName": "mistral",
-    "source": "mindgard",
-    "createdAt": "2021-09-01T00:00:00.000Z",
-    "attacks": [
-        {
-            "id": "example_id_1",
-            "submitted_at": "2021-09-01T00:00:00.000Z",
-            "submitted_at_unix": 1630454400.0,
-            "run_at": "2021-09-01T00:00:00.000Z",
-            "run_at_unix": 1630454400.0,
-            "state": 2,
-            "state_message": "Running",
-            "runtime": 10.5,
-            "model": "mymodel",
-            "dataset": "mydataset",
-            "attack": "myattack",
-            "risk": 12,
-            "stacktrace": None,        
+
+def build_tests_attacks_response(test_id: str = fixture_test_id) -> dict:
+    return {
+        "test": {
+            "id": test_id,
+            "has_finished": False,
+            "model_name": "<model_name>",
+            "total_events": 10,
+            "flagged_events": 5,
         },
-        {
-            "id": "example_id_2",
-            "submitted_at": "2021-09-01T00:00:00.000Z",
-            "submitted_at_unix": 1630454400.0,
-            "run_at": "2021-09-01T00:00:00.000Z",
-            "run_at_unix": 1630454400.0,
-            "state": 2,
-            "state_message": "Running",
-            "runtime": 10.5,
-            "model": "mymodel",
-            "dataset": "mydataset",
-            "attack": "myattack",
-            "risk": 12,
-            "stacktrace": None,        
-        }
-    ],
-    "isCompleted": True,
-    "hasFinished": False,
-    "risk": 13,
-}
-fixture_test_finished_response = fixture_test_not_finished_response.copy()
-fixture_test_finished_response["hasFinished"] = True
+        "items": [
+            {
+                "attack": {
+                    "id": "blah",
+                    "attack_name": "myattack",
+                    "status": 2,
+                    "total_events": 10,
+                    "flagged_events": 5,
+                }
+            }
+        ]
+    }
+
+fixture_test_not_finished_response = build_tests_attacks_response()
+fixture_test_finished_response = build_tests_attacks_response().copy()
+fixture_test_finished_response["test"]["has_finished"] = True
 
 def _run_llm_test(json_out:bool = True, model_type:str = 'llm') -> None:
     auth.load_access_token = MagicMock(return_value="atoken")
@@ -180,14 +163,14 @@ def _test_inner(run_inner: Callable[[],None], requests_mock: requests_mock.Mocke
             )
 
             requests_mock.get(
-                f"{API_BASE}/assessments/{fixture_test_id}",
+                f"{API_BASE}/tests/{fixture_test_id}/attacks",
                 additional_matcher=lambda req: test_context.test_finished,
                 json=fixture_test_finished_response,
                 status_code=200,
             )
 
             requests_mock.get(
-                f"{API_BASE}/assessments/{fixture_test_id}",
+                f"{API_BASE}/tests/{fixture_test_id}/attacks",
                 #TODO: should switch finished after messages are exchanged additional_matcher= 
                 additional_matcher=lambda req: not test_context.test_finished,
                 json=fixture_test_not_finished_response,

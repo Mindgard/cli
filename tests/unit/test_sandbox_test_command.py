@@ -5,55 +5,54 @@ from mindgard.run_functions.external_models import model_test_output_factory
 from mindgard import auth
 import pytest
 from pytest_snapshot.plugin import Snapshot
-# from typing import NamedTuple
-# from unittest.mock import MagicMock
 from mindgard.constants import API_BASE
 from mindgard.run_functions.sandbox_test import submit_sandbox_polling, submit_sandbox_submit_factory
 from mindgard.run_poll_display import cli_run
 from mindgard.utils import convert_test_to_cli_response
 import requests_mock # type: ignore
 
+
+def build_tests_attacks_response(test_id: str = "blah", attack_id: str = "blah", flagged_events: int = 0,
+                                 total_events: int = 0):
+    return {
+        "test": {
+            "id": test_id,
+            "has_finished": True,
+            "model_name": "<model_name>",
+            "total_events": total_events,
+            "flagged_events": flagged_events,
+        },
+        "items": [
+            {
+                "attack": {
+                    "id": attack_id,
+                    "attack_name": "blah",
+                    "status": 2,
+                    "total_events": total_events,
+                    "flagged_events": flagged_events,
+                }
+            }
+        ]
+    }
+
 def test_json_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot, requests_mock: requests_mock.Mocker) -> None:
     # fixture = _helper_fixtures()
 
     auth.load_access_token = MagicMock(return_value="atoken")
 
+    test_id: str = "a-test-id-for-this-test"
+
     requests_mock.post(
         f"{API_BASE}/assessments",
         json={
-            "id": "test_id",
+            "id": test_id,
         },
         status_code=200,
     )
 
     requests_mock.get(
-        f"{API_BASE}/assessments/test_id",
-        json={
-            "id": "test_id",
-            "mindgardModelName": "mistral",
-            "source": "mindgard",
-            "createdAt": "2021-09-01T00:00:00.000Z",
-            "attacks": [
-                {
-                    "id": "example_id",
-                    "submitted_at": "2021-09-01T00:00:00.000Z",
-                    "submitted_at_unix": 1630454400.0,
-                    "run_at": "2021-09-01T00:00:00.000Z",
-                    "run_at_unix": 1630454400.0,
-                    "state": 2,
-                    "state_message": "Running",
-                    "runtime": 10.5,
-                    "model": "mymodel",
-                    "dataset": "mydataset",
-                    "attack": "myattack",
-                    "risk": 12,
-                    "stacktrace": None,        
-                }
-            ],
-            "isCompleted": True,
-            "hasFinished": True,
-            "risk": 13,
-        },
+        f"{API_BASE}/tests/{test_id}/attacks",
+        json=build_tests_attacks_response(test_id=test_id),
         status_code=200,
     )
 
@@ -71,42 +70,19 @@ def test_json_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot, requ
 def test_text_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot, requests_mock: requests_mock.Mocker) -> None:
     auth.load_access_token = MagicMock(return_value="atoken")
 
+    test_id: str = "a-test-id-for-this-test"
+
     requests_mock.post(
         f"{API_BASE}/assessments",
         json={
-            "id": "test_id",
+            "id": test_id,
         },
         status_code=200,
     )
 
     requests_mock.get(
-        f"{API_BASE}/assessments/test_id",
-        json={
-            "id": "test_id",
-            "mindgardModelName": "mistral",
-            "source": "mindgard",
-            "createdAt": "2021-09-01T00:00:00.000Z",
-            "attacks": [
-                {
-                    "id": "example_id",
-                    "submitted_at": "2021-09-01T00:00:00.000Z",
-                    "submitted_at_unix": 1630454400.0,
-                    "run_at": "2021-09-01T00:00:00.000Z",
-                    "run_at_unix": 1630454400.0,
-                    "state": 2,
-                    "state_message": "Running",
-                    "runtime": 10.5,
-                    "model": "mymodel",
-                    "dataset": "mydataset",
-                    "attack": "myattack",
-                    "risk": 12,
-                    "stacktrace": None,        
-                }
-            ],
-            "isCompleted": True,
-            "hasFinished": True,
-            "risk": 13,
-        },
+        f"{API_BASE}/tests/{test_id}/attacks",
+        json=build_tests_attacks_response(test_id=test_id),
         status_code=200,
     )
 
@@ -127,8 +103,9 @@ def test_text_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot, requ
     else:
         snapshot.assert_match(stdout, 'stdout.txt')
 
-@pytest.mark.parametrize("risk_score,risk_threshold,exit_code", [(49, 50, 0), (50, 49, 1)])
-def test_risk_threshold(risk_score: int, risk_threshold: int, exit_code: int, requests_mock: requests_mock.Mocker) -> None:
+@pytest.mark.parametrize("flagged_events,total_events,risk_threshold,exit_code",
+                         [(0, 10, 0.5, 0), (8, 10, 0.5, 1), (5, 10, 0.5, 1), (0, 0, 0.5, 0)])
+def test_risk_threshold(flagged_events: int, total_events: int, risk_threshold: float, exit_code: int, requests_mock: requests_mock.Mocker) -> None:
     auth.load_access_token = MagicMock(return_value="atoken")
 
     requests_mock.post(
@@ -140,33 +117,8 @@ def test_risk_threshold(risk_score: int, risk_threshold: int, exit_code: int, re
     )
 
     requests_mock.get(
-        f"{API_BASE}/assessments/test_id",
-        json={
-            "id": "test_id",
-            "mindgardModelName": "mistral",
-            "source": "mindgard",
-            "createdAt": "2021-09-01T00:00:00.000Z",
-            "attacks": [
-                {
-                    "id": "example_id",
-                    "submitted_at": "2021-09-01T00:00:00.000Z",
-                    "submitted_at_unix": 1630454400.0,
-                    "run_at": "2021-09-01T00:00:00.000Z",
-                    "run_at_unix": 1630454400.0,
-                    "state": 2,
-                    "state_message": "Running",
-                    "runtime": 10.5,
-                    "model": "mymodel",
-                    "dataset": "mydataset",
-                    "attack": "myattack",
-                    "risk": 12,
-                    "stacktrace": None,        
-                }
-            ],
-            "isCompleted": True,
-            "hasFinished": True,
-            "risk": risk_score,
-        },
+        f"{API_BASE}/tests/test_id/attacks",
+        json=build_tests_attacks_response(test_id="test_id", flagged_events=flagged_events, total_events=total_events,),
         status_code=200,
     )
 

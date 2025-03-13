@@ -78,12 +78,36 @@ class OrchestratorTestResponse(BaseModel):
     test_url: str
 
 
+class GetTestAttacksAttack(BaseModel):
+    id: str
+    attack_name: str
+    status: Literal[-1, 0, 1, 2]
+    total_events: int
+    flagged_events: Optional[int] = None
+
+
+class GetTestAttacksTest(BaseModel):
+    has_finished: bool
+    id: str
+    model_name: str
+    flagged_events: Optional[int] = None
+    total_events: int
+
+
+class GetTestAttacksItem(BaseModel):
+    attack: GetTestAttacksAttack
+
+
+class GetTestAttacksResponse(BaseModel):
+    items: list[GetTestAttacksItem]
+    test: GetTestAttacksTest
+
 def submit_sandbox_test(
     access_token: str,
     target_name: str,
     post_request_function: type_post_request_function = api_post,
     get_request_function: type_get_request_function = api_get,
-) -> OrchestratorTestResponse:
+) -> GetTestAttacksResponse:
     url = f"{API_BASE}/assessments"
     post_body = {"mindgardModelName": target_name}
     res = post_request_function(url, access_token, post_body)
@@ -115,14 +139,13 @@ def get_test_by_id(
     test_id: str,
     access_token: str,
     request_function: type_get_request_function = api_get,
-) -> OrchestratorTestResponse:
-    test_url = f"{API_BASE}/assessments/{test_id}"
-
+) -> GetTestAttacksResponse:
     try:
-        response = request_function(test_url, access_token)
-        test_url = f"{DASHBOARD_URL}/r/test/{test_id}"
-
-        return OrchestratorTestResponse(test_url=test_url, **response.json())
+        response = request_function(
+            f"{API_BASE}/tests/{test_id}/attacks",
+            access_token
+        )
+        return GetTestAttacksResponse(**response.json())
 
     except HTTPError as httpe:
         if httpe.response.status_code == 404:
