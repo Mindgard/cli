@@ -278,7 +278,7 @@ The image in bytes will be sent in the data field of the POST request, and the H
 <a id="MLops"></a>
 ### 🚦 Using in an MLOps pipeline
 
-The exit code of a test will be non-zero if the test identifies risks above your risk threshold. To override the default risk-threshold pass `--risk-threshold 50`. This will cause the CLI to exit with an non-zero exit status if any test results in a risk score over 50.
+The exit code of a test will be non-zero if the test identifies risks above your risk threshold. To override the default risk-threshold pass `--risk-threshold 50`. This will cause the CLI to exit with an non-zero exit status if the test's flagged event to total event ratio is >= the threshold.
 
 See an example of this in action here: [https://github.com/Mindgard/mindgard-github-action-example](https://github.com/Mindgard/mindgard-github-action-example)
 
