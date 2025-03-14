@@ -102,6 +102,18 @@ class GetTestAttacksResponse(BaseModel):
     items: list[GetTestAttacksItem]
     test: GetTestAttacksTest
 
+
+class GetTestListTest(BaseModel):
+    id: str
+    mindgard_model_name: str
+    created_at: str
+    flagged_events: Optional[int] = None
+    total_events: int
+
+class GetTestListResponse(BaseModel):
+    items: list[GetTestListTest]
+
+
 def submit_sandbox_test(
     access_token: str,
     target_name: str,
@@ -119,18 +131,12 @@ def submit_sandbox_test(
 
 def get_tests(
     access_token: str, request_function: type_get_request_function = api_get
-) -> List[OrchestratorTestResponse]:
-    url = f"{API_BASE}/assessments?ungrouped=true"
+) -> GetTestListResponse:
+    url = f"{API_BASE}/tests"
 
     try:
         response = request_function(url, access_token)
-
-        return [
-            OrchestratorTestResponse(
-                **data, test_url=f"{API_BASE}/assessments/{data['id']}"
-            )
-            for data in response.json()
-        ]
+        return GetTestListResponse(**response.json())
     except Exception as e:
         raise e
 

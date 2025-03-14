@@ -66,17 +66,47 @@ def build_tests_attacks_response(test_id):
         ]
     }
 
+def build_list_tests_api_response() -> dict[str, Any]:
+    return {
+        "items": [
+            {
+                "id": "blah-1",
+                "mindgard_model_name": "blah-blah-1",
+                "created_at": "blah-blah-blah-1",
+                "flagged_events": 10,
+                "total_events": 10
+            },
+            {
+                "id": "blah-2",
+                "mindgard_model_name": "blah-blah-2",
+                "created_at": "blah-blah-blah-2",
+                "flagged_events": 10,
+                "total_events": 10
+            }
+        ]
+    }
+
 def test_get_all_tests(requests_mock: requests_mock.Mocker) -> None:
     access_token = "valid_access_token"
     api_get.retry.sleep = MagicMock()
 
     requests_mock.get(
-        f"{API_BASE}/assessments?ungrouped=true",
-        json=[get_valid_test_data(), get_valid_test_data()],
+        f"{API_BASE}/tests",
+        json=build_list_tests_api_response(),
         status_code=200,
     )
     tests = get_tests(access_token=access_token, request_function=api_get)
-    assert len(tests) == 2
+    assert len(tests.items) == 2
+    assert tests.items[0].id == "blah-1"
+    assert tests.items[1].id == "blah-2"
+    assert tests.items[0].mindgard_model_name == "blah-blah-1"
+    assert tests.items[1].mindgard_model_name == "blah-blah-2"
+    assert tests.items[0].created_at == "blah-blah-blah-1"
+    assert tests.items[1].created_at == "blah-blah-blah-2"
+    assert tests.items[0].flagged_events == 10
+    assert tests.items[1].total_events == 10
+    assert tests.items[0].flagged_events == 10
+    assert tests.items[1].total_events == 10
 
 
 def test_get_test_and_attacks_by_id(requests_mock: requests_mock.Mocker) -> None:

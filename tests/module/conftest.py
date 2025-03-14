@@ -26,10 +26,9 @@ def pytest_configure(config: Config) -> None:
             access_token = load_access_token()
             tests = get_tests(str(access_token))
 
-        test_id = tests[0].id
-        attack_id = tests[0].attacks[0].id
+        test_id = tests.items[0].id
         global example_ids
-        example_ids = {"test_id": test_id, "attack_id": attack_id}
+        example_ids = {"test_id": test_id}
 
     except Exception as e:
         assert False, f"User that you are authenticated with should have previously run a test. This is required for tests to pass. Error: {e}"
