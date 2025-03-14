@@ -48,7 +48,7 @@ def output_test_table(
     risk_threshold: int,
 ) -> Optional[Table]:
     if json_out:
-        print(test.model_dump_json())
+        print(json.dumps(test.raw, indent=4))
         return None
     else:
         table = Table(title=f"Results - {DASHBOARD_URL}/r/test/{test.test.id}", width=80)

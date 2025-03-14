@@ -101,6 +101,7 @@ class GetTestAttacksItem(BaseModel):
 class GetTestAttacksResponse(BaseModel):
     items: list[GetTestAttacksItem]
     test: GetTestAttacksTest
+    raw: Optional[Dict[str, Any]]
 
 
 class GetTestListTest(BaseModel):
@@ -151,7 +152,8 @@ def get_test_by_id(
             f"{API_BASE}/tests/{test_id}/attacks",
             access_token
         )
-        return GetTestAttacksResponse(**response.json())
+        data = response.json()
+        return GetTestAttacksResponse(**response.json(), raw=data)
 
     except HTTPError as httpe:
         if httpe.response.status_code == 404:
