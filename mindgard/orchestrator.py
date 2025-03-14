@@ -83,14 +83,14 @@ class GetTestAttacksAttack(BaseModel):
     attack_name: str
     status: Literal[-1, 0, 1, 2]
     total_events: int
-    flagged_events: Optional[int] = None
+    flagged_events: int
 
 
 class GetTestAttacksTest(BaseModel):
     has_finished: bool
     id: str
     model_name: str
-    flagged_events: Optional[int] = None
+    flagged_events: int
     total_events: int
 
 
@@ -107,7 +107,7 @@ class GetTestListTest(BaseModel):
     id: str
     mindgard_model_name: str
     created_at: str
-    flagged_events: Optional[int] = None
+    flagged_events: int
     total_events: int
 
 class GetTestListResponse(BaseModel):
