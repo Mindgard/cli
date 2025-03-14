@@ -69,7 +69,7 @@ def output_test_table(
 
                 name = item.attack.attack_name
                 risk_str = f"{item.attack.flagged_events} / {item.attack.total_events}"
-                emoji = "❌‍" if flagged_to_total_ratio > risk_threshold else "✅️"
+                emoji = "❌‍" if flagged_to_total_ratio >= (risk_threshold / 100.0) else "✅️"
 
             table.add_row(emoji, name, risk_str)
 
