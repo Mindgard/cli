@@ -55,7 +55,7 @@ def shared_arguments(parser: argparse.ArgumentParser):
     parser.add_argument('--request-template', type=str, help='The template to wrap the API request in.', required=False)
     parser.add_argument('--tokenizer', type=str, help='Choose a HuggingFace model to provide a tokeniser for prompt and chat completion templating.', required=False)
     parser.add_argument('--model-type', type=str, help='The modality of the model; image or llm', choices=model_types, required=False)
-    parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False)
+    parser.add_argument('--risk-threshold', type=int, help='Set a flagged event to total event ratio threshold above which the system will exit 1', required=False)
 
 def parse_args(args: List[str]) -> argparse.Namespace:
     default_log_level = 'warn'
@@ -73,7 +73,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     sandbox_test_parser = subparsers.add_parser('sandbox', help='Test a mindgard example model')
     sandbox_test_parser.add_argument('target', nargs='?', type=str, choices=['cfp_faces', 'mistral'], default="cfp_faces")
     sandbox_test_parser.add_argument('--json', action="store_true", help='Return json output', required=False)
-    sandbox_test_parser.add_argument('--risk-threshold', type=int, help='Set a risk threshold above which the system will exit 1', required=False, default=80)
+    sandbox_test_parser.add_argument('--risk-threshold', type=int, help='Set a flagged event to total event ratio threshold above which the system will exit 1', required=False, default=80)
 
     list_parser = subparsers.add_parser('list', help='List items')
     list_subparsers = list_parser.add_subparsers(dest='list_command')
