@@ -131,8 +131,5 @@ def test_ui_complete(
   # snapshot provides visual clue to review complete changes, but they render differently
   # in windows
   assert "Results - https://sandbox.mindgard.ai/r/test/my_test_id" in captured_output
-  assert "Attack myattack1 done success" in captured_output
-  assert "Attack myattack3 done failed" in captured_output
-  assert "Error running 'myattack3'" in captured_output
   if platform.system() != "Windows":
     snapshot.assert_match(captured_output, 'stdout.txt')

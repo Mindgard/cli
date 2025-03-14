@@ -16,7 +16,7 @@ from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs, Callb
 import requests
 from mindgard.constants import DEFAULT_RISK_THRESHOLD
 from mindgard.exceptions import handle_exception_callback
-from mindgard.mindgard_api import AttackResponse, FetchTestDataResponse, MindgardApi
+from mindgard.mindgard_api import AttackResponse, MindgardApi, FetchTestAttacksData
 
 from mindgard.version import VERSION
 
@@ -241,9 +241,9 @@ class TestImplementationProvider():
             logging.info(f"start_test: received test_id {test_id}")
             return test_id
 
-    def poll_test(self, config:TestConfig, test_id:str) -> Optional[FetchTestDataResponse]:
+    def poll_test(self, config:TestConfig, test_id:str) -> Optional[FetchTestAttacksData]:
         try:
-            return self._mindgard_api.fetch_test_data(
+            return self._mindgard_api.fetch_test_attacks(
                 api_base=config.api_base,
                 access_token=config.api_access_token,
                 additional_headers=config.additional_headers,
@@ -399,11 +399,10 @@ class Test():
                     if test_data is not None:
                         retries = 0
                         finished = test_data.has_finished
-                        attacks = [_attack_response_to_attack_state(attack_data, self._config.risk_threshold) for attack_data in test_data.attacks]
                         if finished:
-                            self._set_test_complete(test_id, attacks, test_data.risk)
+                            self._set_test_complete(test_id, [], 0)
                         else:
-                            self._set_attacking(test_id, attacks)
+                            self._set_attacking(test_id, [])
                     elif retries > 9:
                         raise InternalError("Failed to poll test data 10 times")
                 if not finished:

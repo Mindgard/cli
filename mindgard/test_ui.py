@@ -64,7 +64,7 @@ class TestUI():
       else:
         attack_progress.update(task, status="[chartreuse1]queued", completed=0)
 
-    with test.state_wait_for(lambda state: len(state.attacks) > 0) as state:
+    with test.state_wait_for(lambda state: (len(state.attacks) > 0 or state.test_complete)) as state:
       attack_id_task_map: Dict[str, TaskID] = {}
       for attack in state.attacks:
         attack_id_task_map[attack.id] = attack_progress.add_task(f"Attack {attack.name}", total=1)

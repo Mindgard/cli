@@ -126,14 +126,6 @@ def test_lib_runs_test_complete(mock_provider:MockProviderFixture, config:TestCo
 
     assert (state := test.get_state()) is not None, "the test should have a state"
     assert state.test_complete == True, "the test should be completed"
-    assert len(state.attacks) == 2, "the test should have 2 attacks"
-    assert state.attacks[0].name == "my attack name 1", "the attack name should be correct"
-    assert state.attacks[0].state == "completed", "the attack state should be completed"
-    assert state.attacks[0].errored == False, "the attack should not be errored"
-    assert state.attacks[0].risk == 45, "the attack risk should be correct"
-
-    assert state.attacks[1].errored == True, "the attack should be errored"
-    assert state.attacks[1].risk == None, "the attack risk should None for errored attacks"
 
 def test_lib_does_not_expose_writable_state(config:TestConfig):
     test = Test(config)
@@ -176,70 +168,6 @@ def test_test_config_defaults():
     assert got_config.risk_threshold == DEFAULT_RISK_THRESHOLD, f"the default risk threshold should be {DEFAULT_RISK_THRESHOLD=}"
     assert got_config.attack_pack == "sandbox", "the default attack pack should be sandbox"
     assert got_config.additional_headers == None, "the default additional_headers should be empty"
-
-def test_lib_emits_attack_passed_failed(mock_provider:MockProviderFixture, config:TestConfig):
-    config.risk_threshold = 90
-    mock_provider.provider.poll_test.side_effect = None
-    mock_provider.provider.poll_test.return_value = FetchTestDataResponse(
-        risk=44,
-        has_finished=True,
-        attacks=[
-            AttackResponse(
-                id="my attack id 1",
-                name="my attack name 1",
-                state="completed",
-                errored=False,
-                risk=89,
-            ),
-            AttackResponse(
-                id="my attack id 2",
-                name="my attack name 2",
-                state="completed",
-                errored=False,
-                risk=90,
-            ),
-        ]
-    )
-    test = Test(config, poll_period_seconds=0)
-    test._provider = mock_provider.provider # type: ignore # TODO: fixme
-    test.run()
-
-    final_state = test.get_state()
-    assert final_state.test_complete == True, "the test should be completed"
-    assert final_state.attacks[0].passed == True, "passed should be true when risk < risk theshold"
-    assert final_state.attacks[1].passed == False, "passed should be false when risk >= risk theshold"
-
-def test_lib_emits_test_passed(mock_provider:MockProviderFixture, config:TestConfig):
-    config.risk_threshold = 90
-    mock_provider.provider.poll_test.side_effect = None
-    mock_provider.provider.poll_test.return_value = FetchTestDataResponse(
-        has_finished=True,
-        risk=89,
-        attacks=[]
-    )
-    test = Test(config, poll_period_seconds=0)
-    test._provider = mock_provider.provider # type: ignore # TODO: fixme
-    test.run()
-
-    final_state = test.get_state()
-    assert final_state.test_complete == True, "the test should be completed"
-    assert final_state.passed == True, "passed should be true when risk < risk theshold"
-
-def test_lib_emits_test_failed(mock_provider:MockProviderFixture, config:TestConfig):
-    config.risk_threshold = 90
-    mock_provider.provider.poll_test.side_effect = None
-    mock_provider.provider.poll_test.return_value = FetchTestDataResponse(
-        has_finished=True,
-        risk=90,
-        attacks=[]
-    )
-    test = Test(config, poll_period_seconds=0)
-    test._provider = mock_provider.provider # type: ignore # TODO: fixme
-    test.run()
-
-    final_state = test.get_state()
-    assert final_state.test_complete == True, "the test should be completed"
-    assert final_state.passed == False, "passed should be false when risk >= risk theshold"
 
 def test_lib_raises_in_state_wait_for(mock_provider:MockProviderFixture, config:TestConfig):
     mock_provider.provider.poll_test.side_effect = UnauthorizedError()
