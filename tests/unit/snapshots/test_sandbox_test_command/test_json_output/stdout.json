@@ -1,2 +1,21 @@
 
-{"items":[{"attack":{"id":"blah","attack_name":"blah","status":2,"total_events":0,"flagged_events":0}}],"test":{"has_finished":true,"id":"a-test-id-for-this-test","model_name":"<model_name>","flagged_events":0,"total_events":0}}
+{
+    "test": {
+        "id": "a-test-id-for-this-test",
+        "has_finished": true,
+        "model_name": "<model_name>",
+        "total_events": 0,
+        "flagged_events": 0
+    },
+    "items": [
+        {
+            "attack": {
+                "id": "blah",
+                "attack_name": "blah",
+                "status": 2,
+                "total_events": 0,
+                "flagged_events": 0
+            }
+        }
+    ]
+}

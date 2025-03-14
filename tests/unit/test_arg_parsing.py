@@ -24,7 +24,8 @@ def helper_test_attacks_response() -> GetTestAttacksResponse:
             has_finished=True,
             flagged_events=0,
             total_events=0,
-        )
+        ),
+        raw={"hello": "world"},
     )
 
 @dataclass

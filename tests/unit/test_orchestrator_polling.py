@@ -113,10 +113,11 @@ def test_get_test_and_attacks_by_id(requests_mock: requests_mock.Mocker) -> None
     test_id = "test-id-for-this-test"
     access_token = "valid_access_token"
     api_get.retry.sleep = MagicMock()
+    api_response = build_tests_attacks_response(test_id=test_id)
 
     requests_mock.get(
         f"{API_BASE}/tests/{test_id}/attacks",
-        json=build_tests_attacks_response(test_id=test_id),
+        json=api_response,
         status_code=200,
     )
     test_and_attacks = get_test_by_id(
@@ -125,6 +126,7 @@ def test_get_test_and_attacks_by_id(requests_mock: requests_mock.Mocker) -> None
 
     assert test_and_attacks.test.id == test_id
     assert len(test_and_attacks.items) == 1
+    assert test_and_attacks.raw == api_response
 
 
 def test_submit_sandbox_test(requests_mock: requests_mock.Mocker) -> None:
