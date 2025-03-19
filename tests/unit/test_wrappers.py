@@ -13,6 +13,33 @@ from mindgard.wrappers.llm import OpenAIWrapper, TestStaticResponder, ContextMan
 
 _EXPECTED_308_MESSAGE = "Failed to contact model: model returned a 308 redirect that couldn't be followed."
 
+EXAMPLE_CHAT_COMPLETION_RESPONSE = content_target = {
+    "id": "chatcmpl-123",
+    "object": "chat.completion",
+    "created": 1677652288,
+    "model": "gpt-4o-mini",
+    "system_fingerprint": "fp_44709d6fcb",
+    "choices": [{
+        "index": 0,
+        "message": {
+            "role": "assistant",
+            "content": "my message",
+        },
+        "logprobs": None,
+        "finish_reason": "stop"
+    }],
+    "usage": {
+        "prompt_tokens": 9,
+        "completion_tokens": 12,
+        "total_tokens": 21,
+        "completion_tokens_details": {
+            "reasoning_tokens": 0,
+            "accepted_prediction_tokens": 0,
+            "rejected_prediction_tokens": 0
+        }
+    }
+}
+
 def test_static_responder_no_context() -> None:
     wrapper = TestStaticResponder(
         system_prompt="mysysprompt"
@@ -342,32 +369,7 @@ def test_llm_huggingfaceopenai_model_wrapper_allow_redirects(httpx_mock: HTTPXMo
     url_target = "https://example.com/target"
     url_target_expected = url_target
     content_redirect = {"nothing":"here"}
-    content_target = {
-        "id": "chatcmpl-123",
-        "object": "chat.completion",
-        "created": 1677652288,
-        "model": "gpt-4o-mini",
-        "system_fingerprint": "fp_44709d6fcb",
-        "choices": [{
-            "index": 0,
-            "message": {
-            "role": "assistant",
-            "content": "my message",
-            },
-            "logprobs": None,
-            "finish_reason": "stop"
-        }],
-        "usage": {
-            "prompt_tokens": 9,
-            "completion_tokens": 12,
-            "total_tokens": 21,
-            "completion_tokens_details": {
-            "reasoning_tokens": 0,
-            "accepted_prediction_tokens": 0,
-            "rejected_prediction_tokens": 0
-            }
-        }
-    }
+
     wrapper = get_llm_model_wrapper(
         preset="huggingface-openai",
         api_key="test api key",
@@ -387,7 +389,7 @@ def test_llm_huggingfaceopenai_model_wrapper_allow_redirects(httpx_mock: HTTPXMo
         url=url_target_expected, 
         method="POST", 
         status_code=200, 
-        json=content_target
+        json=EXAMPLE_CHAT_COMPLETION_RESPONSE
     )
 
     res = wrapper("a")
@@ -517,39 +519,13 @@ def test_anthropic_model_respects_rate_limits(mock_throttle: mock.MagicMock) -> 
     assert ret == mock_throttle.return_value.return_value
 
 
-
 def test_llm_huggingfaceopenai_model_wrapper_default_allow_redirects(httpx_mock: HTTPXMock) -> None:
     url_redirect = "https://example.com/redirect"
     url_redirect_expected = "https://example.com/redirect/v1/chat/completions"
     url_target = "https://example.com/target"
     url_target_expected = url_target
     content_redirect = {"nothing":"here"}
-    content_target = {
-        "id": "chatcmpl-123",
-        "object": "chat.completion",
-        "created": 1677652288,
-        "model": "gpt-4o-mini",
-        "system_fingerprint": "fp_44709d6fcb",
-        "choices": [{
-            "index": 0,
-            "message": {
-            "role": "assistant",
-            "content": "my message",
-            },
-            "logprobs": None,
-            "finish_reason": "stop"
-        }],
-        "usage": {
-            "prompt_tokens": 9,
-            "completion_tokens": 12,
-            "total_tokens": 21,
-            "completion_tokens_details": {
-            "reasoning_tokens": 0,
-            "accepted_prediction_tokens": 0,
-            "rejected_prediction_tokens": 0
-            }
-        }
-    }
+
     wrapper = get_llm_model_wrapper(
         preset="huggingface-openai",
         api_key="test api key",
@@ -568,7 +544,7 @@ def test_llm_huggingfaceopenai_model_wrapper_default_allow_redirects(httpx_mock:
         url=url_target_expected, 
         method="POST", 
         status_code=200, 
-        json=content_target
+        json=EXAMPLE_CHAT_COMPLETION_RESPONSE
     )
 
     res = wrapper("a")
@@ -577,6 +553,49 @@ def test_llm_huggingfaceopenai_model_wrapper_default_allow_redirects(httpx_mock:
     # we know it's processed the redirect if we got the two requests
     assert len(httpx_mock.get_requests()) == 2, "default should follow redirects"
     assert httpx_mock.get_requests()[-1].url == url_target_expected
+
+def test_llm_openai_compatible_model_wrapper_should_default_to_huggingface_model_name(httpx_mock: HTTPXMock) -> None:
+    url_target = "https://example.com/target"
+
+    wrapper = get_llm_model_wrapper(
+        preset="openai-compatible",
+        api_key="test api key",
+        url=url_target,
+        headers={},
+    )
+
+    httpx_mock.add_response(
+        url=url_target + "/v1/chat/completions",
+        method="POST",
+        status_code=200,
+        json=EXAMPLE_CHAT_COMPLETION_RESPONSE
+    )
+
+    wrapper("a")
+
+    assert '"model": "tgi"' in str(httpx_mock.get_requests()[0].read())
+
+def test_llm_openai_compatible_model_wrapper_should_allow_overriding_model_name(httpx_mock: HTTPXMock) -> None:
+    url_target = "https://example.com/target"
+
+    wrapper = get_llm_model_wrapper(
+        preset="openai-compatible",
+        api_key="test api key",
+        url=url_target,
+        model_name="another-model",
+        headers={},
+    )
+
+    httpx_mock.add_response(
+        url=url_target + "/v1/chat/completions",
+        method="POST",
+        status_code=200,
+        json=EXAMPLE_CHAT_COMPLETION_RESPONSE
+    )
+
+    wrapper("a")
+
+    assert '"model": "another-model"' in str(httpx_mock.get_requests()[0].read())
 
 
 

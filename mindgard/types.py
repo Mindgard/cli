@@ -32,7 +32,7 @@ type_orchestrator_attack_pack = Literal["sandbox", "threat_intel"]
 type_orchestrator_source = Literal["threat_intel", "user", "mindgard"]
 model_types = ["image", "llm"]
 type_model_types = Literal["image", "llm"]
-type_model_presets = Literal['huggingface-openai', 'huggingface', 'openai', 'azure-openai', 'azure-aistudio', 'anthropic', 'tester', 'local']
+type_model_presets = Literal['huggingface-openai', 'openai-compatible', 'huggingface', 'openai', 'azure-openai', 'azure-aistudio', 'anthropic', 'tester', 'local']
 type_model_presets_list: Tuple[type_model_presets, ...] = get_args(type_model_presets)
 
 # Types for dependency injecting get/post request functions into over api_post and api_get in orchestrator
