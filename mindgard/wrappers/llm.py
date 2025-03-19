@@ -528,7 +528,7 @@ def get_llm_model_wrapper(
     allow_redirects: bool = True,
 ) -> LLMModelWrapper:
     # Create model based on preset
-    if preset == "huggingface-openai":
+    if preset == "huggingface-openai" or preset == "openai-compatible":
         check_expected_args(locals(), ["api_key", "url"])
         api_key, url, request_template = cast(
             Tuple[str, str, str], (api_key, url, request_template)
@@ -539,7 +539,7 @@ def get_llm_model_wrapper(
             api_key=api_key, 
             api_url=url, 
             system_prompt=system_prompt, 
-            model_name="tgi",
+            model_name=model_name or "tgi",
             allow_redirects=allow_redirects,
             rate_limit=rate_limit
         )
