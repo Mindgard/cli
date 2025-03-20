@@ -400,7 +400,7 @@ def test_poll_test_returns_using_api_token_auth_flow() -> None:
     # test
     provider = TestImplementationProvider(mock_mindgard_api)
     ret = provider.poll_test(config, test_id)
-    assert ret == mock_mindgard_api.fetch_test_attacks.return_value, "should return the result of the fetch_test_data call"
+    assert ret == mock_mindgard_api.fetch_test_attacks.return_value, "should return the result of the fetch_test_attacks call"
     mock_mindgard_api.fetch_test_attacks.assert_called_once_with(
         api_base="https://test.internal", 
         access_token="my access token", 

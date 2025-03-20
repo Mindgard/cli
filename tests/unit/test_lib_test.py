@@ -2,9 +2,9 @@ from typing import Any, Dict
 from unittest.mock import ANY, Mock
 
 from azure.messaging.webpubsubclient import WebPubSubClient
+from mindgard.mindgard_api import FetchTestAttacksData
 import pytest
 from mindgard.constants import DEFAULT_RISK_THRESHOLD
-from mindgard.mindgard_api import AttackResponse, FetchTestDataResponse
 from mindgard.test import AttackState, InternalError, RequestHandler, Test, TestConfig, TestImplementationProvider, LLMModelConfig, UnauthorizedError
 from mindgard.wrappers.llm import TestStaticResponder
 from tests.unit.test_test_llm_command import PropagatingThread
@@ -30,36 +30,11 @@ class MockProviderFixture():
         self.provider.start_test.return_value = self.test_id
         self.provider.poll_test.side_effect = [
             None,
-            FetchTestDataResponse(
-                risk=0,
+            FetchTestAttacksData(
                 has_finished=False,
-                attacks=[
-                    AttackResponse(
-                        id="my attack id 1",
-                        name="my attack name 1",
-                        state="queued"
-                    ),
-                ]
             ),
-            FetchTestDataResponse(
-                risk=44,
+            FetchTestAttacksData(
                 has_finished=True,
-                attacks=[
-                    AttackResponse(
-                        id="my attack id 1",
-                        name="my attack name 1",
-                        state="completed",
-                        errored=False,
-                        risk=45,
-                    ),
-                    AttackResponse(
-                        id="my attack id 2",
-                        name="my attack name 2",
-                        state="completed",
-                        errored=True,
-                        risk=45,
-                    ),
-                ]
             )
         ]
 
@@ -230,7 +205,7 @@ def test_lib_raises_internal_error(mock_provider:MockProviderFixture, config:Tes
 
 # TODO: hurriedly added this test, but the exception handling is not well designed yet
 def test_lib_retries_9_times(mock_provider:MockProviderFixture, config:TestConfig):
-    mock_provider.provider.poll_test.side_effect = [UnauthorizedError()] * 9 + [FetchTestDataResponse(has_finished=True, risk=0, attacks=[])]
+    mock_provider.provider.poll_test.side_effect = [UnauthorizedError()] * 9 + [FetchTestAttacksData(has_finished=True)]
     test = Test(config, poll_period_seconds=0)
     test._provider = mock_provider.provider # type: ignore # TODO: fixme
     
@@ -250,7 +225,7 @@ def test_lib_retries_10_nones(mock_provider:MockProviderFixture, config:TestConf
 
 # TODO: hurriedly added this test, but the exception handling is not well designed yet
 def test_lib_retries_resets(mock_provider:MockProviderFixture, config:TestConfig):
-    mock_provider.provider.poll_test.side_effect = [None] * 9 + [FetchTestDataResponse(has_finished=False, risk=0, attacks=[])] + [None] * 9 + [FetchTestDataResponse(has_finished=True, risk=0, attacks=[])]
+    mock_provider.provider.poll_test.side_effect = [None] * 9 + [FetchTestAttacksData(has_finished=False)] + [None] * 9 + [FetchTestAttacksData(has_finished=True)]
     test = Test(config, poll_period_seconds=0)
     test._provider = mock_provider.provider # type: ignore # TODO: fixme
     
