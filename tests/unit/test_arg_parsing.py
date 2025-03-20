@@ -11,7 +11,7 @@ import pytest
 from mindgard.utils import parse_toml_and_args_into_final_args
 from mindgard.types import valid_image_datasets, valid_llm_datasets
 from mindgard.cli import main, parse_args
-from mindgard.orchestrator import OrchestratorSetupRequest, OrchestratorTestResponse, GetTestAttacksResponse, \
+from mindgard.orchestrator import OrchestratorSetupRequest, GetTestAttacksResponse, \
     GetTestAttacksTest
 
 

@@ -49,35 +49,6 @@ class OrchestratorSetupResponse(BaseModel):
     url: str
     group_id: str
 
-
-class AttackModel(BaseModel):
-    id: str
-    submitted_at: str
-    submitted_at_unix: float
-    run_at: str
-    run_at_unix: float
-    state: Literal[0, 1, 2, -1]
-    state_message: Literal["Completed", "Queued", "Running", "Failed"]
-    runtime: float
-    model: str
-    dataset: str
-    attack: str
-    risk: int
-    stacktrace: Optional[str]
-
-
-class OrchestratorTestResponse(BaseModel):
-    id: str
-    mindgardModelName: str
-    source: type_orchestrator_source
-    createdAt: str
-    attacks: List[AttackModel]
-    isCompleted: bool
-    hasFinished: bool
-    risk: int
-    test_url: str
-
-
 class GetTestAttacksAttack(BaseModel):
     id: str
     attack_name: str

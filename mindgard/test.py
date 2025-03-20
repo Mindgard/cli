@@ -16,7 +16,7 @@ from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs, Callb
 import requests
 from mindgard.constants import DEFAULT_RISK_THRESHOLD
 from mindgard.exceptions import handle_exception_callback
-from mindgard.mindgard_api import AttackResponse, MindgardApi, FetchTestAttacksData
+from mindgard.mindgard_api import MindgardApi, FetchTestAttacksData
 
 from mindgard.version import VERSION
 
@@ -255,17 +255,6 @@ class TestImplementationProvider():
     def close(self, client:Optional[WebPubSubClient]) -> None:
         if client:
             client.close()
-
-def _attack_response_to_attack_state(attack_data:AttackResponse, risk_threshold: int) -> AttackState:
-    return AttackState(
-        id=attack_data.id,
-        name=attack_data.name,
-        state=attack_data.state,
-        errored=attack_data.errored,
-        passed=None if attack_data.risk is None else (attack_data.risk < risk_threshold),
-        risk=None if attack_data.errored else attack_data.risk
-    )
-
 class Test():
     def __init__(self, config:TestConfig, poll_period_seconds:float = 5):
         self._config = config
