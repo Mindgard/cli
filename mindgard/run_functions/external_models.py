@@ -3,7 +3,6 @@ from mindgard.wrappers.llm import LLMModelWrapper
 from ..orchestrator import (
     setup_orchestrator_webpubsub_request,
     OrchestratorSetupRequest,
-    OrchestratorTestResponse,
     get_test_by_id, GetTestAttacksResponse,
 )
 from ..types import (
@@ -14,7 +13,7 @@ from ..types import (
 )
 from ..ui_prefabs import poll_and_display_test, output_test_table
 
-from typing import Optional, List, Callable, Union
+from typing import Optional, Callable, Union
 from rich.progress import Progress
 from rich.table import Table
 

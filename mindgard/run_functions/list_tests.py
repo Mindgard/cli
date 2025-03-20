@@ -8,7 +8,7 @@ from ..types import (
 from rich.progress import Progress
 
 from ..api_service import api_get
-from ..orchestrator import get_tests, OrchestratorTestResponse, GetTestListResponse
+from ..orchestrator import get_tests, GetTestListResponse
 
 from ..utils import print_to_stderr_as_json
 

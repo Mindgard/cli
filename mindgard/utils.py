@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from mindgard.types import valid_image_datasets, valid_llm_datasets
 
 # Data models
-from mindgard.orchestrator import OrchestratorTestResponse, GetTestAttacksResponse
+from mindgard.orchestrator import GetTestAttacksResponse
 
 # B64 encode decode
 import base64

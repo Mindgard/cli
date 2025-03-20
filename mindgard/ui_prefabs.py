@@ -4,7 +4,7 @@ from typing import Optional
 from .run_poll_display import type_ui_task_map
 
 # Orchestrator
-from .orchestrator import OrchestratorTestResponse, get_test_by_id, GetTestAttacksResponse
+from .orchestrator import get_test_by_id, GetTestAttacksResponse
 
 # Constants
 from .constants import DASHBOARD_URL
