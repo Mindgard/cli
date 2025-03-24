@@ -91,6 +91,9 @@ def parse_args(args: List[str]) -> argparse.Namespace:
                                                                          For LLM models this should be a csv formatted file path, with each prompt on a new line'''), required=False)
     test_parser.add_argument('--domain', type=str, help='The domain to inform the dataset used for LLMs.', choices=valid_llm_datasets, required=False)
     test_parser.add_argument('--mode', type=str, help='Specify the number of samples to use during attacks; contact Mindgard for access to \'thorough\' or \'exhaustive\' test', choices=['fast', 'thorough', 'exhaustive'], required=False)
+    test_parser.add_argument('--exclude', type=str, help='Exclude certain attacks from the test', action='append',required=False)
+    test_parser.add_argument('--include', type=str, help='Include certain attacks from the test', action='append',required=False)
+    
 
     validate_parser = subparsers.add_parser("validate", help="Validates that we can communicate with your model")
     shared_arguments(validate_parser)
