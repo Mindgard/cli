@@ -162,6 +162,8 @@ def run_cli() -> None:
                             modelType=final_args["model_type"],
                             attackSource="user",
                             attackPack=final_args["attack_pack"],
+                            exclude=final_args["exclude"],
+                            include=final_args["include"],
                         )
                         submit = model_test_submit_factory(
                             request=request,
