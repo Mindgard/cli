@@ -36,6 +36,8 @@ class OrchestratorSetupRequest(BaseModel):
     attackSource: str
     parallelism: int
     labels: Optional[List[str]] = None
+    exclude: Optional[List[str]] = None
+    include: Optional[List[str]] = None
 
     @model_validator(mode="after")  # type: ignore
     def check_parallelism(self):

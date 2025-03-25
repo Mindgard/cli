@@ -187,6 +187,73 @@ cases = [
         cli_run_response=helper_test_attacks_response(),
         expected_exit_code=0,
     ),
+    Case(
+        name="excluding attacks",
+        input_args=[
+            'mindgard', 'test', 'mytarget',
+            '--system-prompt', 'mysysprompt',
+            '--preset', 'tester',
+            '--exclude', 'AntiGPT',
+            '--exclude', 'DevModeV2'
+        ],
+        expected_request=OrchestratorSetupRequest(
+            target="mytarget",
+            modelType="llm",
+            system_prompt="mysysprompt",
+            exclude=["AntiGPT", "DevModeV2"],
+            attackPack="sandbox",
+            attackSource="user",
+            parallelism=5,
+            labels=None
+        ),
+        cli_run_response=helper_test_attacks_response(),
+        expected_exit_code=0,
+    ),
+    Case(
+        name="including attacks",
+        input_args=[
+            'mindgard', 'test', 'mytarget',
+            '--system-prompt', 'mysysprompt',
+            '--preset', 'tester',
+            '--include', 'DevModeV2',
+            '--include', 'AntiGPT'
+        ],
+        expected_request=OrchestratorSetupRequest(
+            target="mytarget",
+            modelType="llm",
+            system_prompt="mysysprompt",
+            include=["DevModeV2", "AntiGPT"],
+            attackPack="sandbox",
+            attackSource="user",
+            parallelism=5,
+            labels=None
+        ),
+        cli_run_response=helper_test_attacks_response(),
+        expected_exit_code=0,
+    ),
+    Case(
+        name="including and excluding attacks",
+        input_args=[
+            'mindgard', 'test', 'mytarget',
+            '--system-prompt', 'mysysprompt',
+            '--preset', 'tester',
+            '--exclude', 'jail_breaking',
+            '--include', 'AntiGPT'
+        ],
+        expected_request=OrchestratorSetupRequest(
+            target="mytarget",
+            modelType="llm",
+            system_prompt="mysysprompt",
+            exclude=["jail_breaking"],
+            include=["AntiGPT"],
+            attackPack="sandbox",
+            attackSource="user",
+            parallelism=5,
+            labels=None
+        ),
+        cli_run_response=helper_test_attacks_response(),
+        expected_exit_code=0,
+    ),
 ]
 
 
