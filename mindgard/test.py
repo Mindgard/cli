@@ -92,6 +92,8 @@ class TestConfig:
     dataset_domain: Optional[str] = None
     attack_pack: str = "sandbox"
     additional_headers: Optional[Dict[str, str]] = None
+    exclude: Optional[List[str]] = None
+    include: Optional[List[str]] = None
     risk_threshold: int = DEFAULT_RISK_THRESHOLD
     def to_orchestrator_init_params(self) -> Dict[str, Any]:
         """
@@ -109,6 +111,12 @@ class TestConfig:
 
         if self.target_id is not None:
             params['target_id'] = self.target_id
+        
+        if self.exclude is not None:
+            params['exclude'] = self.exclude
+        
+        if self.include is not None:
+            params['include'] = self.include
 
         return params
 

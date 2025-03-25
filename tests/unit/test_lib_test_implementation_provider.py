@@ -143,6 +143,90 @@ def test_init_test_with_domain(requests_mock: requests_mock.Mocker) -> None:
     assert cli_init_requests.last_request is not None
     assert cli_init_requests.last_request.json().get('datasetDomain') == dataset_domain
 
+
+def test_init_test_with_exclude(requests_mock: requests_mock.Mocker) -> None:
+    # expectations
+    exclude = ['AntiGPT', 'PersonGPT']
+
+    # inputs
+    config = _helper_default_config({'exclude': exclude})
+    test_api_base = "https://test.internal"
+    
+    cli_init_requests = requests_mock.post(
+        f"{test_api_base}/tests/cli_init",
+        json={
+            "url": 'url',
+            "groupId": 'groupid'
+        },
+        status_code=200,
+    )
+
+    # test
+    provider = TestImplementationProvider()
+    provider.init_test(config)
+
+    assert cli_init_requests.call_count == 1
+    assert cli_init_requests.last_request is not None
+    assert cli_init_requests.last_request.json().get('exclude') == exclude
+
+
+
+def test_init_test_with_include(requests_mock: requests_mock.Mocker) -> None:
+    # expectations
+    include = ['AntiGPT', 'PersonGPT']
+
+    # inputs
+    config = _helper_default_config({'include': include})
+    test_api_base = "https://test.internal"
+    
+    cli_init_requests = requests_mock.post(
+        f"{test_api_base}/tests/cli_init",
+        json={
+            "url": 'url',
+            "groupId": 'groupid'
+        },
+        status_code=200,
+    )
+
+    # test
+    provider = TestImplementationProvider()
+    provider.init_test(config)
+
+    assert cli_init_requests.call_count == 1
+    assert cli_init_requests.last_request is not None
+    assert cli_init_requests.last_request.json().get('include') == include
+
+
+
+def test_init_test_with_include_and_exclude(requests_mock: requests_mock.Mocker) -> None:
+    # expectations
+    include = ['AntiGPT', 'PersonGPT']
+    exclude = ['base64', 'base32']
+
+    # inputs
+    config = _helper_default_config({'include': include, 'exclude': exclude})
+    test_api_base = "https://test.internal"
+    
+    cli_init_requests = requests_mock.post(
+        f"{test_api_base}/tests/cli_init",
+        json={
+            "url": 'url',
+            "groupId": 'groupid'
+        },
+        status_code=200,
+    )
+
+    # test
+    provider = TestImplementationProvider()
+    provider.init_test(config)
+
+    assert cli_init_requests.call_count == 1
+    assert cli_init_requests.last_request is not None
+    assert cli_init_requests.last_request.json().get('exclude') == exclude
+    assert cli_init_requests.last_request.json().get('include') == include
+
+
+
 def test_init_test_using_api_key_auth_flow(requests_mock: requests_mock.Mocker) -> None:
     # expectations
     test_url = "test_url"
