@@ -219,3 +219,115 @@ def test_exit_code_test_failed(
             "parallelism": 1,
             "system_prompt": "mysysprompt",
             }, model_wrapper=mock.MagicMock())
+        
+
+@mock.patch("mindgard.main_lib.load_access_token", return_value="myApiKey")
+@mock.patch("mindgard.main_lib.Test", return_value=mock.MagicMock())
+def test_run_llm_test_with_exclusions(
+    mock_test: mock.MagicMock,
+    mock_load_access_token: mock.MagicMock
+):
+    final_args: Dict[str, Any] = {
+        "model_type": "llm",
+        "target": "mytarget",
+        "parallelism": 1,
+        "system_prompt": "mysysprompt",
+        "attack_pack": "myattackpack",
+        "exclude": ["exclusion1", "exclusion2"]
+    }
+    
+    model_wrapper = TestStaticResponder(system_prompt="test")
+    
+    with pytest.raises(SystemExit):
+        run_test(final_args=final_args, model_wrapper=model_wrapper)
+    
+    mock_test.assert_called_once_with(
+        TestConfig(
+            api_base="https://api.sandbox.mindgard.ai/api/v1",
+            api_access_token="myApiKey",
+            target="mytarget",
+            attack_source="user",
+            attack_pack="myattackpack",
+            parallelism=1,
+            model=LLMModelConfig(
+                wrapper=model_wrapper,
+                system_prompt="mysysprompt",
+            ),
+            exclude=["exclusion1", "exclusion2"]
+        )
+    )
+
+
+@mock.patch("mindgard.main_lib.load_access_token", return_value="myApiKey")
+@mock.patch("mindgard.main_lib.Test", return_value=mock.MagicMock())
+def test_run_llm_test_with_inclusions(
+    mock_test: mock.MagicMock,
+    mock_load_access_token: mock.MagicMock
+):
+    final_args: Dict[str, Any] = {
+        "model_type": "llm",
+        "target": "mytarget",
+        "parallelism": 1,
+        "system_prompt": "mysysprompt",
+        "attack_pack": "myattackpack",
+        "include": ["inclusion1", "inclusion2"]
+    }
+    
+    model_wrapper = TestStaticResponder(system_prompt="test")
+    
+    with pytest.raises(SystemExit):
+        run_test(final_args=final_args, model_wrapper=model_wrapper)
+    
+    mock_test.assert_called_once_with(
+        TestConfig(
+            api_base="https://api.sandbox.mindgard.ai/api/v1",
+            api_access_token="myApiKey",
+            target="mytarget",
+            attack_source="user",
+            attack_pack="myattackpack",
+            parallelism=1,
+            model=LLMModelConfig(
+                wrapper=model_wrapper,
+                system_prompt="mysysprompt",
+            ),
+            include=["inclusion1", "inclusion2"]
+        )
+    )
+
+@mock.patch("mindgard.main_lib.load_access_token", return_value="myApiKey")
+@mock.patch("mindgard.main_lib.Test", return_value=mock.MagicMock())
+def test_run_llm_test_with_include_and_exclude(
+    mock_test: mock.MagicMock,
+    mock_load_access_token: mock.MagicMock
+):
+    final_args: Dict[str, Any] = {
+        "model_type": "llm",
+        "target": "mytarget",
+        "parallelism": 1,
+        "system_prompt": "mysysprompt",
+        "attack_pack": "myattackpack",
+        "exclude": ["exclusion1", "exclusion2"],
+        "include": ["inclusion1", "inclusion2"]
+    }
+    
+    model_wrapper = TestStaticResponder(system_prompt="test")
+    
+    with pytest.raises(SystemExit):
+        run_test(final_args=final_args, model_wrapper=model_wrapper)
+    
+    mock_test.assert_called_once_with(
+        TestConfig(
+            api_base="https://api.sandbox.mindgard.ai/api/v1",
+            api_access_token="myApiKey",
+            target="mytarget",
+            attack_source="user",
+            attack_pack="myattackpack",
+            parallelism=1,
+            model=LLMModelConfig(
+                wrapper=model_wrapper,
+                system_prompt="mysysprompt",
+            ),
+            exclude=["exclusion1", "exclusion2"],
+            include=["inclusion1", "inclusion2"]
+        )
+    )
