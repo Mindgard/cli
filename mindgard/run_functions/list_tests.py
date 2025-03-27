@@ -54,7 +54,7 @@ def list_test_output(
         for test in test_list.items:
             table.add_row(
                 test.mindgard_model_name,
-                datetime.fromisoformat(test.created_at).strftime("%H:%M, %Y-%m-%d"),
+                datetime.fromisoformat(test.created_at.replace('Z', '+00:00')).strftime("%H:%M, %Y-%m-%d"),
                 f"{test.flagged_events} / {test.total_events}",
                 f"{DASHBOARD_URL}/r/test/{test.id}",
             )
