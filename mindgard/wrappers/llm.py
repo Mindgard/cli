@@ -119,11 +119,13 @@ class APIModelWrapper(LLMModelWrapper):
         tokenizer: Optional[str] = None,
         headers: Optional[Dict[str, str]] = None,
         rate_limit: int = 3600,
+        multi_turn_enabled:bool = False
     ) -> None:
         self._allow_redirects = allow_redirects
         self.context_manager = ContextManager()
         self.api_url = api_url
         self.throttled_call_llm = throttle(self._call_llm, rate_limit=rate_limit)
+        self.multi_turn_enabled = multi_turn_enabled
         if tokenizer:
             logging.debug(
                 "Note that with tokenizer enabled, the request_template format is different."
@@ -195,7 +197,7 @@ class APIModelWrapper(LLMModelWrapper):
     def __call__(self, content: str, with_context: Optional[Context] = None) -> str:
         return self.throttled_call_llm(content,with_context)
     def _call_llm(self, content: str, with_context: Optional[Context] = None) -> str:
-        if with_context is not None:
+        if with_context is not None and not self.multi_turn_enabled:
             logging.debug(
                 "APIModelWrapper is temporarily incompatible with chat completions history. Attacks that require chat completions history fail."
             )
@@ -337,6 +339,7 @@ class HuggingFaceWrapper(APIModelWrapper):
         allow_redirects: bool,
         system_prompt: Optional[str] = None,
         rate_limit: Optional[int] = 60000,
+        multi_turn_enabled: bool = False,
     ) -> None:
         super().__init__(
             api_url,
@@ -346,6 +349,7 @@ class HuggingFaceWrapper(APIModelWrapper):
             system_prompt=system_prompt,
             rate_limit=rate_limit,
             allow_redirects=allow_redirects,
+            multi_turn_enabled=multi_turn_enabled,
         )
 
 
@@ -526,6 +530,7 @@ def get_llm_model_wrapper(
     tokenizer: Optional[str] = None,
     rate_limit: int = 60000,
     allow_redirects: bool = True,
+    force_multi_turn: bool = False,
 ) -> LLMModelWrapper:
     # Create model based on preset
     if preset == "huggingface-openai" or preset == "openai-compatible":
@@ -555,6 +560,7 @@ def get_llm_model_wrapper(
             request_template=request_template,
             rate_limit=rate_limit,
             allow_redirects=allow_redirects,
+            multi_turn_enabled=force_multi_turn,
         )
     elif preset == "azure-aistudio":
         check_expected_args(locals(), ["api_key", "url", "system_prompt"])
@@ -619,6 +625,7 @@ def get_llm_model_wrapper(
                 tokenizer=tokenizer,
                 headers=headers,
                 rate_limit=rate_limit,
+                multi_turn_enabled=force_multi_turn,
             )
         else:
             return APIModelWrapper(
@@ -629,4 +636,5 @@ def get_llm_model_wrapper(
                 system_prompt=system_prompt,
                 tokenizer=tokenizer,
                 rate_limit=rate_limit,
+                multi_turn_enabled=force_multi_turn,
             )

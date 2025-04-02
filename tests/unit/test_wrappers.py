@@ -7,9 +7,11 @@ import base64
 import pytest
 from pytest_httpx import HTTPXMock
 
+import mindgard
 from mindgard.exceptions import Uncontactable, UnprocessableEntity, EmptyResponse
 from mindgard.wrappers.image import ImageModelWrapper, LabelConfidence, get_image_model_wrapper
-from mindgard.wrappers.llm import OpenAIWrapper, TestStaticResponder, ContextManager, APIModelWrapper, get_llm_model_wrapper
+from mindgard.wrappers.llm import OpenAIWrapper, TestStaticResponder, ContextManager, APIModelWrapper, \
+    get_llm_model_wrapper, Context, PromptResponse
 
 _EXPECTED_308_MESSAGE = "Failed to contact model: model returned a 308 redirect that couldn't be followed."
 
@@ -174,6 +176,45 @@ def test_api_model_wrapper_with_context_with_template() -> None:
         assert wrapper(text) == '"eh up"'
         assert mock.last_request.headers[header_key] == header_value
 
+def test_api_model_wrapper_does_not_support_multi_turn_by_default_due_to_interleving_requests() -> None:
+    header_key = "random"
+    header_value = "thing"
+    url = "https://example.com/somewhere"
+    
+    wrapper = APIModelWrapper(
+        url,
+        headers={header_key:header_value},
+    )
+
+    with requests_mock.mock() as m:
+        m.post(
+            url,
+            json="eh up",
+        )
+        context = Context()
+        context.add(PromptResponse(prompt="Foo", response="Bar"))
+        with pytest.raises(mindgard.exceptions.NotImplemented):
+            wrapper("hello", context)
+
+def test_api_model_wrapper_can_support_multi_turn_in_stateful_api_scenarios() -> None:
+    header_key = "random"
+    header_value = "thing"
+    url = "https://example.com/somewhere"
+    wrapper = APIModelWrapper(
+        url,
+        headers={header_key:header_value},
+        multi_turn_enabled=True
+    )
+
+    with requests_mock.mock() as m:
+        m.post(
+            url,
+            json="eh up",
+        )
+        context = Context()
+        context.add(PromptResponse(prompt="Foo", response="Bar"))
+
+        assert '"eh up"' == wrapper("hello", context)
 
 def test_image_model_wrapper_aligns_responses() -> None:
     url = "https://example.com/somewhere"

@@ -155,6 +155,10 @@ def parse_toml_and_args_into_final_args(
                 f"Labels in config file are not in a valid JSON format! - {e}"
             )
 
+    if final_args.get("force_multi_turn"):
+        final_args["parallelism"] = 1
+        
+
     return final_args
 
 def check_expected_args(args: Dict[str, Any], expected_args: List[str]) -> None:
