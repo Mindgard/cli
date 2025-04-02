@@ -85,6 +85,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     shared_arguments(test_parser)
     test_parser.add_argument('--parallelism', type=int, help='The maximum number of parallel requests that can be made to the API.', required=False)
     test_parser.add_argument('--rate-limit', type=int, help='The maximum number of requests to make to model in one minute (default: 3600)', required=False)
+    test_parser.add_argument('--force-multi-turn', type=bool, help='Enable multi turn attacks in scenarios where they may not be safe, such as when testing an API without chat completions history.', required=False)
     test_parser.add_argument('--dataset', type=str, help=textwrap.dedent(f'''
                                                                          The dataset to be used for running the attacks on the given model. 
                                                                          For image models use the following values: {valid_image_datasets}
@@ -159,7 +160,7 @@ def run_cli() -> None:
                     if final_args["model_type"] == "llm":
                         request = OrchestratorSetupRequest(
                             target=final_args["target"],
-                            parallelism=int(final_args["parallelism"]),
+                            parallelism=final_args["parallelism"],
                             system_prompt=final_args["system_prompt"],
                             dataset=final_args.get("custom_dataset", final_args["dataset"]),
                             custom_dataset=final_args.get("custom_dataset",None),
