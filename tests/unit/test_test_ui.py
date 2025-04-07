@@ -6,9 +6,9 @@ from threading import Thread
 from typing import Any, Dict, Optional
 from unittest import mock
 from unittest.mock import Mock
+from mindgard.mindgard_api import FetchTestAttacksData
 from pytest_snapshot.plugin import Snapshot # type: ignore
 from rich.console import Console
-from mindgard.mindgard_api import AttackResponse, FetchTestDataResponse
 from mindgard.test import LLMModelConfig, Test, TestConfig
 from mindgard.test_ui import TestUI
 from mindgard.wrappers.llm import Context, LLMModelWrapper, PromptResponse
@@ -75,43 +75,11 @@ def test_ui_complete(
 
   mock_provider.poll_test.side_effect = [
      None,
-      FetchTestDataResponse(
-            risk=0,
+      FetchTestAttacksData(
             has_finished=False,
-            attacks=[
-               AttackResponse(
-                  id="1",
-                  name="myattack1",
-                  state="queued"
-               ),
-            ]
       ),
-      FetchTestDataResponse(
-            risk=0,
+      FetchTestAttacksData(
             has_finished=True,
-            attacks=[
-               AttackResponse(
-                  id="1",
-                  name="myattack1",
-                  state="completed",
-                  errored=False,
-                  risk=50,
-               ),
-               AttackResponse(
-                  id="2",
-                  name="myattack2",
-                  state="completed",
-                  errored=False,
-                  risk=80,
-               ),
-               AttackResponse(
-                  id="3",
-                  name="myattack3",
-                  state="completed",
-                  errored=True,
-                  risk=None,
-               ),
-            ]
       )
   ]
   
