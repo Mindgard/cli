@@ -42,6 +42,7 @@ Table of Contents
 * [🚀 Install](#Install)
 * [✅ Testing demo models](#Tests)
 * [✅ Testing your models](#TestCustom)
+* [📝 Documentation](#Documentation)
 * [🚦 Using in an MLOps pipeline](#MLops)
 
 <a id="Install"></a>
@@ -133,6 +134,9 @@ mindgard validate \
   --request-template '{"prompt": "[INST] {system_prompt} {prompt} [/INST]"}' \ # how to format the system prompt and prompt in the API request
   --system-prompt 'respond with hello' # system prompt to test the model with
 ```
+
+<a id="Documentation"></a>
+### 📝 Documentation - [Documentation for Running a test using CLI](https://docs.mindgard.ai/user-guide/testing-via-cli)
 
 ### 📋 Using a Configuration File
 
