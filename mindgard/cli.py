@@ -98,6 +98,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     test_parser.add_argument('--include', type=str, help=textwrap.dedent(f'''
                                                                          Include a selected set of attacks in the test. A name or category can be provided as part of the inclusion. 
                                                                          The supported attacks can be found here - https://docs.mindgard.ai/user-guide/running-subset-of-attacks#list-of-attacks'''), action='append',required=False)
+    test_parser.add_argument('--prompt-repeats', type=int, help='The number of times to repeat the prompt for each sample in the dataset.', required=False)
     
 
     validate_parser = subparsers.add_parser("validate", help="Validates that we can communicate with your model")
@@ -169,6 +170,7 @@ def run_cli() -> None:
                             attackPack=final_args["attack_pack"],
                             exclude=final_args["exclude"],
                             include=final_args["include"],
+                            prompt_repeats=final_args["prompt_repeats"],
                         )
                         submit = model_test_submit_factory(
                             request=request,
