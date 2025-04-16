@@ -92,16 +92,16 @@ fixture_test_not_finished_response = build_tests_attacks_response()
 fixture_test_finished_response = build_tests_attacks_response().copy()
 fixture_test_finished_response["test"]["has_finished"] = True
 
-def _run_llm_test(json_out:bool = True, model_type:str = 'llm') -> None:
+def _run_llm_test(json_out:bool = True) -> None:
     auth.load_access_token = MagicMock(return_value="atoken")
     model_wrapper = MockModelWrapper()
 
     request = OrchestratorSetupRequest(
         target="mymodel",
         parallelism=4,
-        system_prompt=None if model_type == "image" else "my system prompt",
+        system_prompt="my system prompt",
         dataset=None,
-        modelType=model_type,
+        modelType="llm",
         attackSource="user"
     )
     submit = model_test_submit_factory(
@@ -278,26 +278,6 @@ def test_mindgard_extra_config(requests_mock: requests_mock.Mocker):
     assert submitted_test is not None
     assert submitted_test.get("extraConfig") == config
 
-def test_image_test_model_type_llm(requests_mock: requests_mock.Mocker) -> None:
-    def run_test() -> None:
-        _run_llm_test(json_out=False, model_type="llm")
-    
-    submitted_test =  _test_inner(run_test, requests_mock)
-    assert submitted_test.get("modelType") == "llm"
-    
-def test_image_test_model_type_empty(requests_mock: requests_mock.Mocker) -> None:
-    def run_test() -> None:
-        _run_llm_test(json_out=False)
-    
-    submitted_test =  _test_inner(run_test, requests_mock)
-    assert submitted_test.get("modelType") == "llm"
-    
-def test_image_test_model_type_image(requests_mock: requests_mock.Mocker) -> None:
-    def run_test() -> None:
-        _run_llm_test(json_out=False, model_type="image")
-    
-    submitted_test =  _test_inner(run_test, requests_mock)
-    assert submitted_test.get("modelType") == "image"
 
 def test_json_output(
     capsys: pytest.CaptureFixture[str], 

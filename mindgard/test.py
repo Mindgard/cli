@@ -55,19 +55,7 @@ class ModelConfig:
     wrapper: _Wrapper
     def to_orchestrator_init_params(self) -> Dict[str, Any]:
         return {}
-    
-@dataclass
-class ImageModelConfig(ModelConfig):
-    dataset: str
-    labels: list[str]
-    model_type: str = "image"
 
-    def to_orchestrator_init_params(self) -> Dict[str, Any]:
-        return {
-            "modelType": self.model_type,
-            "dataset": self.dataset,
-            "labels": self.labels,
-        }
 
 @dataclass
 class LLMModelConfig(ModelConfig):

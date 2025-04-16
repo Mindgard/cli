@@ -4,17 +4,12 @@ from .exceptions import Uncontactable, HTTPBaseError
 
 # Models
 from .wrappers.llm import LLMModelWrapper
-from .wrappers.image import ImageModelWrapper
 
 # UI
 from rich.console import Console
 
 # Logging
 import logging
-
-
-# Data
-from .utils import base64_test_image_as_bytes
 
 
 def preflight_llm(
@@ -54,24 +49,5 @@ def preflight_llm(
         # something we've not really accounted for caught
         logging.error(e)
         raise e
-
-    return False
-
-
-def preflight_image(
-    model_wrapper: ImageModelWrapper,
-    console: Console,
-    json_out: bool,
-) -> bool:
-    
-    try:
-        data = base64_test_image_as_bytes()   
-        for i in range(5):
-            _ = model_wrapper.__call__(data)
-        return True
-    except Exception as e:
-        if not json_out:
-            console.print(f"[red]Could not contact the model!")
-        logging.error(e)
 
     return False

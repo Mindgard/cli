@@ -7,19 +7,17 @@ import traceback
 # Types
 from typing import List, cast
 
-from mindgard.types import log_levels, model_types, valid_image_datasets, type_model_presets_list, valid_llm_datasets
+from mindgard.types import log_levels, type_model_presets_list, valid_llm_datasets
 
 # Models
-from mindgard.preflight import preflight_image, preflight_llm
+from mindgard.preflight import preflight_llm
 from mindgard.wrappers.utils import parse_args_into_model
-from mindgard.wrappers.image import ImageModelWrapper
 from mindgard.wrappers.llm import LLMModelWrapper
 
 # Run functions
 from mindgard.run_functions.list_tests import list_test_submit, list_test_polling, list_test_output
 from mindgard.run_functions.sandbox_test import submit_sandbox_submit_factory, submit_sandbox_polling
 from mindgard.run_functions.external_models import model_test_polling, model_test_output_factory, model_test_submit_factory
-from mindgard.external_model_handlers.image_model import image_message_handler
 from mindgard.external_model_handlers.llm_model import llm_message_handler
 from mindgard.run_poll_display import cli_run
 
@@ -54,7 +52,6 @@ def shared_arguments(parser: argparse.ArgumentParser):
     parser.add_argument('--selector', type=str, help='The selector to retrieve the text response from the LLM response JSON.', required=False)
     parser.add_argument('--request-template', type=str, help='The template to wrap the API request in.', required=False)
     parser.add_argument('--tokenizer', type=str, help='Choose a HuggingFace model to provide a tokeniser for prompt and chat completion templating.', required=False)
-    parser.add_argument('--model-type', type=str, help='The modality of the model; image or llm', choices=model_types, required=False)
     parser.add_argument('--risk-threshold', type=int, help='Set a flagged event to total event ratio threshold above which the system will exit 1', required=False)
 
 def parse_args(args: List[str]) -> argparse.Namespace:
@@ -87,9 +84,8 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     test_parser.add_argument('--rate-limit', type=int, help='The maximum number of requests to make to model in one minute (default: 3600)', required=False)
     test_parser.add_argument('--force-multi-turn', type=bool, help='Enable multi turn attacks in scenarios where they may not be safe, such as when testing an API without chat completions history.', required=False)
     test_parser.add_argument('--dataset', type=str, help=textwrap.dedent(f'''
-                                                                         The dataset to be used for running the attacks on the given model. 
-                                                                         For image models use the following values: {valid_image_datasets}
-                                                                         For LLM models this should be a csv formatted file path, with each prompt on a new line'''), required=False)
+                                                                         The dataset to be used for running the attacks on the given model.
+                                                                         This should be a csv formatted file path, with each prompt on a new line'''), required=False)
     test_parser.add_argument('--domain', type=str, help='The domain to inform the dataset used for LLMs.', choices=valid_llm_datasets, required=False)
     test_parser.add_argument('--mode', type=str, help='Specify the number of samples to use during attacks; contact Mindgard for access to \'thorough\' or \'exhaustive\' test', choices=['fast', 'thorough', 'exhaustive'], required=False)
     test_parser.add_argument('--exclude', type=str, help=textwrap.dedent(f'''
@@ -141,12 +137,9 @@ def run_cli() -> None:
     elif args.command == "validate" or args.command == "test":
         console = Console()
         final_args = parse_toml_and_args_into_final_args(args.config_file, args)
-        model_wrapper = parse_args_into_model(final_args["model_type"], final_args)
+        model_wrapper = parse_args_into_model(final_args)
 
-        if final_args["model_type"] == "llm":
-            passed_preflight = preflight_llm(model_wrapper, console=console, json_out=final_args["json"])
-        else:
-            passed_preflight = preflight_image(model_wrapper, console=console, json_out=final_args["json"])
+        passed_preflight = preflight_llm(model_wrapper, console=console, json_out=final_args["json"])
 
         if not final_args["json"]:
             console.print(f"{'[green bold]Model contactable!' if passed_preflight else '[red bold]Model not contactable!'}")
@@ -158,41 +151,24 @@ def run_cli() -> None:
                     from mindgard.main_lib import run_test
                     run_test(final_args, model_wrapper)
                 else:
-                    if final_args["model_type"] == "llm":
-                        request = OrchestratorSetupRequest(
-                            target=final_args["target"],
-                            parallelism=final_args["parallelism"],
-                            system_prompt=final_args["system_prompt"],
-                            dataset=final_args.get("custom_dataset", final_args["dataset"]),
-                            custom_dataset=final_args.get("custom_dataset",None),
-                            modelType=final_args["model_type"],
-                            attackSource="user",
-                            attackPack=final_args["attack_pack"],
-                            exclude=final_args["exclude"],
-                            include=final_args["include"],
-                            prompt_repeats=final_args["prompt_repeats"],
-                        )
-                        submit = model_test_submit_factory(
-                            request=request,
-                            model_wrapper=cast(LLMModelWrapper, model_wrapper),
-                            message_handler=llm_message_handler
-                        )
-                    elif final_args["model_type"] == "image":
-                        dataset = final_args["dataset"] or valid_image_datasets[0]
-
-                        request = OrchestratorSetupRequest(
-                            target=final_args["target"],
-                            parallelism=int(final_args["parallelism"]),
-                            dataset=dataset,
-                            modelType=final_args["model_type"],
-                            attackSource="user",
-                            labels=final_args["labels"]
-                        )
-                        submit = model_test_submit_factory(
-                            request=request,
-                            model_wrapper=cast(ImageModelWrapper, model_wrapper),
-                            message_handler=image_message_handler
-                        )
+                    request = OrchestratorSetupRequest(
+                        target=final_args["target"],
+                        parallelism=final_args["parallelism"],
+                        system_prompt=final_args["system_prompt"],
+                        dataset=final_args.get("custom_dataset", final_args["dataset"]),
+                        custom_dataset=final_args.get("custom_dataset",None),
+                        modelType="llm",
+                        attackSource="user",
+                        attackPack=final_args["attack_pack"],
+                        exclude=final_args["exclude"],
+                        include=final_args["include"],
+                        prompt_repeats=final_args["prompt_repeats"],
+                    )
+                    submit = model_test_submit_factory(
+                        request=request,
+                        model_wrapper=cast(LLMModelWrapper, model_wrapper),
+                        message_handler=llm_message_handler
+                    )
 
                     output = model_test_output_factory(risk_threshold=int(final_args["risk_threshold"]))
                     cli_response = cli_run(submit, model_test_polling, output_func=output, json_out=final_args["json"])
