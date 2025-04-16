@@ -30,8 +30,6 @@ type_output_func = Callable[[Any, bool], Optional[Table]]
 # Orchestrator submit/request enums
 type_orchestrator_attack_pack = Literal["sandbox", "threat_intel"]
 type_orchestrator_source = Literal["threat_intel", "user", "mindgard"]
-model_types = ["image", "llm"]
-type_model_types = Literal["image", "llm"]
 type_model_presets = Literal['huggingface-openai', 'openai-compatible', 'huggingface', 'openai', 'azure-openai', 'azure-aistudio', 'anthropic', 'tester', 'local']
 type_model_presets_list: Tuple[type_model_presets, ...] = get_args(type_model_presets)
 
@@ -50,16 +48,6 @@ log_levels = [
     "debug",
     "notset",
 ]  # [n.lower() for n in logging.getLevelNamesMapping().keys()]
-
-# valid datasets
-valid_image_datasets = [
-    "mri",
-    "xray",
-    "rvltest_mini",
-    "eurosat",
-    "mnist",
-    "beans",
-]
 
 valid_llm_datasets = {
     "customerservice": "BadCustomer",

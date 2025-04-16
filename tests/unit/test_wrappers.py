@@ -9,7 +9,6 @@ from pytest_httpx import HTTPXMock
 
 import mindgard
 from mindgard.exceptions import Uncontactable, UnprocessableEntity, EmptyResponse
-from mindgard.wrappers.image import ImageModelWrapper, LabelConfidence, get_image_model_wrapper
 from mindgard.wrappers.llm import OpenAIWrapper, TestStaticResponder, ContextManager, APIModelWrapper, \
     get_llm_model_wrapper, Context, PromptResponse
 
@@ -216,121 +215,6 @@ def test_api_model_wrapper_can_support_multi_turn_in_stateful_api_scenarios() ->
 
         assert '"eh up"' == wrapper("hello", context)
 
-def test_image_model_wrapper_aligns_responses() -> None:
-    url = "https://example.com/somewhere"
-    wrapper = ImageModelWrapper(
-        url=url,
-        labels=["0","1"],
-        api_key="test api key"
-    )
-
-    with requests_mock.mock() as m:
-        image=base64.b64encode("hello world".encode("utf-8"))
-        mock = m.post(
-            url,
-            json=[{"label":"1","score":"0.2"},{"label":"0","score":"0.1"}],
-        )
-        assert wrapper(image) == [LabelConfidence(label="0",score="0.1"),LabelConfidence(label="1",score="0.2")]
-        assert mock.last_request.headers["Accept"] == "application/json"
-        assert mock.last_request.headers["Content-Type"] == "image/jpeg"
-        assert mock.last_request.headers["Authorization"] == "Bearer test api key"
-        assert mock.last_request.text == image.decode("utf-8")
-
-def test_image_model_wrapper_missing_labels_raises_valueerror() -> None:
-    url = "https://example.com/somewhere"
-    wrapper = ImageModelWrapper(
-        url=url,
-        labels=["0"],
-        api_key="test api key"
-    )
-
-    with requests_mock.mock() as m:
-        image=base64.b64encode("hello world".encode("utf-8"))
-        mock = m.post(
-            url,
-            json=[{"label":"1","score":"0.2"},{"label":"0","score":"0.1"}],
-        )
-        with pytest.raises(ValueError):
-            wrapper(image)
-        assert mock.last_request.text == image.decode("utf-8")
-        assert mock.last_request.headers["Accept"] == "application/json"
-        assert mock.last_request.headers["Content-Type"] == "image/jpeg"
-        assert mock.last_request.headers["Authorization"] == "Bearer test api key"
-
-def test_image_local_model_wrapper_allow_redirects() -> None:
-    url_redirect = "https://example.com/redirect"
-    url_target = "https://example.com/target"
-    content_redirect = {"nothing":"here"}
-    content_target = [{"label":"my label", "score": 0.5}]
-    wrapper = get_image_model_wrapper(
-        preset="local",
-        url=url_redirect,
-        labels=["my label"],
-        api_key="test api key",
-        allow_redirects=True,
-    )
-
-    with requests_mock.mock() as m:
-        m.post(url_redirect, json=content_redirect, status_code=308, headers={"Location":url_target})
-        m.post(url_target, json=content_target, status_code=200)
-
-        res = wrapper(b'a')
-        assert res == [LabelConfidence(label='my label', score=0.5)]
-
-        # we know it's processed the redirect if we got the two requests
-        assert len(m.request_history) == 2, "default should follow redirects"
-        assert m.last_request.url == url_target
-
-def test_image_local_model_wrapper_disallow_redirects() -> None:
-    url_redirect = "https://example.com/redirect"
-    url_target = "https://example.com/target"
-    content_redirect = {"nothing":"here"}
-    wrapper = get_image_model_wrapper(
-        preset="local",
-        url=url_redirect,
-        labels=["my label"],
-        api_key="test api key",
-        allow_redirects=False,
-    )
-
-    with requests_mock.mock() as m:
-        m.post(url_redirect, json=content_redirect, status_code=308, headers={"Location":url_target})
-
-        try:
-            # Image models do not have any response processing to distinguish non-success responses
-            # at the time of writing this test we were not focused in that area but needed to validate
-            # the redirect behaviour. This exception assertion may not necessarily hold once response
-            # processing is implemented fully.
-            wrapper(b'a')
-        except:
-            pass
-
-        # we know it's processed the redirect if we got the two requests
-        assert len(m.request_history) == 1, "should not follow redirects"
-        assert m.last_request.url == url_redirect
-
-def test_image_local_model_wrapper_default_allow_redirects() -> None:
-    url_redirect = "https://example.com/redirect"
-    url_target = "https://example.com/target"
-    content_redirect = {"nothing":"here"}
-    content_target = [{"label":"my label", "score": 0.5}]
-    wrapper = get_image_model_wrapper(
-        preset="local",
-        url=url_redirect,
-        labels=["my label"],
-        api_key="test api key",
-    )
-
-    with requests_mock.mock() as m:
-        m.post(url_redirect, json=content_redirect, status_code=308, headers={"Location":url_target})
-        m.post(url_target, json=content_target, status_code=200)
-
-        res = wrapper(b'a')
-        assert res == [LabelConfidence(label='my label', score=0.5)]
-
-        # we know it's processed the redirect if we got the two requests
-        assert len(m.request_history) == 2, "default should follow redirects"
-        assert m.last_request.url == url_target
 
 def test_llm_local_model_wrapper_allow_redirects() -> None:
     url_redirect = "https://example.com/redirect"

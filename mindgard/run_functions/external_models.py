@@ -1,4 +1,3 @@
-from mindgard.wrappers.image import ImageModelWrapper
 from mindgard.wrappers.llm import LLMModelWrapper
 from ..orchestrator import (
     setup_orchestrator_webpubsub_request,
@@ -26,13 +25,13 @@ import time
 
 def model_test_submit_factory(
     request: OrchestratorSetupRequest,
-    model_wrapper: Union[LLMModelWrapper, ImageModelWrapper],
+    model_wrapper: LLMModelWrapper,
     message_handler: Callable[
         [
             type_ui_exception_map,
             Progress,
             Callable[[str], None],
-            Union[LLMModelWrapper, ImageModelWrapper],
+            LLMModelWrapper,
             WebPubSubClient,
         ],
         Callable[[OnGroupDataMessageArgs], None],

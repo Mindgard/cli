@@ -85,7 +85,7 @@ mindgard sandbox cfp_faces
 
 Our testing infrastructure can be pointed at your models using the CLI.
 
-Testing an external model uses the `test` command and can target either LLMs or Image Classifiers
+Testing an external model uses the `test` command to evaluate your LLMs.
 
 `mindgard test <name> --url <url> <other settings>`
 
@@ -98,28 +98,6 @@ mindgard test my-model-name \
   --request-template '{"prompt": "[INST] {system_prompt} {prompt} [/INST]"}' \ # how to format the system prompt and prompt in the API request
   --system-prompt 'respond with hello' # system prompt to test the model with
 ```
-
-### Image Classifiers
-
-Image models require a few more parameters than LLMs so we recommend using a configuration file:
-
-```
-target = "my-custom-model"
-model-type = "image"
-api_key = "hf_###"
-url = "https://####.@@@@.aws.endpoints.huggingface.cloud"
-dataset = "beans"
-labels='''{
-            "0": "angular_leaf_spot",
-            "1": "bean_rust",
-            "2": "healthy"
-        }'''
-```
-After saving as `image-model-config.toml`, it can be used in the test command as follows:
-
-```mindgard test --config=image-model-config.toml```
-
-Click here for more on our [datasets](#datasets), [labels](#labels) and our supported [API](#icapi).
 
 ### Validate model is online before launching tests
 
@@ -204,80 +182,6 @@ The `selector` setting is a JSON selector and specifies how to extract the model
 
 The `headers` setting allows you to specify a custom HTTP header to include with outgoing requests, for example to implement a custom authentication method.
 
-<a id="datasets"></a>
-#### Image Classifier Datasets
-
-We have a fixed set of datasets to chose from covering diverse domains such as facial recognition, medical imaging, satellite imagery, and handwritten digit recognition, allowing for a suite of different custom models to be tested.
-
-| CLI Dataset  | Domain                                                   | Source/Name                            |
-|--------------|----------------------------------------------------------|----------------------------------------|
-| mri          | Classification of Alzheimers based on MRI scans          | HuggingFace Alzheimer_MRI              |
-| xray         | Classification of Pneumonia based on chest x-rays        | HuggingFace chest-xray-classification  |
-| rvltest_mini | Classification of documents as letter, memo, etc         | HuggingFace rvlTest                    |
-| eurosat      | Classification of satellite images by terrain features   | HuggingFace eurosat-demo               |
-| mnist        | Classification of handwritten digits 0 - 9               | TorchVision MNIST                      |
-| beans        | Classification of leaves as either healthy or unhealthy. | HuggingFace beans                      |
-
-<a id="labels"></a>
-#### Labels
-
-Many image classifiers don't return probabilities for all classes. A config is required to make sure we're aware of all the labels and tensor indexes for the classes you're going to send us.
-
-For a eurosat model, 
-```
-{
-  "0": "AnnualCrop",
-  "1": "Forest",
-  "2": "HerbaceousVegetation",
-  "3": "Highway",
-  "4": "Industrial",
-  "5": "Pasture",
-  "6": "PermanentCrop",
-  "7": "Residential",
-  "8": "River",
-  "9": "SeaLake"
-}
-```
-
-<a id="icapi"></a>
-#### Image Classifier API
-
-Mindgard supports any image model compatible with an API compatible with HuggingFace's InferenceEndpoints for image classifiers.
-
-```
-curl "https://address.com/model" \
--X POST \
---data-binary '@cats.jpg' \
--H "Accept: application/json" \
--H "Content-Type: image/jpeg"
-```
-
-The image in bytes will be sent in the data field of the POST request, and the HTTP response body should include predictions in the form:
-
-```
-[
-  {
-    "label": "stretcher",
-    "score": 0.44380655884742737
-  },
-  {
-    "label": "basketball",
-    "score": 0.08756192773580551
-  },
-  {
-    "label": "prison, prison house",
-    "score": 0.06375777721405029
-  },
-  {
-    "label": "scoreboard",
-    "score": 0.043840788304805756
-  },
-  {
-    "label": "neck brace",
-    "score": 0.029874464496970177
-  }
-]
-```
 
 <a id="MLops"></a>
 ### 🚦 Using in an MLOps pipeline
