@@ -3,12 +3,12 @@ from unittest import mock
 from httpx import Response
 from openai import OpenAIError, APIStatusError
 import requests_mock
-import base64
+import requests
 import pytest
 from pytest_httpx import HTTPXMock
 
 import mindgard
-from mindgard.exceptions import Uncontactable, UnprocessableEntity, EmptyResponse
+from mindgard.exceptions import Uncontactable, UnprocessableEntity, EmptyResponse, HTTPBaseError
 from mindgard.wrappers.llm import OpenAIWrapper, TestStaticResponder, ContextManager, APIModelWrapper, \
     get_llm_model_wrapper, Context, PromptResponse
 
@@ -971,3 +971,23 @@ def test_llm_openai_model_wrapper_empty_response_exception(mock_azureopenai:mock
     ):
         wrapper("a")
 
+
+def test_llm_custom_model_wrapper_exception_of_unknown_status() -> None:
+    status_code = 455
+    url = "https://blah.com/model"
+    expected_error_detail = "An unexpected error occurred:<Response [455]>"
+
+    with requests_mock.Mocker() as m:
+        m.post(url, status_code=status_code)
+
+        wrapper = APIModelWrapper(
+            url,
+            system_prompt="mysysprompt",
+            rate_limit=100
+        )
+
+        with pytest.raises(
+                HTTPBaseError,
+                match=re.escape(expected_error_detail),
+        ):
+            wrapper("a")

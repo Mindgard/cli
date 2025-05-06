@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import json
 import logging
+from http.client import HTTPException
 from typing import Any, Dict, List, Optional, Tuple, Union, cast
 from anthropic import Anthropic
 from anthropic.types import MessageParam
@@ -23,7 +24,7 @@ from mindgard.exceptions import (
     UnprocessableEntity,
     status_code_to_exception,
     EmptyResponse,
-    NotImplemented,
+    NotImplemented, HTTPBaseError,
 )
 
 
@@ -217,7 +218,7 @@ class APIModelWrapper(LLMModelWrapper):
             raise Uncontactable(str(cerr))
         except requests.exceptions.HTTPError as httperr:
             status_code: int = httperr.response.status_code
-            raise status_code_to_exception(status_code)
+            raise status_code_to_exception(status_code, actual_error=httperr)
         except Exception as e:
             # everything else
             raise e
