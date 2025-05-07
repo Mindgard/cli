@@ -4,7 +4,7 @@ import logging
 
 # Typing
 from typing import Callable, Dict, Literal, Optional, Type
-from requests import status_codes
+from requests import status_codes, HTTPError
 
 
 
@@ -82,27 +82,39 @@ class NotImplemented(MGException):
     pass
 
 
+class GatewayTimeout(HTTPBaseError): ...
+
+
+msg_bad_request = "LLM provider received message that couldn't be handled."
+msg_unauthorized = "User is not authorized to access this LLM provider resource"
+msg_forbidden = "User is known but does not have permission to access this resource"
+msg_not_found = "This resource was not found."
+msg_timeout = "Timed out while trying to access resource"
+msg_unprocessable = "Entity sent to LLM could not be processed."
+msg_failed_dependency = "Failed Dependency"
+msg_rate_limit_or_insufficient_credits = "Rate Limit or Insufficient Credits"
+msg_internal_server_error = "Internal Server Error"
+msg_service_unavailable = "Service Unavailable"
+msg_gateway_timeout = "The server, acting as a gateway or proxy, didn't receive a timely response from an upstream server it needed to access to complete the request"
+
 _status_code_exception_map: Dict[int, HTTPBaseError] = {
-    400: BadRequest("LLM provider received message that couldn't be handled.", 400),
-    401: Unauthorized(
-        "User is not authorized to access this LLM provider resource.", 401
-    ),
-    403: Forbidden(
-        "User is known but does not have permission to access this resource.", 403
-    ),
-    404: NotFound("This resource was not found.", 404),
-    408: Timeout("Timed out while trying to access resource", 408),
-    422: UnprocessableEntity("Entity sent to LLM could not be processed.", 422),
-    424: FailedDependency("Failed Dependency TODO", 424),
-    429: RateLimitOrInsufficientCredits("Rate Limit or Insufficient Credits TODO", 429),
-    500: InternalServerError("Internal Server Error TODO", 500),
-    503: ServiceUnavailable("Service Unavailable TODO", 503),
+    400: BadRequest(msg_bad_request, 400),
+    401: Unauthorized(msg_unauthorized, 401),
+    403: Forbidden(msg_forbidden, 403),
+    404: NotFound(msg_not_found, 404),
+    408: Timeout(msg_timeout, 408),
+    422: UnprocessableEntity(msg_unprocessable, 422),
+    424: FailedDependency(msg_failed_dependency, 424),
+    429: RateLimitOrInsufficientCredits(msg_rate_limit_or_insufficient_credits, 429),
+    500: InternalServerError(msg_internal_server_error, 500),
+    503: ServiceUnavailable(msg_service_unavailable, 503),
+    504: GatewayTimeout(msg_gateway_timeout, 504),
 }
 
 
-def status_code_to_exception(status_code: int) -> HTTPBaseError:
+def status_code_to_exception(status_code: int, actual_error: Optional[HTTPError] = None) -> HTTPBaseError:
     return _status_code_exception_map.get(
-        status_code, HTTPBaseError("Error specifics unknown", -1)
+        status_code, HTTPBaseError("An unexpected error occurred:" + str(actual_error.response), status_code)
     )
 
 
@@ -132,6 +144,7 @@ exceptions_to_cli_status_codes: Dict[Type[Exception], ErrorCode] = {
     ServiceUnavailable: "NoResponse",
     NotImplemented: "NotImplemented",
     EmptyResponse: "NoResponse",
+    GatewayTimeout: "NoResponse",
 }
 
 
