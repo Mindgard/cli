@@ -53,6 +53,12 @@ def create_custom_dataset(create_args: CreateCustomDatasetCLIArgs, access_token:
             f"File name: {create_args.output_filename} already exists. Please choose a different name by setting --output-filename <your_file_name>"))
         exit(EXIT_CODE_ERROR)
 
+    if create_args.num_entries < 1 or create_args.num_entries > 250:
+        print_to_stderr(
+            ValueError(f"Number of entries (--num_entries) must be between 1 and 250 (provided: {create_args.num_entries})")
+        )
+        exit(EXIT_CODE_ERROR)
+
     try:
 
         json_payload = CreateCustomDatasetRequest(
