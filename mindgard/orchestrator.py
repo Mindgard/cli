@@ -39,6 +39,9 @@ class OrchestratorSetupRequest(BaseModel):
     exclude: Optional[List[str]] = None
     include: Optional[List[str]] = None
     prompt_repeats: Optional[int] = None
+    seed_prompts: Optional[str] = None
+    perspective: Optional[str] = None
+    tone: Optional[str] = None
 
     @model_validator(mode="after")  # type: ignore
     def check_parallelism(self):

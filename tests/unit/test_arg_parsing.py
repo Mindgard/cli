@@ -3,6 +3,7 @@ import sys
 from argparse import Namespace
 from dataclasses import dataclass, field
 import tempfile
+import shlex
 from typing import Any, Dict, List, Optional, Tuple, cast
 from unittest import mock
 from unittest.mock import mock_open, patch
@@ -817,3 +818,16 @@ def test_args_parsing_empty_config_test() -> None:
     final_args = parse_toml_and_args_into_final_args(None, parsed_args)
     
     assert final_args, "Expected final_args to be returned"
+
+
+def test_args_parsing_for_generate_dataset() -> None:
+    seed_prompt = "I am a sales person and I dont want customers to game my chatbot to get free cars"
+    perspective = "cultural"
+    tone = "leading"
+    cli_command = f"create dataset --seed-prompt \"{seed_prompt}\" --perspective {perspective} --tone {tone}"
+    parsed_args = parse_args(cast(List[str], shlex.split(cli_command)))
+    assert parsed_args.command == "create"
+    assert parsed_args.create_command == "dataset"
+    assert parsed_args.seed_prompt == seed_prompt
+    assert parsed_args.perspective == perspective
+    assert parsed_args.tone == tone
