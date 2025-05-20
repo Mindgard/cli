@@ -100,6 +100,14 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     validate_parser = subparsers.add_parser("validate", help="Validates that we can communicate with your model")
     shared_arguments(validate_parser)
 
+    create_parser = subparsers.add_parser('create', help='Create commands')
+    create_subparsers = create_parser.add_subparsers(dest='create_command')
+    create_dataset_parser = create_subparsers.add_parser('dataset', help='Create a custom dataset for your test')
+    create_dataset_parser.add_argument('--seed-prompt', type=str, help='The seed prompt representing a policy for which to generate a counter-example dataset for.', required=True)
+    create_dataset_parser.add_argument('--perspective', type=str, help='The perspective to use while generating the dataset. This skews the dataset generation towards asking the same question, but through a historical, cultural, etc lens that may confuse a target model.', choices=['nonspecific', 'historical', 'cultural', 'scientific'], default='nonspecific', required=False)
+    create_dataset_parser.add_argument('--tone', type=str, help='The tone to use for the questions in the dataset.', choices=['neutral', 'forceful', 'leading', 'innocent', 'corrigible', 'indirect'], default='neutral' , required=False)
+    create_dataset_parser.add_argument('--output-filename', type=str, help='Name of the file dataset will be stored', default="mindgard_custom_dataset.txt")
+    create_dataset_parser.add_argument("--num-entries", type=int, help="Number of dataset entries to generate", default=15)
     return parser.parse_args(args)
 
 def run_cli() -> None:
@@ -133,6 +141,12 @@ def run_cli() -> None:
 
         cli_response = cli_run(submit_func=submit_sandbox_submit, polling_func=submit_sandbox_polling, output_func=submit_sandbox_output, json_out=args.json)
         exit(convert_test_to_cli_response(test=cli_response, risk_threshold=100).code())
+    elif args.command == 'create':
+        if args.create_command == 'dataset':
+            from mindgard.dataset_generation import create_custom_dataset
+            create_custom_dataset(args)
+        else:
+            print('Unknown create command. Please see `mindgard create --help` for more information.')
 
     elif args.command == "validate" or args.command == "test":
         console = Console()
