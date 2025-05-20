@@ -824,10 +824,12 @@ def test_args_parsing_for_generate_dataset() -> None:
     seed_prompt = "I am a sales person and I dont want customers to game my chatbot to get free cars"
     perspective = "cultural"
     tone = "leading"
-    cli_command = f"create dataset --seed-prompt \"{seed_prompt}\" --perspective {perspective} --tone {tone}"
+    num_entries = 25
+    cli_command = f"create dataset --seed-prompt \"{seed_prompt}\" --perspective {perspective} --tone {tone} --num-entries {num_entries}"
     parsed_args = parse_args(cast(List[str], shlex.split(cli_command)))
     assert parsed_args.command == "create"
     assert parsed_args.create_command == "dataset"
     assert parsed_args.seed_prompt == seed_prompt
     assert parsed_args.perspective == perspective
     assert parsed_args.tone == tone
+    assert parsed_args.num_entries == num_entries
