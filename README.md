@@ -48,7 +48,7 @@ Table of Contents
 <a id="Install"></a>
 ## 🚀 Install Mindgard CLI
 
-`pip install mindgard` or `pip install mindgard -U` to update to the latest version
+`pip install mindgard` or `pip install --upgrade mindgard` to update to the latest version
 
 ### 🔑 Login
 
