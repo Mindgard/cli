@@ -34,7 +34,7 @@ class OrchestratorSetupRequest(BaseModel):
     custom_dataset: Optional[str] = None
     attackPack: Optional[str] = None
     attackSource: str
-    parallelism: int
+    parallelism: Optional[int] = None
     labels: Optional[List[str]] = None
     exclude: Optional[List[str]] = None
     include: Optional[List[str]] = None
@@ -45,7 +45,7 @@ class OrchestratorSetupRequest(BaseModel):
 
     @model_validator(mode="after")  # type: ignore
     def check_parallelism(self):
-        if self.parallelism < 1:
+        if self.parallelism and self.parallelism < 1:
             raise ValueError("Parallelism must be greater than 0.")
 
         return self
