@@ -102,7 +102,7 @@ def parse_toml_and_args_into_final_args(
 
 
     final_args["risk_threshold"] = final_args.get("risk_threshold") if final_args.get("risk_threshold") is not None else 50
-    final_args["parallelism"] = final_args.get("parallelism") if final_args.get("parallelism") is not None else 5
+    final_args["parallelism"] = final_args.get("parallelism") if final_args.get("parallelism") is not None else final_args.pop("parallelism", None)
     final_args["json"] = final_args.get("json") if final_args.get("json") is not None else False
     final_args["mode"] = final_args.get("mode") if final_args.get("mode") is not None else "fast"
     final_args["rate_limit"] = final_args.get("rate_limit") if final_args.get("rate_limit") is not None else 3600 # 60rps

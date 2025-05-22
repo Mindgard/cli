@@ -86,7 +86,7 @@ def create_custom_dataset(create_args: CreateCustomDatasetCLIArgs, access_token:
                     time.sleep(0.5)
                     datasets = get_generated_dataset(dataset_id=response.json()["id"],
                                                      file_name=create_args.output_filename)
-                    if datasets.get("is_complete", None):
+                    if datasets and datasets.get("is_complete", False):
                         console.print(f"Dataset generation completed. Filename is {create_args.output_filename}")
                         break
         response.raise_for_status()
