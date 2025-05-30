@@ -7,7 +7,7 @@ import toml
 
 # Types
 from typing import Any, Dict, List, Optional, Tuple
-from mindgard.types import valid_llm_datasets
+from mindgard.types import valid_llm_datasets, type_model_presets_list
 
 # Data models
 from mindgard.orchestrator import OrchestratorTestResponse, GetTestAttacksResponse
@@ -95,6 +95,10 @@ def parse_toml_and_args_into_final_args(
         k: v if v is not None else toml_args.get(k) or toml_args.get(k.replace("_", "-"))
         for k, v in vars(args).items()
     }
+
+    preset = final_args["preset"]
+    if preset is not None and preset not in type_model_presets_list:
+        raise ValueError(f"Preset '{preset}' is invalid, must be one of {type_model_presets_list}")
     
     final_args["api_key"] = final_args["api_key"] or os.environ.get(
         "MODEL_API_KEY", None

@@ -394,6 +394,29 @@ def test_toml_and_args_parsing_model_type_llm():
             assert final_args["mode"] == "fast"
 
 
+def test_toml_and_args_parsing_valid_preset():
+    cli_command = "test --config-file=config.toml"
+    namespace = Namespace(command='test', config_file='config.toml', log_level='warn', json=False, az_api_version=None,
+                          prompt=None, system_prompt=None, selector=None, request_template=None, rate_limit=None,
+                          tokenizer=None, parallelism=None, dataset=None, domain=None, model_name=None,
+                          api_key=None, url=None, preset=None, headers=None, header=None, target=None,
+                          risk_threshold=None, mode=None, exclude=None, include=None, force_multi_turn=None,
+                          prompt_repeats=None)
+    parsed_args = parse_args(cast(List[str], cli_command.split()))
+
+    assert parsed_args == namespace
+
+    toml_content = """
+    preset = "garbage"
+    target= "my_model"
+    system-prompt = "You are a helpful, respectful and honest assistant."
+    """
+
+    with pytest.raises(ValueError):
+        with patch('builtins.open', mock_open(read_data=toml_content)):
+            parse_toml_and_args_into_final_args("config.toml", parsed_args)
+
+
 def test_toml_and_args_parsing_model_type_empty():
     cli_command = "test --config-file=config.toml"
     namespace = Namespace(command='test', config_file='config.toml', log_level='warn', json=False, az_api_version=None,
