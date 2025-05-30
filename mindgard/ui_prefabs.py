@@ -1,5 +1,6 @@
 # Typing
 import json
+import logging
 from typing import Optional
 from .run_poll_display import type_ui_task_map
 
@@ -13,6 +14,7 @@ from .constants import DASHBOARD_URL
 from rich.progress import Progress
 from rich.table import Table
 
+logger = logging.getLogger(__name__)
 
 def poll_and_display_test(
     access_token: str,
@@ -27,15 +29,19 @@ def poll_and_display_test(
             ui_task_map[item.attack.id] = ui_task_progress.add_task(
                 f"Attack {item.attack.attack_name}", total=1, status="[chartreuse1]queued"
             )
+            logger.debug(f"Attack Queued : {item.attack.attack_name}")
 
     for item in test_and_attacks.items:
         task_id = ui_task_map[item.attack.id]
         if item.attack.status == 2:
             ui_task_progress.update(task_id, completed=1, status="[chartreuse3]success")
+            logger.debug(f"Attack Success : {item.attack.attack_name}")
         elif item.attack.status == -1:
             ui_task_progress.update(task_id, completed=1, status="[red3]failed")
+            logger.debug(f"Attack Failed : {item.attack.attack_name}")
         elif item.attack.status == 1:
             ui_task_progress.update(task_id, status="[orange3]running")
+            logger.debug(f"Attack Running : {item.attack.attack_name}")
 
     if test_and_attacks.test.has_finished is False:
         return None

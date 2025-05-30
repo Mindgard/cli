@@ -116,7 +116,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
 def run_cli() -> None:
     args = parse_args(sys.argv[1:])
 
-    FORMAT = "%(message)s"
+    FORMAT = "%(asctime)s.%(msecs)02d; %(message)s"
     logging.basicConfig(
         level=args.log_level.upper(), format=FORMAT, datefmt="[%X]", handlers=[RichHandler(console=Console(stderr=True),locals_max_string=None,locals_max_length=None)]
     )

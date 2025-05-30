@@ -1,7 +1,9 @@
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import json
 import logging
+from functools import wraps
 from typing import Any, Dict, List, Optional, Tuple, Union, cast
 from anthropic import Anthropic
 from anthropic.types import MessageParam
@@ -27,6 +29,7 @@ from mindgard.exceptions import (
     Unauthorized
 )
 
+logger = logging.getLogger(__name__)
 
 @dataclass
 class PromptResponse:
@@ -54,6 +57,17 @@ class ContextManager:
         if self.contexts.get(context_id, None) is None:
             self.contexts[context_id] = Context()
         return self.contexts[context_id]
+
+def log_time(func):
+    @wraps(func)
+    def _inner(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        duration = end_time - start_time
+        logger.debug(f"App/Model API call took {duration * 1000.0} ms")
+        return result
+    return _inner
 
 
 class LLMModelWrapper(ABC):
@@ -87,7 +101,8 @@ class TestStaticResponder(LLMModelWrapper):
             return self._handler
         else:
             return super().to_handler()
-        
+
+    @log_time
     def __call__(self, content: str, with_context: Optional[Context] = None) -> str:
         return self._throttled_call(content, with_context)
     
@@ -195,8 +210,10 @@ class APIModelWrapper(LLMModelWrapper):
         ), f"Expected the request template to form a json dict, got {type(payload)} instead."
         return cast(Dict[str, Any], payload)
 
+    @log_time
     def __call__(self, content: str, with_context: Optional[Context] = None) -> str:
         return self.throttled_call_llm(content,with_context)
+
     def _call_llm(self, content: str, with_context: Optional[Context] = None) -> str:
         if with_context is not None and not self.multi_turn_enabled:
             logging.debug(
@@ -267,8 +284,10 @@ class AzureAIStudioWrapper(APIModelWrapper):
             rate_limit=rate_limit
         )
 
+    @log_time
     def __call__(self, content: str, with_context: Optional[Context] = None) -> str:
         return self.throttled_call_llm(content, with_context)
+
     def _call_llm(self, content: str, with_context: Optional[Context] = None) -> str:
         if with_context is not None:
             logging.debug(
@@ -378,8 +397,10 @@ class AzureOpenAIWrapper(LLMModelWrapper):
         self.system_prompt = system_prompt
         self.throttled_call_llm = throttle(self._call_llm, rate_limit=rate_limit)
 
+    @log_time
     def __call__(self, content: str, with_context: Optional[Context] = None) -> str:
         return self.throttled_call_llm(content, with_context)
+
     def _call_llm(self, content: str, with_context: Optional[Context] = None) -> str:
         return openai_call(wrapper=self, content=content, with_context=with_context)
 
@@ -408,8 +429,11 @@ class OpenAIWrapper(LLMModelWrapper):
         self.model_name = model_name or "gpt-3.5-turbo"
         self.system_prompt = system_prompt
         self.throttled_call_llm = throttle(self._call_llm, rate_limit=rate_limit)
+
+    @log_time
     def __call__(self, content: str, with_context: Optional[Context] = None) -> str:
         return self.throttled_call_llm(content, with_context)
+
     def _call_llm(self, content: str, with_context: Optional[Context] = None) -> str:
         return openai_call(wrapper=self, content=content, with_context=with_context)
 
@@ -481,6 +505,7 @@ class AnthropicWrapper(LLMModelWrapper):
         self.system_prompt = system_prompt
         self.throttled_call_llm = throttle(self._call_llm, rate_limit=rate_limit)
 
+    @log_time
     def __call__(self, content: str, with_context: Optional[Context] = None) -> str:
         return self.throttled_call_llm(content, with_context)
 
