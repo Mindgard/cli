@@ -43,6 +43,8 @@ def preflight_llm(
         message: str = (
             f"[red]Model pre-flight check returned {httpbe.status_code} ({httpbe.status_message})"
         )
+        if httpbe.status_code == 401:
+            message += " Is your API token correct/valid/permissive?"
         if not json_out:
             console.print(message)
     except Exception as e:

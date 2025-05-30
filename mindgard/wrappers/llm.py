@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import json
 import logging
-from http.client import HTTPException
 from typing import Any, Dict, List, Optional, Tuple, Union, cast
 from anthropic import Anthropic
 from anthropic.types import MessageParam
@@ -24,7 +23,8 @@ from mindgard.exceptions import (
     UnprocessableEntity,
     status_code_to_exception,
     EmptyResponse,
-    NotImplemented, HTTPBaseError,
+    NotImplemented,
+    Unauthorized
 )
 
 
@@ -441,6 +441,9 @@ def openai_call(
     except APIStatusError as exception:
         if exception.status_code == 308:
             raise Uncontactable("Failed to contact model: model returned a 308 redirect that couldn't be followed.") from exception
+        if exception.status_code == 401:
+            raise Unauthorized("Failed to contact model: model returned a 401 (unauthorized).",
+                                  status_code=401) from exception
         if exception.status_code == 422:
             err_message = "<none>"
             try:
