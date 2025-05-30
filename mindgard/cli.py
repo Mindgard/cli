@@ -203,4 +203,6 @@ def main() -> None:
         exit(2)
     except Exception:
         traceback.print_exc()
+        print(
+            "\n\033[93mTry running with `mindgard --log-level=debug ...` for more information, and ` 2> >(tee output.log >&2)` after your command to save output to disk.\033[0m")
         exit(2)
