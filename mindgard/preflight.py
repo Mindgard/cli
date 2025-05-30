@@ -1,6 +1,6 @@
 # Exceptions
 from typing import Tuple
-from .exceptions import Uncontactable, HTTPBaseError
+from .exceptions import Uncontactable, HTTPBaseError, MGException
 
 # Models
 from .wrappers.llm import LLMModelWrapper
@@ -47,6 +47,7 @@ def preflight_llm(
             message += " Is your API token correct/valid/permissive?"
         if not json_out:
             console.print(message)
+        raise MGException(f"{httpbe}")
     except Exception as e:
         # something we've not really accounted for caught
         logging.error(e)

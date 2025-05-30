@@ -7,6 +7,7 @@ import traceback
 # Types
 from typing import List, cast
 
+from mindgard.exceptions import MGException
 from mindgard.types import log_levels, type_model_presets_list, valid_llm_datasets
 
 # Models
@@ -34,6 +35,8 @@ from rich.console import Console
 
 # Auth
 from mindgard.auth import login, logout
+
+debug_help = lambda: print("\033[93mTry running with `mindgard --log-level=debug ...` for more information, and ` 2> >(tee output.log >&2)` after your command to save output to disk.\033[0m")
 
 # both validate and test need these same arguments, so have factored them out
 def shared_arguments(parser: argparse.ArgumentParser):
@@ -201,8 +204,10 @@ def main() -> None:
     except ValueError as e:
         print_to_stderr(str(e))
         exit(2)
+    except MGException:
+        debug_help()
+        exit(2)
     except Exception:
         traceback.print_exc()
-        print(
-            "\n\033[93mTry running with `mindgard --log-level=debug ...` for more information, and ` 2> >(tee output.log >&2)` after your command to save output to disk.\033[0m")
+        debug_help()
         exit(2)
