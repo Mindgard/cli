@@ -71,7 +71,6 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     subparsers.add_parser('logout', help='Logout of the Mindgard platform in the CLI')
 
     sandbox_test_parser = subparsers.add_parser('sandbox', help='Test a mindgard example model')
-    sandbox_test_parser.add_argument('target', nargs='?', type=str, choices=['cfp_faces', 'mistral'], default="cfp_faces")
     sandbox_test_parser.add_argument('--json', action="store_true", help='Return json output', required=False)
     sandbox_test_parser.add_argument('--risk-threshold', type=int, help='Set a flagged event to total event ratio threshold above which the system will exit 1', required=False, default=80)
 
@@ -139,7 +138,7 @@ def run_cli() -> None:
         else:
             print_to_stderr('Provide a resource to list. Eg `list tests`.')
     elif args.command == 'sandbox':
-        submit_sandbox_submit = submit_sandbox_submit_factory(model_name=args.target)
+        submit_sandbox_submit = submit_sandbox_submit_factory()
         submit_sandbox_output = model_test_output_factory(risk_threshold=100)
 
         cli_response = cli_run(submit_func=submit_sandbox_submit, polling_func=submit_sandbox_polling, output_func=submit_sandbox_output, json_out=args.json)
