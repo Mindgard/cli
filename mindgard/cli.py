@@ -7,6 +7,7 @@ import traceback
 # Types
 from typing import List, cast
 
+from mindgard.exceptions import MGException
 from mindgard.types import log_levels, type_model_presets_list, valid_llm_datasets
 
 # Models
@@ -34,6 +35,8 @@ from rich.console import Console
 
 # Auth
 from mindgard.auth import login, logout
+
+debug_help = lambda: print("\033[93mTry running with `mindgard --log-level=debug ...` for more information, and ` 2> >(tee output.log >&2)` after your command to save output to disk.\033[0m")
 
 # both validate and test need these same arguments, so have factored them out
 def shared_arguments(parser: argparse.ArgumentParser):
@@ -68,7 +71,6 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     subparsers.add_parser('logout', help='Logout of the Mindgard platform in the CLI')
 
     sandbox_test_parser = subparsers.add_parser('sandbox', help='Test a mindgard example model')
-    sandbox_test_parser.add_argument('target', nargs='?', type=str, choices=['cfp_faces', 'mistral'], default="cfp_faces")
     sandbox_test_parser.add_argument('--json', action="store_true", help='Return json output', required=False)
     sandbox_test_parser.add_argument('--risk-threshold', type=int, help='Set a flagged event to total event ratio threshold above which the system will exit 1', required=False, default=80)
 
@@ -113,7 +115,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
 def run_cli() -> None:
     args = parse_args(sys.argv[1:])
 
-    FORMAT = "%(message)s"
+    FORMAT = "%(asctime)s.%(msecs)02d; %(message)s"
     logging.basicConfig(
         level=args.log_level.upper(), format=FORMAT, datefmt="[%X]", handlers=[RichHandler(console=Console(stderr=True),locals_max_string=None,locals_max_length=None)]
     )
@@ -136,7 +138,7 @@ def run_cli() -> None:
         else:
             print_to_stderr('Provide a resource to list. Eg `list tests`.')
     elif args.command == 'sandbox':
-        submit_sandbox_submit = submit_sandbox_submit_factory(model_name=args.target)
+        submit_sandbox_submit = submit_sandbox_submit_factory()
         submit_sandbox_output = model_test_output_factory(risk_threshold=100)
 
         cli_response = cli_run(submit_func=submit_sandbox_submit, polling_func=submit_sandbox_polling, output_func=submit_sandbox_output, json_out=args.json)
@@ -201,8 +203,10 @@ def main() -> None:
     except ValueError as e:
         print_to_stderr(str(e))
         exit(2)
+    except MGException:
+        debug_help()
+        exit(2)
     except Exception:
         traceback.print_exc()
-        print(
-            "\n\033[93mTry running with `mindgard --log-level=debug ...` for more information, and ` 2> >(tee output.log >&2)` after your command to save output to disk.\033[0m")
+        debug_help()
         exit(2)

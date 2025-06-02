@@ -1,16 +1,22 @@
 import re
 from unittest import mock
+from unittest.mock import MagicMock
+
 from httpx import Response
 from openai import OpenAIError, APIStatusError
 import requests_mock
-import requests
+
 import pytest
 from pytest_httpx import HTTPXMock
+import httpx
 
 import mindgard
-from mindgard.exceptions import Uncontactable, UnprocessableEntity, EmptyResponse, HTTPBaseError
+from mindgard.exceptions import Uncontactable, UnprocessableEntity, EmptyResponse, HTTPBaseError, \
+    Unauthorized
 from mindgard.wrappers.llm import OpenAIWrapper, TestStaticResponder, ContextManager, APIModelWrapper, \
     get_llm_model_wrapper, Context, PromptResponse
+
+from openai import AuthenticationError
 
 _EXPECTED_308_MESSAGE = "Failed to contact model: model returned a 308 redirect that couldn't be followed."
 
@@ -968,6 +974,30 @@ def test_llm_openai_model_wrapper_empty_response_exception(mock_azureopenai:mock
     with pytest.raises(
         EmptyResponse, 
         match=re.escape("An OpenAI error occurred")
+    ):
+        wrapper("a")
+
+
+@mock.patch("mindgard.wrappers.llm.OpenAI", return_value=mock.MagicMock())
+def test_llm_openai_model_wrapper_raises_unauthorized_errors(mock_azureopenai:mock.MagicMock) -> None:
+    wrapper = get_llm_model_wrapper(
+        preset="openai",
+        api_key="test api key",
+        url="https://example.com/redirect",
+        model_name="model-name",
+        az_api_version="a-version",
+        headers={},
+    )
+
+    mock_azureopenai.return_value.chat.completions.create.side_effect = AuthenticationError(message="_",
+                                                                                            response=httpx.Response(
+                                                                                                status_code=401,
+                                                                                                request=MagicMock()),
+                                                                                            body=None)
+
+    with pytest.raises(
+        Unauthorized,
+        match=re.escape("Failed to contact model: model returned a 401 (unauthorized).")
     ):
         wrapper("a")
 

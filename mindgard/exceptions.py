@@ -42,6 +42,10 @@ class Unauthorized(HTTPBaseError):
     pass
 
 
+class Unauthenticated(HTTPBaseError):
+    pass
+
+
 class Forbidden(HTTPBaseError):
     pass
 

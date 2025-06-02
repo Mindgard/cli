@@ -15,14 +15,14 @@ from rich.progress import Progress
 POLL_INTERVAL_SECONDS = 3
 
 
-def submit_sandbox_submit_factory(model_name: str) -> type_submit_func:
+def submit_sandbox_submit_factory() -> type_submit_func:
 
     def submit_sandbox_submit(
         access_token: str,
         ui_exception_map: type_ui_exception_map,
         ui_exception_progress: Progress,
     ) -> OrchestratorTestResponse:
-        return submit_sandbox_test(access_token=access_token, target_name=model_name)
+        return submit_sandbox_test(access_token=access_token, target_name="sandbox-openai-gpt4o-mini")
 
     return submit_sandbox_submit
 

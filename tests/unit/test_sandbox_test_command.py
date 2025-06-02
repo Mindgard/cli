@@ -56,7 +56,7 @@ def test_json_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot, requ
         status_code=200,
     )
 
-    submit_sandbox_submit = submit_sandbox_submit_factory(model_name="mistral")
+    submit_sandbox_submit = submit_sandbox_submit_factory()
     submit_sandbox_output = model_test_output_factory(risk_threshold=100)
 
     cli_response = cli_run(submit_func=submit_sandbox_submit, polling_func=submit_sandbox_polling, output_func=submit_sandbox_output, json_out=True)
@@ -86,7 +86,7 @@ def test_text_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot, requ
         status_code=200,
     )
 
-    submit_sandbox_submit = submit_sandbox_submit_factory(model_name="mistral")
+    submit_sandbox_submit = submit_sandbox_submit_factory()
     submit_sandbox_output = model_test_output_factory(risk_threshold=100)
 
     cli_response = cli_run(submit_func=submit_sandbox_submit, polling_func=submit_sandbox_polling, output_func=submit_sandbox_output, json_out=False)
@@ -122,7 +122,7 @@ def test_risk_threshold(flagged_events: int, total_events: int, risk_threshold: 
         status_code=200,
     )
 
-    submit_sandbox_submit = submit_sandbox_submit_factory(model_name="mistral")
+    submit_sandbox_submit = submit_sandbox_submit_factory()
     submit_sandbox_output = model_test_output_factory(risk_threshold=risk_threshold)
 
     cli_response = cli_run(submit_func=submit_sandbox_submit, polling_func=submit_sandbox_polling, output_func=submit_sandbox_output, json_out=False)
