@@ -76,8 +76,7 @@ The `.mindgard/` folder contains:
 ## ✅ Test a mindgard hosted model
 
 ```
-mindgard sandbox mistral
-mindgard sandbox cfp_faces
+mindgard sandbox
 ```
 
 <a id="TestCustom"></a>
