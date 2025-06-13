@@ -75,8 +75,13 @@ class LLMModelWrapper(ABC):
         context_manager = ContextManager()
         def handler(payload: Any) -> Any:
             context = context_manager.get_context_or_none(payload.get("context_id"))
+            start_time = time.time()
+            model_response = self(payload["prompt"], context)
+            end_time = time.time()
+            duration_ms = (end_time - start_time) * 1000  # convert to milliseconds
             return {
-                "response": self(payload["prompt"], context)
+                "response": model_response,
+                "duration_ms": duration_ms
             }
         return handler
 
