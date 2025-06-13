@@ -342,32 +342,32 @@ def test_connect_websocket() -> None:
 
     mock_client.open.assert_called_once()
 
-def test_wrapper_to_handler() -> None:
+@mock.patch("mindgard.wrappers.llm.time.time", side_effect=[100.0, 100.123])
+def test_wrapper_to_handler(mock_time) -> None:
     wrapper = MockModelWrapper()
     handler = wrapper.to_handler()
     request_payload = {"prompt": "world"}
 
     response_payload = handler(request_payload)
-    assert response_payload == {
-        "response": "hello world",
-    }
+    assert response_payload['response'] == "hello world", "should return a response"
+    assert response_payload['duration_ms'] > 0, "should return a duration in milliseconds"
 
-def test_wrapper_to_handler_with_context() -> None:
+@mock.patch("mindgard.wrappers.llm.time.time", side_effect=[100.0, 100.123, 200.0, 200.123])
+def test_wrapper_to_handler_with_context(mock_time) -> None:
     wrapper = MockModelWrapper()
     handler = wrapper.to_handler()
     request_payload = {"prompt": "world", "context_id": "mycontext"}
 
     response_payload_0 = handler(request_payload)
-    assert response_payload_0 == {
-        "response": "hello world 0",
-    }
+    assert response_payload_0['response'] == "hello world 0", "should return a response"
+    assert response_payload_0['duration_ms'] > 0, "should return a duration in milliseconds"
 
     response_payload_1 = handler(request_payload)
-    assert response_payload_1 == {
-        "response": "hello world 1",
-    }
+    assert response_payload_1['response'] == "hello world 1", "should return a response"
+    assert response_payload_1['duration_ms'] > 0, "should return a duration in milliseconds"
 
-def test_register_handler() -> None:
+@mock.patch("mindgard.wrappers.llm.time.time", side_effect=[100.0, 100.123])
+def test_register_handler(mock_time) -> None:
     has_handler: List[Callable[[OnGroupDataMessageArgs], None]] = []
     has_sent_to_group: List[Dict[str, Any]] = []
     def subscribe(group_name:str, handler:Callable[[OnGroupDataMessageArgs], None]) -> None:
@@ -405,14 +405,11 @@ def test_register_handler() -> None:
     handler(msg)
 
     assert len(has_sent_to_group) == 1, "Request messages should be responded to"
-    assert has_sent_to_group[0] == {
-        "correlationId": "id1",
-        "messageType": "Response",
-        "status": "ok",
-        "payload": {
-            "response": "hello world",
-        }
-    }
+    assert has_sent_to_group[0]["correlationId"] == "id1", "should echo the correlation id"
+    assert has_sent_to_group[0]["messageType"] == "Response", "should be a Response messageType"
+    assert has_sent_to_group[0]["status"] == "ok", "should be an ok status"
+    assert has_sent_to_group[0]["payload"]["response"] == "hello world", "should return the correct response payload"
+    assert has_sent_to_group[0]["payload"]["duration_ms"] > 0, "should return the duration in milliseconds"
 
     # incorrect message type
     msg = OnGroupDataMessageArgs(group="group id", data_type=WebPubSubDataType.JSON, data={"correlationId": "id1", "messageType": "NotRequest", "payload": {"prompt": "world"}})
