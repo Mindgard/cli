@@ -17,7 +17,7 @@ import logging
 from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs
 from azure.messaging.webpubsubclient import WebPubSubClient
 
-from mindgard.wrappers.llm import LLMModelWrapper, ContextManager
+from mindgard.wrappers.llm import LLMModelWrapper, ContextManager, PromptResponse
 
 # Exceptions
 from mindgard.exceptions import (
@@ -61,13 +61,12 @@ def llm_message_handler(
 
             try:
                 # would pose being explicit with __call__ so we can ctrl+f easier, not a very clear shorthand
-                start_time = time.time()
-                response = model_wrapper.__call__(
+                prompt_response = model_wrapper.__call__(
                     content=content,
                     with_context=context,
                 )
-                end_time = time.time()
-                duration_ms = (end_time - start_time) * 1000  # convert to milliseconds
+                response = prompt_response.response
+                duration_ms = prompt_response.duration_ms
             except MGException as mge:
                 error_code = temp_handler(mge)
                 if error_code == "CLIError":

@@ -31,12 +31,15 @@ class MockModelWrapper(LLMModelWrapper):
     def mirror(cls, input:str) -> str:
         return "hello " + input
     
-    def __call__(self, content:str, with_context:Optional[Context] = None) -> str:
+    def __call__(self, content:str, with_context:Optional[Context] = None) -> PromptResponse:
         if with_context:
             res = self.mirror(content) + " " + str(len(with_context.turns))
-            with_context.add(PromptResponse(prompt=content, response=res))
-            return res
-        return self.mirror(content)
+            prompt_response = PromptResponse(prompt=content, response=res, duration_ms=1)
+            with_context.add(prompt_response)
+            return prompt_response
+
+        mirrored_content = self.mirror(content)
+        return PromptResponse(prompt=content, response=mirrored_content, duration_ms=1)
 
 def _helper_default_config(extra: Dict[str, Any] = {}) -> TestConfig:
     return TestConfig(
@@ -342,32 +345,29 @@ def test_connect_websocket() -> None:
 
     mock_client.open.assert_called_once()
 
-@mock.patch("mindgard.wrappers.llm.time.time", side_effect=[100.0, 100.123])
-def test_wrapper_to_handler(mock_time) -> None:
+def test_wrapper_to_handler() -> None:
     wrapper = MockModelWrapper()
     handler = wrapper.to_handler()
     request_payload = {"prompt": "world"}
 
     response_payload = handler(request_payload)
     assert response_payload['response'] == "hello world", "should return a response"
-    assert response_payload['duration_ms'] > 0, "should return a duration in milliseconds"
+    assert response_payload['duration_ms'] == 1, "should return a duration in milliseconds from the MockModelWrapper"
 
-@mock.patch("mindgard.wrappers.llm.time.time", side_effect=[100.0, 100.123, 200.0, 200.123])
-def test_wrapper_to_handler_with_context(mock_time) -> None:
+def test_wrapper_to_handler_with_context() -> None:
     wrapper = MockModelWrapper()
     handler = wrapper.to_handler()
     request_payload = {"prompt": "world", "context_id": "mycontext"}
 
     response_payload_0 = handler(request_payload)
     assert response_payload_0['response'] == "hello world 0", "should return a response"
-    assert response_payload_0['duration_ms'] > 0, "should return a duration in milliseconds"
+    assert response_payload_0['duration_ms'] == 1, "should return a duration in milliseconds from the MockModelWrapper"
 
     response_payload_1 = handler(request_payload)
     assert response_payload_1['response'] == "hello world 1", "should return a response"
-    assert response_payload_1['duration_ms'] > 0, "should return a duration in milliseconds"
+    assert response_payload_1['duration_ms'] == 1, "should return a duration in milliseconds from the MockModelWrapper"
 
-@mock.patch("mindgard.wrappers.llm.time.time", side_effect=[100.0, 100.123])
-def test_register_handler(mock_time) -> None:
+def test_register_handler() -> None:
     has_handler: List[Callable[[OnGroupDataMessageArgs], None]] = []
     has_sent_to_group: List[Dict[str, Any]] = []
     def subscribe(group_name:str, handler:Callable[[OnGroupDataMessageArgs], None]) -> None:
@@ -391,7 +391,8 @@ def test_register_handler(mock_time) -> None:
     group_id = "test_group_id"
     def mock_handler(payload: Any) -> Any:
         return {
-            "response": f"hello {payload['prompt']}"
+            "response": f"hello {payload['prompt']}",
+            "duration_ms": 2
         }
     provider = TestImplementationProvider()
 
@@ -409,7 +410,7 @@ def test_register_handler(mock_time) -> None:
     assert has_sent_to_group[0]["messageType"] == "Response", "should be a Response messageType"
     assert has_sent_to_group[0]["status"] == "ok", "should be an ok status"
     assert has_sent_to_group[0]["payload"]["response"] == "hello world", "should return the correct response payload"
-    assert has_sent_to_group[0]["payload"]["duration_ms"] > 0, "should return the duration in milliseconds"
+    assert has_sent_to_group[0]["payload"]["duration_ms"] == 2, "should return the duration in milliseconds"
 
     # incorrect message type
     msg = OnGroupDataMessageArgs(group="group id", data_type=WebPubSubDataType.JSON, data={"correlationId": "id1", "messageType": "NotRequest", "payload": {"prompt": "world"}})

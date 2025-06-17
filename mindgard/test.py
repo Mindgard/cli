@@ -194,11 +194,7 @@ class TestImplementationProvider():
             if msg.data["messageType"] != "Request":
                 return
 
-            start_time = time.time()
             payload = handler(payload=msg.data["payload"])
-            end_time = time.time()
-            duration_ms = (end_time - start_time) * 1000  # convert to milliseconds
-            payload["duration_ms"] = duration_ms
             client.send_to_group(
                 "orchestrator",
                 {
