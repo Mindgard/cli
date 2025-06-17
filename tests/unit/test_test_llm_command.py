@@ -15,7 +15,7 @@ from azure.messaging.webpubsubclient.models import OnGroupDataMessageArgs, WebPu
 from mindgard.external_model_handlers.llm_model import llm_message_handler
 from mindgard.orchestrator import OrchestratorSetupRequest
 from mindgard.run_functions.external_models import model_test_output_factory, model_test_polling, model_test_submit_factory
-from mindgard.wrappers.llm import Context, LLMModelWrapper
+from mindgard.wrappers.llm import Context, LLMModelWrapper, PromptResponse
 from mindgard import auth
 import pytest
 from pytest_snapshot.plugin import Snapshot
@@ -47,8 +47,9 @@ class MockModelWrapper(LLMModelWrapper):
         time.sleep(0.1)
         return "hello " + input
     
-    def __call__(self, content:str, with_context:Optional[Context] = None) -> str:
-        return self.mirror(content) # mirror the input for later assertions
+    def __call__(self, content:str, with_context:Optional[Context] = None) -> PromptResponse:
+        response_content = self.mirror(content) # mirror the input for later assertions
+        return PromptResponse(prompt=content, response=response_content, duration_ms=1)
 
 @dataclass
 class _TestContext():

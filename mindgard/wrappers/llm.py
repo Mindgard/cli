@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 class PromptResponse:
     prompt: str
     response: str
+    duration_ms: float
 
 
 class Context:
@@ -75,18 +76,15 @@ class LLMModelWrapper(ABC):
         context_manager = ContextManager()
         def handler(payload: Any) -> Any:
             context = context_manager.get_context_or_none(payload.get("context_id"))
-            start_time = time.time()
-            model_response = self(payload["prompt"], context)
-            end_time = time.time()
-            duration_ms = (end_time - start_time) * 1000  # convert to milliseconds
+            prompt_response = self(payload["prompt"], context)
             return {
-                "response": model_response,
-                "duration_ms": duration_ms
+                "response": prompt_response.response,
+                "duration_ms": prompt_response.duration_ms
             }
         return handler
 
     @abstractmethod
-    def __call__(self, content: str, with_context: Optional[Context] = None) -> str:
+    def __call__(self, content: str, with_context: Optional[Context] = None) -> PromptResponse:
         pass
 
 
@@ -108,10 +106,10 @@ class TestStaticResponder(LLMModelWrapper):
             return super().to_handler()
 
     @log_time
-    def __call__(self, content: str, with_context: Optional[Context] = None) -> str:
+    def __call__(self, content: str, with_context: Optional[Context] = None) -> PromptResponse:
         return self._throttled_call(content, with_context)
     
-    def _call_inner(self, content: str, with_context: Optional[Context] = None) -> str:
+    def _call_inner(self, content: str, with_context: Optional[Context] = None) -> PromptResponse:
         request = f"[start]sys: {self._system_prompt};"
         if with_context is not None:
             request = f"{request}"
@@ -122,11 +120,16 @@ class TestStaticResponder(LLMModelWrapper):
             request = f"{request}"
         request = f"{request} next: {content}[end]"
 
+        start_time = time.time()
         response = f"TEST. prompted with: {request=}"
+        duration_ms = (time.time() - start_time) * 1000
+
+        prompt_response = PromptResponse(prompt=content, response=response, duration_ms=duration_ms)
 
         if with_context is not None:
-            with_context.add(PromptResponse(prompt=content, response=response))
-        return response
+            with_context.add(prompt_response)
+
+        return prompt_response
 
 
 class APIModelWrapper(LLMModelWrapper):
@@ -216,10 +219,10 @@ class APIModelWrapper(LLMModelWrapper):
         return cast(Dict[str, Any], payload)
 
     @log_time
-    def __call__(self, content: str, with_context: Optional[Context] = None) -> str:
+    def __call__(self, content: str, with_context: Optional[Context] = None) -> PromptResponse:
         return self.throttled_call_llm(content,with_context)
 
-    def _call_llm(self, content: str, with_context: Optional[Context] = None) -> str:
+    def _call_llm(self, content: str, with_context: Optional[Context] = None) -> PromptResponse:
         if with_context is not None and not self.multi_turn_enabled:
             logging.debug(
                 "APIModelWrapper is temporarily incompatible with chat completions history. Attacks that require chat completions history fail."
@@ -231,6 +234,7 @@ class APIModelWrapper(LLMModelWrapper):
         request_payload = self.prompt_to_request_payload(content)
 
         # Make the API call
+        start_time = time.time()
         try:
             response = requests.post(
                 self.api_url, headers=self.headers, json=request_payload, allow_redirects=self._allow_redirects
@@ -244,11 +248,14 @@ class APIModelWrapper(LLMModelWrapper):
         except Exception as e:
             # everything else
             raise e
+        finally:
+            duration = (time.time() - start_time) * 1000
 
         if response.status_code == 308:
             raise Uncontactable("Failed to contact model: model returned a 308 redirect that couldn't be followed.")
-        
-        return extract_replies(response, self.selector)
+
+        extracted_response = extract_replies(response, self.selector)
+        return PromptResponse(prompt=str(request_payload), response=extracted_response, duration_ms=duration)
 
 class AzureAIStudioWrapper(APIModelWrapper):
     def __init__(
@@ -403,10 +410,10 @@ class AzureOpenAIWrapper(LLMModelWrapper):
         self.throttled_call_llm = throttle(self._call_llm, rate_limit=rate_limit)
 
     @log_time
-    def __call__(self, content: str, with_context: Optional[Context] = None) -> str:
+    def __call__(self, content: str, with_context: Optional[Context] = None) -> PromptResponse:
         return self.throttled_call_llm(content, with_context)
 
-    def _call_llm(self, content: str, with_context: Optional[Context] = None) -> str:
+    def _call_llm(self, content: str, with_context: Optional[Context] = None) -> PromptResponse:
         return openai_call(wrapper=self, content=content, with_context=with_context)
 
 class OpenAIWrapper(LLMModelWrapper):
@@ -436,10 +443,10 @@ class OpenAIWrapper(LLMModelWrapper):
         self.throttled_call_llm = throttle(self._call_llm, rate_limit=rate_limit)
 
     @log_time
-    def __call__(self, content: str, with_context: Optional[Context] = None) -> str:
+    def __call__(self, content: str, with_context: Optional[Context] = None) -> PromptResponse:
         return self.throttled_call_llm(content, with_context)
 
-    def _call_llm(self, content: str, with_context: Optional[Context] = None) -> str:
+    def _call_llm(self, content: str, with_context: Optional[Context] = None) -> PromptResponse:
         return openai_call(wrapper=self, content=content, with_context=with_context)
 
 
@@ -447,7 +454,7 @@ def openai_call(
     wrapper: Union[AzureOpenAIWrapper, OpenAIWrapper],
     content: str,
     with_context: Optional[Context] = None,
-) -> str:
+) -> PromptResponse:
     if wrapper.system_prompt:
         messages = [{"role": "system", "content": wrapper.system_prompt}]
     else:
@@ -462,6 +469,7 @@ def openai_call(
 
     logging.debug(messages)
 
+    start_time = time.time()
     try:
         chat = wrapper.client.chat.completions.create(model=wrapper.model_name, messages=messages)  # type: ignore # TODO: fix type error
         response = chat.choices[0].message.content
@@ -472,7 +480,7 @@ def openai_call(
             raise Uncontactable("Failed to contact model: model returned a 308 redirect that couldn't be followed.") from exception
         if exception.status_code == 401:
             raise Unauthorized("Failed to contact model: model returned a 401 (unauthorized).",
-                                  status_code=401) from exception
+                               status_code=401) from exception
         if exception.status_code == 422:
             err_message = "<none>"
             try:
@@ -485,15 +493,15 @@ def openai_call(
         raise status_code_to_exception(exception.status_code) from exception
     except OpenAIError as exception:
         raise EmptyResponse("An OpenAI error occurred") from exception
+    finally:
+        duration_ms = (time.time() - start_time) * 1000
+
+    prompt_response = PromptResponse(prompt=content, response=response, duration_ms=duration_ms)
 
     if with_context is not None:
-        with_context.add(
-            PromptResponse(
-                prompt=content,
-                response=response,
-            )
-        )
-    return response
+        with_context.add(prompt_response)
+
+    return prompt_response
 
 
 class AnthropicWrapper(LLMModelWrapper):
@@ -511,10 +519,10 @@ class AnthropicWrapper(LLMModelWrapper):
         self.throttled_call_llm = throttle(self._call_llm, rate_limit=rate_limit)
 
     @log_time
-    def __call__(self, content: str, with_context: Optional[Context] = None) -> str:
+    def __call__(self, content: str, with_context: Optional[Context] = None) -> PromptResponse:
         return self.throttled_call_llm(content, with_context)
 
-    def _call_llm(self, content: str, with_context: Optional[Context] = None) -> str:
+    def _call_llm(self, content: str, with_context: Optional[Context] = None) -> PromptResponse:
         messages: List[MessageParam] = []
 
         if with_context:
@@ -526,6 +534,7 @@ class AnthropicWrapper(LLMModelWrapper):
 
         messages.append({"role": "user", "content": content})
 
+        start_time = time.time()
         if self.system_prompt is not None:
             message = self.client.messages.create(
                 system=self.system_prompt,
@@ -539,14 +548,16 @@ class AnthropicWrapper(LLMModelWrapper):
             )
         response = message.content[0].text
 
+        duration_ms = (time.time() - start_time) * 1000
+
+        prompt_response = PromptResponse(prompt=content, response=response, duration_ms=duration_ms)
+
         if with_context is not None:
             with_context.add(
-                PromptResponse(
-                    prompt=content,
-                    response=response,
-                )
+                prompt_response
             )
-        return response
+
+        return prompt_response
 
 
 def get_llm_model_wrapper(

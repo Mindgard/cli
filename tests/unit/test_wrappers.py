@@ -197,7 +197,7 @@ def test_api_model_wrapper_does_not_support_multi_turn_by_default_due_to_interle
             json="eh up",
         )
         context = Context()
-        context.add(PromptResponse(prompt="Foo", response="Bar"))
+        context.add(PromptResponse(prompt="Foo", response="Bar", duration_ms=1))
         with pytest.raises(mindgard.exceptions.NotImplemented):
             wrapper("hello", context)
 
@@ -217,7 +217,7 @@ def test_api_model_wrapper_can_support_multi_turn_in_stateful_api_scenarios() ->
             json="eh up",
         )
         context = Context()
-        context.add(PromptResponse(prompt="Foo", response="Bar"))
+        context.add(PromptResponse(prompt="Foo", response="Bar", duration_ms=1))
 
         assert '"eh up"' == wrapper("hello", context)
 
