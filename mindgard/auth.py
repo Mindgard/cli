@@ -1,8 +1,8 @@
 import os
-from typing import Any, Callable, Optional, TypeVar, cast
+from typing import Any, Callable, Optional, TypeVar, cast, Union
 from functools import wraps
 
-import requests
+
 from auth0.authentication.token_verifier import (
     AsymmetricSignatureVerifier,  # type: ignore
     TokenVerifier,
@@ -219,7 +219,7 @@ T = TypeVar("T")
 
 
 # TODO: improve typing definitions here
-def require_auth(func: Callable[..., CliResponse]) -> Callable[..., CliResponse]:
+def require_auth(func: Callable[..., Union[CliResponse,Any]]) -> Callable[..., Union[CliResponse,Any]]:
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> CliResponse:
         access_token = load_access_token()

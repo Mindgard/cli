@@ -3,11 +3,16 @@ import textwrap
 import os
 import sys
 import traceback
+from threading import Thread
+from time import sleep
 
 # Types
 from typing import List, cast
 
 from mindgard.exceptions import MGException
+from mindgard.recon.command import GuardrailReconnCommand, OrchestratorSetupReconRequest, OrchestratorPollReconRequest, \
+    OrchestratorSetupReconResponse
+from mindgard.recon.guardrail import GuardrailService, GetReconnResponse, GetReconnRequest
 from mindgard.types import log_levels, type_model_presets_list, valid_llm_datasets
 
 # Models
@@ -25,16 +30,17 @@ from mindgard.run_poll_display import cli_run
 from mindgard.orchestrator import OrchestratorSetupRequest
 
 # Constants and Utils
-from mindgard.constants import VERSION
+from mindgard.constants import VERSION, API_BASE
 from mindgard.utils import is_version_outdated, print_to_stderr, parse_toml_and_args_into_final_args, convert_test_to_cli_response, CliResponse
 
 # Logging
 import logging
 from rich.logging import RichHandler
 from rich.console import Console
+from rich.progress import Progress, SpinnerColumn, TextColumn
 
 # Auth
-from mindgard.auth import login, logout
+from mindgard.auth import login, logout, require_auth
 
 debug_help = lambda: print("\033[93mTry running with `mindgard --log-level=debug ...` for more information, and ` 2> >(tee output.log >&2)` after your command to save output to disk.\033[0m")
 
@@ -102,6 +108,10 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     validate_parser = subparsers.add_parser("validate", help="Validates that we can communicate with your model")
     shared_arguments(validate_parser)
 
+    recon_guardrail_parser = subparsers.add_parser("recon-guardrail", help="Run guardrail Reconnaissance against your target system")
+    shared_arguments(recon_guardrail_parser)
+
+
     create_parser = subparsers.add_parser('create', help='Create commands')
     create_subparsers = create_parser.add_subparsers(dest='create_command')
     create_dataset_parser = create_subparsers.add_parser('dataset', help='Create a custom dataset for your test')
@@ -150,7 +160,7 @@ def run_cli() -> None:
         else:
             print('Unknown create command. Please see `mindgard create --help` for more information.')
 
-    elif args.command == "validate" or args.command == "test":
+    elif args.command == "validate" or args.command == "test" or args.command == "recon-guardrail":
         console = Console()
         final_args = parse_toml_and_args_into_final_args(args.config_file, args)
         model_wrapper = parse_args_into_model(final_args)
@@ -190,6 +200,65 @@ def run_cli() -> None:
                     cli_response = cli_run(submit, model_test_polling, output_func=output, json_out=final_args["json"])
                     exit(convert_test_to_cli_response(test=cli_response, risk_threshold=int(final_args["risk_threshold"])).code()) # type: ignore
 
+            if args.command == 'recon-guardrail':
+                result: list[GetReconnResponse] = []
+
+                @require_auth
+                def guardrail(access_token: str) -> None:
+                    guardrail_recon_service = GuardrailService(
+                        reconn_url=f"{API_BASE}/recon/guardrail/detection",
+                        get_events_url=f"{API_BASE}/events/prompt_request_response/pop",
+                        push_events_url=f"{API_BASE}/events/prompt_request_response/push"
+                    )
+                    guardrail_command = GuardrailReconnCommand(call_system_under_test=model_wrapper.__call__,
+                                                     service=guardrail_recon_service)
+                    orchestrator_setup_recon_request = OrchestratorSetupReconRequest(target_name=final_args["target"])
+                    start_recon_response: OrchestratorSetupReconResponse = guardrail_command.start(
+                        orchestrator_setup_recon_request,
+                        access_token=access_token)
+
+                    orchestrator_poll_request = OrchestratorPollReconRequest(
+                        recon_id=start_recon_response.recon_id,
+                        types=["prompt_request", "complete"]
+                    )
+                    guardrail_command.poll(orchestrator_poll_request, access_token=access_token)
+
+                    result.append(guardrail_command.fetch_recon_result(GetReconnRequest(
+                        recon_id=start_recon_response.recon_id,
+                        access_token=access_token
+                    )))
+
+                def guardrail_with_spinner() -> None:
+                    with Progress(
+                            SpinnerColumn(style="bold yellow"),
+                            TextColumn("[bold yellow]Probing for guardrails…"),
+                            transient=True,
+                            console=console,
+                    ) as progress:
+                        task_id = progress.add_task("probing", total=None)
+
+                        worker = Thread(target=guardrail, daemon=True)
+                        worker.start()
+
+                        while worker.is_alive():
+                            sleep(0.3)
+                        progress.update(task_id, completed=100)
+
+                guardrail_with_spinner()
+
+                if len(result) > 0:
+                    console.print("Probing completed!", style="bold green")
+                    detected = result[0].result.guardrail_detected
+
+                    if detected:
+                        console.print("\nSome signs of guardrail found.", style="bold blue")
+                    else:
+                        console.print("\nNo clear signs of guardrail.", style="bold red")
+
+                    console.print(f"\n[underline]Reasoning[/underline]: {result[0].reason}")
+                    console.print(f"[underline]Recommendation[/underline]: {result[0].recommendation}\n")
+                else:
+                    console.print("Failed to get result from guardrail detection session")
         else:
             exit(CliResponse(1).code())
         
