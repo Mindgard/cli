@@ -3,7 +3,7 @@ import textwrap
 import os
 import sys
 import traceback
-from threading import Thread
+from concurrent.futures import ThreadPoolExecutor
 from time import sleep
 
 # Types
@@ -12,7 +12,7 @@ from typing import List, cast
 from mindgard.exceptions import MGException
 from mindgard.recon.command import GuardrailReconnCommand, OrchestratorSetupReconRequest, OrchestratorPollReconRequest, \
     OrchestratorSetupReconResponse
-from mindgard.recon.guardrail import GuardrailService, GetReconnResponse, GetReconnRequest
+from mindgard.recon.guardrail import GuardrailService, GetReconnResponse, GetReconnRequest, GuardrailServiceException
 from mindgard.types import log_levels, type_model_presets_list, valid_llm_datasets
 
 # Models
@@ -237,14 +237,20 @@ def run_cli() -> None:
                     ) as progress:
                         task_id = progress.add_task("probing", total=None)
 
-                        worker = Thread(target=guardrail, daemon=True)
-                        worker.start()
+                        with ThreadPoolExecutor(max_workers=1) as executor:
+                            guardrail_future = executor.submit(guardrail)
 
-                        while worker.is_alive():
-                            sleep(0.3)
-                        progress.update(task_id, completed=100)
+                            while not guardrail_future.done():
+                                sleep(0.15)
 
-                guardrail_with_spinner()
+                            progress.update(task_id, completed=100)
+                            guardrail_future.result()
+
+                try:
+                    guardrail_with_spinner()
+                except GuardrailServiceException as ex:
+                    console.print(f"[red bold]Error: {ex.message}[/red bold]")
+                    exit(CliResponse(ex.status_code).code())
 
                 if len(result) > 0:
                     console.print("Probing completed!", style="bold green")

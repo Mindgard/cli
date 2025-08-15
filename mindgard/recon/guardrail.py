@@ -6,6 +6,8 @@ from pydantic import BaseModel
 
 import requests
 
+from mindgard.exceptions import MGException
+
 
 @dataclass
 class StartReconRequest:
@@ -88,7 +90,7 @@ class PushPromptResultsResponse(BaseModel):
     event_id: str
 
 
-class GuardrailServiceException(Exception):
+class GuardrailServiceException(MGException):
     status_code: int
     message: str
 
