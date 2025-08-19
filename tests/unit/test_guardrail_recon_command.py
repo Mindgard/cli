@@ -39,15 +39,11 @@ class TestGuardrailReconnCommand:
                 prompt_request=[
                     PromptRequest(
                         prompt="test prompt",
-                        sequence=0,
                         language="en",
-                        is_malicious=False
                     ),
                     PromptRequest(
                         prompt="test prompt 2",
-                        sequence=1,
                         language="en",
-                        is_malicious=False
                     )
                 ]
             ),
@@ -102,15 +98,11 @@ class TestGuardrailReconnCommand:
                 prompt_request=[
                     PromptRequest(
                         prompt="test prompt",
-                        sequence=0,
                         language="en",
-                        is_malicious=False
                     ),
                     PromptRequest(
                         prompt="test prompt 2",
-                        sequence=1,
                         language="en",
-                        is_malicious=False
                     )
                 ]
             ),
@@ -146,9 +138,7 @@ class TestGuardrailReconnCommand:
                             duration_ms=None,
                             prompt_request=PromptRequest(
                                 prompt="test prompt",
-                                sequence=0,
                                 language="en",
-                                is_malicious=False
                             ),
                             error_code=None,
                             error_message="Unable to call system under test"
@@ -167,9 +157,7 @@ class TestGuardrailReconnCommand:
                             duration_ms=None,
                             prompt_request=PromptRequest(
                                 prompt="test prompt 2",
-                                sequence=1,
                                 language="en",
-                                is_malicious=False
                             ),
                             error_code=None,
                             error_message="Unable to call system under test"
@@ -198,15 +186,11 @@ class TestGuardrailReconnCommand:
                 prompt_request=[
                     PromptRequest(
                         prompt="test prompt",
-                        sequence=0,
                         language="en",
-                        is_malicious=False
                     ),
                     PromptRequest(
                         prompt="test prompt 2",
-                        sequence=1,
                         language="en",
-                        is_malicious=False
                     )
                 ]
             ),
@@ -241,15 +225,11 @@ class TestGuardrailReconnCommand:
             prompt_request=[
                 PromptRequest(
                     prompt="test prompt",
-                    sequence=1,
                     language="en",
-                    is_malicious=False
                 ),
                 PromptRequest(
                     prompt="another test prompt",
-                    sequence=2,
                     language="en",
-                    is_malicious=True
                 )
             ]
         )
