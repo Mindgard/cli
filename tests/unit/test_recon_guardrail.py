@@ -65,9 +65,7 @@ class TestReconGuardrailServiceStartRecon:
         access_token = "<BEARER_TOKEN>"
         prompt_request = {
             "prompt": "hello",
-            "sequence": 1,
             "language": "en",
-            "is_malicious": False
         }
 
         expected_response = {
@@ -168,9 +166,7 @@ class TestReconGuardrailServiceStartRecon:
                 duration_ms=100.0,
                 prompt_request=PromptRequest(
                     prompt="hello",
-                    sequence=1,
                     language="en",
-                    is_malicious=False
                 )
             )],
             access_token=access_token
@@ -213,9 +209,7 @@ class TestReconGuardrailServiceStartRecon:
                 duration_ms=100.0,
                 prompt_request=PromptRequest(
                     prompt="hello",
-                    sequence=1,
                     language="en",
-                    is_malicious=False
                 )
             )],
             access_token=access_token

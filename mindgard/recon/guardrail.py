@@ -51,7 +51,6 @@ class GetReconnResponse(BaseModel):
 class PromptRequest(BaseModel):
     prompt: str
     language: str
-    is_malicious: bool
 
 
 class PromptResult(BaseModel):
