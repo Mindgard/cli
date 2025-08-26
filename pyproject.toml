@@ -16,7 +16,7 @@ mindgard = "mindgard.cli:main"
 [tool.poetry.dependencies]
 python = "^3.9"
 auth0-python = "^4.7.1"
-anthropic = "^0.23.1"
+anthropic = "^0.64.0"
 openai = "^1.16.2"
 jsonpath-ng = "^1.6.1"
 rich = "^13.7.1"
@@ -32,7 +32,7 @@ ratelimit = "^2.2.1"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.8.0"
-twine = "^5.0.0"
+twine = "^6.1.0"
 wheel = "^0.43.0"
 types-setuptools = "^69.2.0.20240317"
 build = "^1.1.1"
