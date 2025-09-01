@@ -130,7 +130,13 @@ def parse_toml_and_args_into_final_args(
             try:
                 datasets = csv.reader(datasets_file)
                 all_rows = [line for line in datasets]
-                lines = [line[0].strip() for line in all_rows]
+
+                non_empty_rows = list(filter(lambda row: row != [], all_rows))
+
+                if len(non_empty_rows) == 0:
+                    raise ValueError("Custom dataset should not be an empty file!")
+
+                lines = [line[0].strip() for line in non_empty_rows]
             except csv.Error:
                 raise ValueError(f"{dataset} is not a valid CSV file!")
 

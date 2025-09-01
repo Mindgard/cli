@@ -652,6 +652,37 @@ def test_passing_dataset_with_domain_should_be_contents_of_multiline_file() -> N
         final_args = parse_toml_and_args_into_final_args(None, parsed_args)
         assert final_args["custom_dataset"] == f'["{content1}", "{content2}", "{content3}"]'
 
+def test_passing_dataset_should_raise_error_if_contents_of_dataset_is_empty() -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_file = os.path.join(temp_dir, "temp.csv")
+        cli_command = "test --dataset " + temp_file
+        with open(temp_file, "w") as f:
+            pass
+        parsed_args = parse_args(cast(List[str], cli_command.split()))
+        with pytest.raises(ValueError) as exception_info:
+            parse_toml_and_args_into_final_args(None, parsed_args)
+        assert exception_info.type is ValueError
+        assert "Custom dataset should not be an empty file!" in str(exception_info.value)
+
+def test_passing_dataset_should_ignore_empty_lines() -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_file = os.path.join(temp_dir, "temp.csv")
+        cli_command = "test --dataset " + temp_file
+        c1 = "blah0"
+        c2 = "\n"
+        c3 = ""
+        c4 = " "
+        c5 = "blah1"
+        with open(temp_file, "w") as f:
+            f.write(c1)
+            f.write(c2)
+            f.write(c3)
+            f.write(c4)
+            f.write(c5)
+        parsed_args = parse_args(cast(List[str], cli_command.split()))
+        final_args = parse_toml_and_args_into_final_args(None, parsed_args)
+        assert final_args["custom_dataset"] == f'["{c1}", "{c5}"]'
+
 def test_passing_dataset_for_llm_model_should_only_take_first_column_in_csv() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_file = os.path.join(temp_dir, "invalid-data.exe")
