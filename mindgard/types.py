@@ -57,4 +57,10 @@ valid_llm_datasets = {
     "injection": "SqlInjection",
     "rce": "Xss",
     "xss": "Xss",
+    "bypass_deepset": "GuardrailBypassDeepset",
+    "bypass_llmguard": "GuardrailBypassLlmGuard",
+    "bypass_metapromptguardv1": "GuardrailBypassMetaPromptGuardV1",
+    "bypass_protectaiv1": "GuardrailBypassProtectAiV1",
+    "bypass_protectaiv2": "GuardrailBypassProtectAiV2",
+    "bypass_vijilpromptinjection": "GuardrailBypassVijilPromptInjection"
 }
