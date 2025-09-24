@@ -13,12 +13,12 @@ import requests_mock # type: ignore
 
 
 def build_tests_attacks_response(test_id: str = "blah", attack_id: str = "blah", flagged_events: int = 0,
-                                 total_events: int = 0):
+                                 total_events: int = 0, model_name: str = "my-test-target"):
     return {
         "test": {
             "id": test_id,
             "has_finished": True,
-            "model_name": "<model_name>",
+            "model_name": model_name,
             "total_events": total_events,
             "flagged_events": flagged_events,
         },
@@ -71,6 +71,7 @@ def test_text_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot, requ
     auth.load_access_token = MagicMock(return_value="atoken")
 
     test_id: str = "a-test-id-for-this-test"
+    target_name = "my-test-target"
 
     requests_mock.post(
         f"{API_BASE}/assessments",
@@ -82,7 +83,7 @@ def test_text_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot, requ
 
     requests_mock.get(
         f"{API_BASE}/tests/{test_id}/attacks",
-        json=build_tests_attacks_response(test_id=test_id),
+        json=build_tests_attacks_response(test_id=test_id, model_name=target_name),
         status_code=200,
     )
 
@@ -98,7 +99,7 @@ def test_text_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot, requ
 
     if platform.system() == "Windows":
         # TODO: this is a basic check as Rich renders differently on windows
-        assert f"Results - https://sandbox.mindgard.ai/r/test/{test_id}" in stdout
+        assert f"https://sandbox.mindgard.ai/results/targets/{target_name}/tests/{test_id}" in stdout
         assert "Attack blah done success" in stdout
     else:
         snapshot.assert_match(stdout, 'stdout.txt')

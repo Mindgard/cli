@@ -35,7 +35,7 @@ def get_valid_test_data(
 ) -> Dict[str, Any]:
     return {
         "id": id,
-        "mindgardModelName": "<model_name>",
+        "mindgardModelName": "my-target-model-name",
         "source": "user",
         "createdAt": json.dumps(datetime.now(), default=str),
         "isCompleted": True,
@@ -49,7 +49,7 @@ def build_tests_attacks_response(test_id):
         "test": {
             "id": test_id,
             "has_finished": True,
-            "model_name": "<model_name>",
+            "model_name": "my-target-model-name",
             "total_events": 10,
             "flagged_events": 3
         },
