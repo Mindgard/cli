@@ -99,7 +99,7 @@ def test_text_output(capsys: pytest.CaptureFixture[str], snapshot:Snapshot, requ
 
     if platform.system() == "Windows":
         # TODO: this is a basic check as Rich renders differently on windows
-        assert f"https://sandbox.mindgard.ai/results/targets/{target_name}/tests/{test_id}" in stdout
+        assert f"https://sandbox.mindgard.ai/results/targets/{target_name}/tests/{test_id}".replace("\n","") in stdout.replace("\n","")
         assert "Attack blah done success" in stdout
     else:
         snapshot.assert_match(stdout, 'stdout.txt')
