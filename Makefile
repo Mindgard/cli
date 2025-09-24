@@ -25,7 +25,7 @@ increment-minor-number-and-build: # increment version
 	python3 -m build
 
 upload-to-testpypi: # Upload current dist directory to testpypi
-	POETRY_PYPI_TOKEN_PYPI=$(TEST_PYPITOKEN) poetry publish -r testpypi
+	POETRY_PYPI_TOKEN_TESTPYPI=$(TEST_PYPITOKEN) poetry publish -r testpypi
 
 upload-to-pypi: increment-minor-number-and-build # Upload current dist directory to pypi
 	POETRY_PYPI_TOKEN_PYPI=$(PYPITOKEN) poetry publish
