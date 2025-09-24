@@ -1,6 +1,6 @@
 include .env
 
-RELEASE_TAG = ""
+RELEASE_TAG ?= ""
 
 
 help: # Show this help
@@ -25,10 +25,10 @@ increment-minor-number-and-build: # increment version
 	python3 -m build
 
 upload-to-testpypi: # Upload current dist directory to testpypi
-	python3 -m twine upload -p $(TEST_PYPITOKEN) --repository testpypi dist/* 
+	POETRY_PYPI_TOKEN_PYPI=$(TEST_PYPITOKEN) poetry publish -r testpypi
 
 upload-to-pypi: increment-minor-number-and-build # Upload current dist directory to pypi
-	python3 -m twine upload dist/* -p $(PYPITOKEN)
+	POETRY_PYPI_TOKEN_PYPI=$(PYPITOKEN) poetry publish
 
 system-tests: # Run system tests
 	./run_system_tests.sh $(RELEASE_TAG)
