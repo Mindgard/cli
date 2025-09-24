@@ -61,6 +61,7 @@ class _TestContext():
     cli_completed: bool = False
 
 fixture_test_id = "my-test-id"
+fixture_target_name = "my-target-name"
 fixture_group_id = "my-group-id"
 fixture_cli_init_response = {
     "url": "dsfdfsdf",
@@ -72,7 +73,7 @@ def build_tests_attacks_response(test_id: str = fixture_test_id) -> dict:
         "test": {
             "id": test_id,
             "has_finished": False,
-            "model_name": "<model_name>",
+            "model_name": "my-target-model-name",
             "total_events": 10,
             "flagged_events": 5,
         },
@@ -98,7 +99,7 @@ def _run_llm_test(json_out:bool = True) -> None:
     model_wrapper = MockModelWrapper()
 
     request = OrchestratorSetupRequest(
-        target="mymodel",
+        target=fixture_target_name,
         parallelism=4,
         system_prompt="my system prompt",
         dataset=None,
@@ -305,7 +306,7 @@ def test_text_output(
         stdout = captured.out
         if platform.system() == "Windows":
             # TODO: this is a basic check as Rich renders differently on windows
-            assert f"Results - https://sandbox.mindgard.ai/r/test/{fixture_test_id}" in stdout
+            assert f"https://sandbox.mindgard.ai/results/targets/{fixture_target_name}/tests/{fixture_test_id}"
             assert "Attack myattack done success" in stdout
         else:
             snapshot.assert_match(stdout, 'stdout.txt')    

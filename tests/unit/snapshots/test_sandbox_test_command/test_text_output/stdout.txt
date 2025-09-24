@@ -2,7 +2,10 @@ Submitting...  Submitted!
                                                                                 
 Attack blah done success                                                        
                                                                                 
-                                                                                      Results - https://sandbox.mindgard.ai/r/test/a-test-id-for-this-test      
+                                                                                https://sandbox.mindgard.ai/results/targets/my-test-target/tests/a-test-id-for-t
+his-test
+
+                                    Results                                     
 ┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Pass            ┃ Name            ┃                           Flagged Events ┃
 ┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩

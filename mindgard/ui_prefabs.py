@@ -2,6 +2,8 @@
 import json
 import logging
 from typing import Optional
+
+from .dataset_generation import console
 from .run_poll_display import type_ui_task_map
 
 # Orchestrator
@@ -57,7 +59,8 @@ def output_test_table(
         print(json.dumps(test.raw, indent=4))
         return None
     else:
-        table = Table(title=f"Results - {DASHBOARD_URL}/r/test/{test.test.id}", width=80)
+        console.print(f"{DASHBOARD_URL}/results/targets/{test.test.model_name}/tests/{test.test.id}\n")
+        table = Table(title="Results", width=80)
         table.add_column("Pass", style="cyan")
         table.add_column("Name", style="magenta")
         table.add_column("Flagged Events", justify="right", style="green")

@@ -2,7 +2,10 @@ Submitting...  Submitted!
                                                                                 
 Attack myattack done success                                                    
                                                                                 
-                                                                                            Results - https://sandbox.mindgard.ai/r/test/my-test-id             
+                                                                                https://sandbox.mindgard.ai/results/targets/my-target-model-name/tests/my-test-i
+d
+
+                                    Results                                     
 ┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Pass          ┃ Name                   ┃                      Flagged Events ┃
 ┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
